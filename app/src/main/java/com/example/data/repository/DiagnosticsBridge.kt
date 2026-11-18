@@ -23,4 +23,10 @@ object DiagnosticsBridge {
     fun dismissToast() {
         _recentToast.value = null
     }
+
+    fun dismissToastIfEvent(eventId: Long) {
+        if (_recentToast.value?.eventId == eventId) {
+            _recentToast.value = null
+        }
+    }
 }

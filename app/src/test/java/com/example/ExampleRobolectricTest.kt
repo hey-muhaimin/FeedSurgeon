@@ -3,6 +3,10 @@ package com.example
 import android.app.Notification
 import android.content.Context
 import android.content.pm.PackageInfo
+import android.view.accessibility.AccessibilityNodeInfo
+import androidx.sqlite.db.SupportSQLiteDatabase
+import androidx.sqlite.db.SupportSQLiteOpenHelper
+import androidx.sqlite.db.framework.FrameworkSQLiteOpenHelperFactory
 import androidx.test.core.app.ApplicationProvider
 import androidx.work.ListenableWorker
 import androidx.work.WorkInfo
@@ -14,13 +18,17 @@ import com.example.data.local.FeedSurgeonDatabase
 import com.example.data.local.SettingsDataStore
 import com.example.data.model.InspectedNode
 import com.example.data.model.InterventionMode
+import com.example.data.model.InterventionOutcome
 import com.example.data.model.LiveTreeSnapshot
+import com.example.data.model.ProtectionStatus
+import com.example.data.repository.InterventionRepository
 import com.example.data.repository.RulesetRepository
 import com.example.data.repository.RulesetSyncResult
 import com.example.service.AccessibilityEventLogger
 import com.example.service.ForegroundProtectionNotifier
 import com.example.service.InstalledAppDetector
 import com.example.service.SelectorMatcher
+import com.example.ui.MainViewModel
 import com.example.worker.RulesetSyncWorker
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
@@ -33,6 +41,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -237,6 +246,12 @@ class ExampleRobolectricTest {
 
         val repo = RulesetRepository(context, db.feedSurgeonDao(), settings, okHttpClient = mockClient)
         repo.ensureLocalCacheSeeded()
+        settings.saveFetchedRuleset(
+            version = AppPreferences.DEFAULT_RULESET_VERSION,
+            rawJson = AppPreferences.BUNDLED_RULESET_JSON,
+            checkedAtMs = 1L,
+            etag = "\"abc123etag\""
+        )
         val result = repo.syncFromRemoteOrFallback()
 
         assertTrue(result is RulesetSyncResult.Success)
@@ -273,5 +288,201 @@ class ExampleRobolectricTest {
         assertEquals(5, success.updatedApps)
         assertEquals("", settings.preferencesFlow.first().rulesetEtag)
         assertEquals(5, db.feedSurgeonDao().getAllRulesSnapshot().size)
+    }
+
+    @Test
+    fun `strict package root selector ignores unrelated active window`() {
+        val unrelatedActive = AccessibilityNodeInfo().apply {
+            packageName = "com.android.launcher"
+        }
+        val youtubeWindow = AccessibilityNodeInfo().apply {
+            packageName = "com.google.android.youtube"
+        }
+
+        val resolved = SelectorMatcher.selectTargetWindowRoot(
+            targetPackage = "com.google.android.youtube",
+            activeRoot = unrelatedActive,
+            windowRoots = listOf(unrelatedActive, youtubeWindow)
+        )
+        assertSame(youtubeWindow, resolved)
+
+        val missing = SelectorMatcher.selectTargetWindowRoot(
+            targetPackage = "com.instagram.android",
+            activeRoot = unrelatedActive,
+            windowRoots = listOf(unrelatedActive, youtubeWindow)
+        )
+        assertNull(missing)
+    }
+
+    @Test
+    fun `intervention repository records outcomes and filters failed events from insights`() = runTest {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val db = FeedSurgeonDatabase.getInstance(context)
+        val settings = SettingsDataStore(context)
+        val repo = InterventionRepository(db.feedSurgeonDao(), settings)
+        repo.ensureDefaultRulesSeeded()
+        repo.clearHistory()
+
+        val ytRule = db.feedSurgeonDao().getRuleByPackage("com.google.android.youtube")!!
+        val confirmedId = repo.recordIntervention(
+            rule = ytRule,
+            matchedSelector = "com.google.android.youtube:id/reel_recycler",
+            actionTaken = InterventionMode.HOME_TAB,
+            outcome = InterventionOutcome.ATTEMPTED
+        )
+        repo.updateInterventionOutcome(confirmedId, InterventionOutcome.CONFIRMED)
+
+        val failedId = repo.recordIntervention(
+            rule = ytRule,
+            matchedSelector = "tab:\"Shorts\"",
+            actionTaken = InterventionMode.BACK,
+            outcome = InterventionOutcome.ATTEMPTED
+        )
+        repo.updateInterventionOutcome(failedId, InterventionOutcome.FAILED)
+
+        val allowedId = repo.recordIntervention(
+            rule = ytRule,
+            matchedSelector = "com.google.android.youtube:id/shorts_player",
+            actionTaken = InterventionMode.OVERLAY,
+            outcome = InterventionOutcome.ATTEMPTED
+        )
+        repo.allowOnceForEvent(allowedId, ytRule.packageName)
+
+        val allEvents = repo.recentEvents.first()
+        assertEquals(3, allEvents.size)
+        assertEquals(
+            InterventionOutcome.CONFIRMED,
+            allEvents.first { it.id == confirmedId }.outcome
+        )
+        assertEquals(
+            InterventionOutcome.FAILED,
+            allEvents.first { it.id == failedId }.outcome
+        )
+        val allowedEvent = allEvents.first { it.id == allowedId }
+        assertEquals(InterventionOutcome.ALLOWED_ONCE, allowedEvent.outcome)
+        assertTrue(allowedEvent.wasAllowedOnce)
+
+        val counted = MainViewModel.filterCountedEvents(allEvents)
+        assertEquals(2, counted.size)
+        assertFalse(counted.any { it.id == failedId })
+    }
+
+    @Test
+    fun `migration 2 to 3 adds outcome column defaulting to CONFIRMED`() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val dbName = "migration_2_3_test.db"
+        context.deleteDatabase(dbName)
+        val factory = FrameworkSQLiteOpenHelperFactory()
+        val config = SupportSQLiteOpenHelper.Configuration.builder(context)
+            .name(dbName)
+            .callback(object : SupportSQLiteOpenHelper.Callback(2) {
+                override fun onCreate(db: SupportSQLiteDatabase) {
+                    db.execSQL(
+                        """
+                        CREATE TABLE IF NOT EXISTS intervention_events (
+                            id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                            packageName TEXT NOT NULL,
+                            appName TEXT NOT NULL,
+                            feedLabel TEXT NOT NULL,
+                            matchedSelector TEXT NOT NULL,
+                            actionTaken TEXT NOT NULL,
+                            timestampMs INTEGER NOT NULL,
+                            reclaimedSeconds INTEGER NOT NULL,
+                            wasAllowedOnce INTEGER NOT NULL
+                        )
+                        """.trimIndent()
+                    )
+                }
+
+                override fun onUpgrade(db: SupportSQLiteDatabase, oldVersion: Int, newVersion: Int) = Unit
+            })
+            .build()
+
+        val helper = factory.create(config)
+        val db = helper.writableDatabase
+        db.execSQL(
+            """
+            INSERT INTO intervention_events (packageName, appName, feedLabel, matchedSelector, actionTaken, timestampMs, reclaimedSeconds, wasAllowedOnce)
+            VALUES ('com.google.android.youtube', 'YouTube', 'Shorts', 'id/reel_recycler', 'OVERLAY', 1000, 165, 0)
+            """.trimIndent()
+        )
+        FeedSurgeonDatabase.MIGRATION_2_3.migrate(db)
+
+        val cursor = db.query("SELECT outcome FROM intervention_events")
+        assertTrue(cursor.moveToFirst())
+        assertEquals("CONFIRMED", cursor.getString(0))
+        cursor.close()
+        helper.close()
+        context.deleteDatabase(dbName)
+    }
+
+    @Test
+    fun `deriveProtectionStatus distinguishes all five operational states`() {
+        assertEquals(
+            ProtectionStatus.PERMISSION_NEEDED,
+            MainViewModel.deriveProtectionStatus(
+                isAccessibilityEnabled = false,
+                isServiceConnected = false,
+                activeInstalledCount = 2,
+                isGloballyPaused = false
+            )
+        )
+        assertEquals(
+            ProtectionStatus.SERVICE_DISCONNECTED,
+            MainViewModel.deriveProtectionStatus(
+                isAccessibilityEnabled = true,
+                isServiceConnected = false,
+                activeInstalledCount = 2,
+                isGloballyPaused = false
+            )
+        )
+        assertEquals(
+            ProtectionStatus.NO_APPS_ACTIVE,
+            MainViewModel.deriveProtectionStatus(
+                isAccessibilityEnabled = true,
+                isServiceConnected = true,
+                activeInstalledCount = 0,
+                isGloballyPaused = false
+            )
+        )
+        assertEquals(
+            ProtectionStatus.PAUSED,
+            MainViewModel.deriveProtectionStatus(
+                isAccessibilityEnabled = true,
+                isServiceConnected = true,
+                activeInstalledCount = 1,
+                isGloballyPaused = true
+            )
+        )
+        assertEquals(
+            ProtectionStatus.OPERATIONAL,
+            MainViewModel.deriveProtectionStatus(
+                isAccessibilityEnabled = true,
+                isServiceConnected = true,
+                activeInstalledCount = 2,
+                isGloballyPaused = false
+            )
+        )
+    }
+
+    @Test
+    fun `global pause and app snooze persist and clear cleanly`() = runTest {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val db = FeedSurgeonDatabase.getInstance(context)
+        val settings = SettingsDataStore(context)
+        val repo = InterventionRepository(db.feedSurgeonDao(), settings)
+        repo.ensureDefaultRulesSeeded()
+
+        repo.pauseGloballyForMinutes(15)
+        assertTrue(settings.preferencesFlow.first().isGloballyPaused())
+        repo.resumeGlobalProtection()
+        assertFalse(settings.preferencesFlow.first().isGloballyPaused())
+
+        repo.snoozeForMinutes("com.google.android.youtube", 15)
+        val snoozedRule = db.feedSurgeonDao().getRuleByPackage("com.google.android.youtube")!!
+        assertTrue(snoozedRule.isCurrentlySnoozed())
+        repo.clearSnooze("com.google.android.youtube")
+        val resumedRule = db.feedSurgeonDao().getRuleByPackage("com.google.android.youtube")!!
+        assertFalse(resumedRule.isCurrentlySnoozed())
     }
 }

@@ -10,7 +10,9 @@ import com.example.data.local.AppPreferences
 import com.example.data.local.InterventionEventEntity
 import com.example.data.local.TargetAppRuleEntity
 import com.example.data.model.InterventionMode
+import com.example.data.model.InterventionOutcome
 import com.example.data.model.InterventionToastState
+import com.example.data.model.ProtectionStatus
 import com.example.data.repository.DiagnosticsBridge
 import com.example.data.repository.InterventionRepository
 import com.example.data.repository.RulesetSyncResult
@@ -24,10 +26,9 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
-
-import java.text.SimpleDateFormat
 
 data class DayBarStat(
     val dayLetter: String,
@@ -52,6 +53,10 @@ data class MainUiState(
     val rules: List<TargetAppRuleEntity> = emptyList(),
     val installedPackages: Set<String> = emptySet(),
     val isAccessibilityEnabled: Boolean = false,
+    val isServiceConnected: Boolean = false,
+    val protectionStatus: ProtectionStatus = ProtectionStatus.PERMISSION_NEEDED,
+    val activeInstalledCount: Int = 0,
+    val installedSupportedCount: Int = 0,
     val isBatteryOptimizationIgnored: Boolean = false,
     val isNotificationPermissionGranted: Boolean = true,
     val todayCutsCount: Int = 0,
@@ -107,6 +112,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     private data class TransientState(
         val accessibilityEnabled: Boolean,
+        val serviceConnected: Boolean,
         val batteryOptimizationIgnored: Boolean,
         val notificationPermissionGranted: Boolean,
         val installedPackages: Set<String>,
@@ -137,11 +143,12 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     private val environmentFlow = combine(
         _accessibilityEnabled,
+        DiagnosticsBridge.isServiceConnected,
         _batteryOptimizationIgnored,
         _notificationPermissionGranted,
         _installedPackages
-    ) { accessibilityEnabled, batteryIgnored, notifGranted, installedPackages ->
-        Tuple5(accessibilityEnabled, batteryIgnored, notifGranted, installedPackages, Unit)
+    ) { accessibilityEnabled, serviceConnected, batteryIgnored, notifGranted, installedPackages ->
+        Tuple5(accessibilityEnabled, serviceConnected, batteryIgnored, notifGranted, installedPackages)
     }
 
     private val transientFlow = combine(
@@ -150,9 +157,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     ) { env, extra ->
         TransientState(
             accessibilityEnabled = env.first,
-            batteryOptimizationIgnored = env.second,
-            notificationPermissionGranted = env.third,
-            installedPackages = env.fourth,
+            serviceConnected = env.second,
+            batteryOptimizationIgnored = env.third,
+            notificationPermissionGranted = env.fourth,
+            installedPackages = env.fifth,
             isSyncing = extra.first,
             syncMessage = extra.second,
             toast = extra.third,
@@ -171,20 +179,30 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             InstalledAppDetector.getInstalledPackages(app, rules.map { it.packageName })
         }
         val nowMs = System.currentTimeMillis()
+        val countedEvents = filterCountedEvents(events)
         val todayStart = InterventionRepository.startOfTodayMs(nowMs)
-        val todayEvents = events.filter { it.timestampMs >= todayStart }
+        val todayEvents = countedEvents.filter { it.timestampMs >= todayStart }
         val todaySeconds = todayEvents.sumOf { it.reclaimedSeconds }
 
-        val fiveDayBars = buildFiveDaySparkline(events, nowMs)
-        val weeklyBars = buildWeeklyDayBars(events, nowMs)
+        val fiveDayBars = buildFiveDaySparkline(countedEvents, nowMs)
+        val weeklyBars = buildWeeklyDayBars(countedEvents, nowMs)
         val weekStart = InterventionRepository.startOfWeekDaysAgoMs(6, nowMs)
-        val weekEvents = events.filter { it.timestampMs >= weekStart }
+        val weekEvents = countedEvents.filter { it.timestampMs >= weekStart }
         val weekSeconds = weekEvents.sumOf { it.reclaimedSeconds }
         val weekReclaimedText = formatReclaimedDuration(weekSeconds)
         val weekAllowedOnce = weekEvents.count { it.wasAllowedOnce }
 
         val byApp = buildAppBreakdown(rules, weekEvents)
-        val staleCount = rules.count { it.isOutdated && it.packageName in installed }
+        val installedRules = rules.filter { it.packageName in installed }
+        val activeInstalledCount = installedRules.count { it.enabled }
+        val staleCount = installedRules.count { it.isOutdated }
+        val isGloballyPaused = prefs.isGloballyPaused(nowMs)
+        val protectionStatus = deriveProtectionStatus(
+            isAccessibilityEnabled = transient.accessibilityEnabled,
+            isServiceConnected = transient.serviceConnected,
+            activeInstalledCount = activeInstalledCount,
+            isGloballyPaused = isGloballyPaused
+        )
 
         MainUiState(
             isInitialLoading = false,
@@ -192,6 +210,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             rules = rules,
             installedPackages = installed,
             isAccessibilityEnabled = transient.accessibilityEnabled,
+            isServiceConnected = transient.serviceConnected,
+            protectionStatus = protectionStatus,
+            activeInstalledCount = activeInstalledCount,
+            installedSupportedCount = installedRules.size,
             isBatteryOptimizationIgnored = transient.batteryOptimizationIgnored,
             isNotificationPermissionGranted = transient.notificationPermissionGranted,
             todayCutsCount = todayEvents.size,
@@ -208,9 +230,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             syncStatusMessage = transient.syncMessage,
             eventLogPreview = transient.logPreview,
             eventLogSizeBytes = transient.logSizeBytes,
-            isGloballyPaused = prefs.isGloballyPaused(nowMs),
+            isGloballyPaused = isGloballyPaused,
             globalPauseUntilMs = prefs.globalPauseUntilMs,
-            streakDays = computeStreakDays(events, nowMs)
+            streakDays = computeStreakDays(countedEvents, nowMs)
         )
     }.stateIn(
         scope = viewModelScope,
@@ -535,5 +557,23 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         } else {
             "~$minutes min"
         }
+    }
+
+    companion object {
+        fun deriveProtectionStatus(
+            isAccessibilityEnabled: Boolean,
+            isServiceConnected: Boolean,
+            activeInstalledCount: Int,
+            isGloballyPaused: Boolean
+        ): ProtectionStatus = when {
+            !isAccessibilityEnabled -> ProtectionStatus.PERMISSION_NEEDED
+            !isServiceConnected -> ProtectionStatus.SERVICE_DISCONNECTED
+            activeInstalledCount <= 0 -> ProtectionStatus.NO_APPS_ACTIVE
+            isGloballyPaused -> ProtectionStatus.PAUSED
+            else -> ProtectionStatus.OPERATIONAL
+        }
+
+        fun filterCountedEvents(events: List<InterventionEventEntity>): List<InterventionEventEntity> =
+            events.filter { it.outcome != InterventionOutcome.FAILED }
     }
 }

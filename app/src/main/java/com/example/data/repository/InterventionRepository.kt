@@ -7,6 +7,7 @@ import com.example.data.local.InterventionEventEntity
 import com.example.data.local.SettingsDataStore
 import com.example.data.local.TargetAppRuleEntity
 import com.example.data.model.InterventionMode
+import com.example.data.model.InterventionOutcome
 import com.example.data.model.InterventionToastState
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
@@ -81,7 +82,7 @@ class InterventionRepository(
         val current = dao.getRuleByPackage(packageName) ?: return
         val until = System.currentTimeMillis() + 5 * 60 * 1000L
         dao.updateRule(current.copy(allowOnceUntilMs = until))
-        DiagnosticsBridge.dismissToast()
+        DiagnosticsBridge.dismissToastIfEvent(eventId)
     }
 
     suspend fun allowOnceTemporary(packageName: String) {
@@ -96,13 +97,14 @@ class InterventionRepository(
         if (current != null) {
             dao.updateRule(current.copy(allowOnceUntilMs = System.currentTimeMillis() + 60 * 1000L))
         }
-        DiagnosticsBridge.dismissToast()
+        DiagnosticsBridge.dismissToastIfEvent(eventId)
     }
 
     suspend fun recordIntervention(
         rule: TargetAppRuleEntity,
         matchedSelector: String,
-        actionTaken: InterventionMode
+        actionTaken: InterventionMode,
+        outcome: InterventionOutcome = InterventionOutcome.ATTEMPTED
     ): Long {
         val prefs = settingsDataStore.preferencesFlow.first()
         val now = System.currentTimeMillis()
@@ -115,10 +117,11 @@ class InterventionRepository(
                 actionTaken = actionTaken,
                 timestampMs = now,
                 reclaimedSeconds = prefs.reclaimedSecondsPerCut,
-                wasAllowedOnce = false
+                wasAllowedOnce = outcome == InterventionOutcome.ALLOWED_ONCE,
+                outcome = outcome
             )
         )
-        if (prefs.showInterventionBanner) {
+        if (prefs.showInterventionBanner && outcome != InterventionOutcome.FAILED) {
             DiagnosticsBridge.publishToast(
                 InterventionToastState(
                     eventId = eventId,
@@ -130,6 +133,13 @@ class InterventionRepository(
             )
         }
         return eventId
+    }
+
+    suspend fun updateInterventionOutcome(eventId: Long, outcome: InterventionOutcome) {
+        dao.updateEventOutcome(eventId, outcome)
+        if (outcome == InterventionOutcome.FAILED) {
+            DiagnosticsBridge.dismissToastIfEvent(eventId)
+        }
     }
 
     suspend fun updateSelectorHealth(

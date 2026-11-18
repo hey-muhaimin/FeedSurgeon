@@ -46,6 +46,7 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.R
@@ -197,6 +198,7 @@ fun InsightsScreen(
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
+                                .semantics(mergeDescendants = true) {}
                                 .clip(RoundedCornerShape(12.dp))
                                 .background(MintTealDark.copy(alpha = 0.45f))
                                 .border(1.dp, MintTealBorder, RoundedCornerShape(12.dp))
@@ -285,6 +287,27 @@ fun InsightsScreen(
                     )
                 }
             }
+        }
+
+        // Estimation methodology transparency note
+        item {
+            val perVisitLabel = if (uiState.preferences.reclaimedSecondsPerCut % 60 == 0) {
+                "${uiState.preferences.reclaimedSecondsPerCut / 60} min"
+            } else {
+                String.format(
+                    java.util.Locale.US,
+                    "%.1f min",
+                    uiState.preferences.reclaimedSecondsPerCut / 60f
+                )
+            }
+            Text(
+                text = "Estimated time reclaimed is based on confirmed exits \u00D7 your $perVisitLabel per-visit estimate in Settings (not measured screen time). Failed exits are excluded.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = TextSecondary,
+                modifier = Modifier
+                    .padding(horizontal = 4.dp)
+                    .testTag("insights_estimate_note")
+            )
         }
 
         // Calm empty state artwork + interactive preview when no weekly events yet

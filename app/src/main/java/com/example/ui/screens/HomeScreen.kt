@@ -49,6 +49,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
@@ -56,6 +57,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.R
 import com.example.data.local.TargetAppRuleEntity
+import com.example.data.model.ProtectionStatus
+import com.example.service.AccessibilityStatusHelper
 import com.example.ui.MainUiState
 import com.example.ui.components.AppBadgeIcon
 import com.example.ui.components.MindfulPausePreviewDialog
@@ -91,6 +94,7 @@ fun HomeScreen(
     onAppClick: (String) -> Unit,
     onToggleApp: (String, Boolean) -> Unit
 ) {
+    val context = LocalContext.current
     val haptics = LocalHapticFeedback.current
     val installedRules = remember(uiState.rules, uiState.installedPackages) {
         uiState.rules.filter { it.packageName in uiState.installedPackages }
@@ -106,17 +110,22 @@ fun HomeScreen(
         onExpired = onGlobalBreakExpired
     )
     val isGloballyPausedNow = globalCountdown != null
+    val effectiveStatus = when {
+        uiState.protectionStatus == ProtectionStatus.PERMISSION_NEEDED -> ProtectionStatus.PERMISSION_NEEDED
+        uiState.protectionStatus == ProtectionStatus.SERVICE_DISCONNECTED -> ProtectionStatus.SERVICE_DISCONNECTED
+        uiState.protectionStatus == ProtectionStatus.NO_APPS_ACTIVE -> ProtectionStatus.NO_APPS_ACTIVE
+        isGloballyPausedNow -> ProtectionStatus.PAUSED
+        else -> ProtectionStatus.OPERATIONAL
+    }
 
-    val statusLabel = when {
-        !uiState.isAccessibilityEnabled -> stringResource(R.string.status_service_off)
-        isGloballyPausedNow -> stringResource(R.string.status_paused)
-        else -> stringResource(R.string.status_running)
+    val statusLabel = when (effectiveStatus) {
+        ProtectionStatus.PERMISSION_NEEDED -> stringResource(R.string.status_service_off)
+        ProtectionStatus.SERVICE_DISCONNECTED -> stringResource(R.string.status_disconnected)
+        ProtectionStatus.NO_APPS_ACTIVE -> stringResource(R.string.status_no_apps)
+        ProtectionStatus.PAUSED -> stringResource(R.string.status_paused)
+        ProtectionStatus.OPERATIONAL -> stringResource(R.string.status_running)
     }
-    val statusColor = when {
-        !uiState.isAccessibilityEnabled -> AmberWarning
-        isGloballyPausedNow -> AmberWarning
-        else -> MintTeal
-    }
+    val statusColor = if (effectiveStatus == ProtectionStatus.OPERATIONAL) MintTeal else AmberWarning
 
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -164,111 +173,33 @@ fun HomeScreen(
             }
         }
 
-        // Actionable Setup Card when Accessibility permission is off, or Master Protection Control when active
+        // Actionable status card matching the 5 explicit protection states
         if (!uiState.isInitialLoading) {
             item {
-                if (!uiState.isAccessibilityEnabled) {
-                    SurgeonCard(
-                        borderColor = AmberWarningBorder,
-                        modifier = Modifier.testTag("home_setup_needed_card")
-                    ) {
-                        Text(
-                            text = "Protection isn\u2019t active yet",
-                            style = MaterialTheme.typography.titleLarge,
-                            color = TextPrimary
-                        )
-                        Spacer(modifier = Modifier.height(6.dp))
-                        Text(
-                            text = "Turn on Feed Surgeon in Android Settings so it can gently close Shorts and Reels for you.",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = TextSecondary
-                        )
-                        Spacer(modifier = Modifier.height(14.dp))
-                        Button(
-                            onClick = onSetupClick,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(48.dp)
-                                .testTag("home_turn_on_protection_button"),
-                            shape = RoundedCornerShape(100.dp),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = MintTeal,
-                                contentColor = OnMintTeal
-                            )
+                when (effectiveStatus) {
+                    ProtectionStatus.PERMISSION_NEEDED -> {
+                        SurgeonCard(
+                            borderColor = AmberWarningBorder,
+                            modifier = Modifier.testTag("home_setup_needed_card")
                         ) {
                             Text(
-                                text = "Turn on protection",
-                                style = MaterialTheme.typography.labelLarge,
-                                fontWeight = FontWeight.Bold
+                                text = "Protection isn\u2019t active yet",
+                                style = MaterialTheme.typography.titleLarge,
+                                color = TextPrimary
                             )
-                        }
-                        Spacer(modifier = Modifier.height(6.dp))
-                        TextButton(
-                            onClick = { showPausePreview = true },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .testTag("home_preview_pause_button")
-                        ) {
+                            Spacer(modifier = Modifier.height(6.dp))
                             Text(
-                                text = "Preview how Mindful Pause works",
-                                style = MaterialTheme.typography.labelLarge,
-                                color = MintTeal
+                                text = "Turn on Feed Surgeon in Android Settings so it can gently close Shorts and Reels for you.",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = TextSecondary
                             )
-                        }
-                    }
-                } else {
-                    SurgeonCard(
-                        borderColor = if (isGloballyPausedNow) AmberWarningBorder else MintTealBorder,
-                        modifier = Modifier.testTag("home_protection_control_card")
-                    ) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(
-                                    text = if (isGloballyPausedNow) "Taking a break" else "Protection is active",
-                                    style = MaterialTheme.typography.titleMedium,
-                                    color = TextPrimary
-                                )
-                                Spacer(modifier = Modifier.height(2.dp))
-                                Text(
-                                    text = if (isGloballyPausedNow) {
-                                        if (uiState.globalPauseUntilMs == Long.MAX_VALUE) {
-                                            "Paused until you turn it back on"
-                                        } else {
-                                            "$globalCountdown remaining before auto-resume"
-                                        }
-                                    } else {
-                                        val activeCount = installedRules.count { it.enabled }
-                                        "Guarding $activeCount installed app${if (activeCount == 1) "" else "s"}"
-                                    },
-                                    style = MaterialTheme.typography.bodyMedium.copy(
-                                        fontFeatureSettings = "tnum"
-                                    ),
-                                    color = if (isGloballyPausedNow) AmberWarning else TextSecondary
-                                )
-                            }
-                            Spacer(modifier = Modifier.width(10.dp))
-                            SurgeonSwitch(
-                                checked = !isGloballyPausedNow,
-                                onCheckedChange = { active -> onToggleGlobalPause(!active) },
-                                testTag = "home_global_protection_switch"
-                            )
-                        }
-
-                        Spacer(modifier = Modifier.height(12.dp))
-                        if (isGloballyPausedNow) {
+                            Spacer(modifier = Modifier.height(14.dp))
                             Button(
-                                onClick = {
-                                    haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                                    onToggleGlobalPause(false)
-                                },
+                                onClick = onSetupClick,
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .height(48.dp)
-                                    .testTag("home_resume_protection_button"),
+                                    .testTag("home_turn_on_protection_button"),
                                 shape = RoundedCornerShape(100.dp),
                                 colors = ButtonDefaults.buttonColors(
                                     containerColor = MintTeal,
@@ -276,43 +207,95 @@ fun HomeScreen(
                                 )
                             ) {
                                 Text(
-                                    text = "Resume protection now",
+                                    text = "Turn on protection",
                                     style = MaterialTheme.typography.labelLarge,
                                     fontWeight = FontWeight.Bold
                                 )
                             }
-                        } else {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            Spacer(modifier = Modifier.height(6.dp))
+                            TextButton(
+                                onClick = { showPausePreview = true },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .testTag("home_preview_pause_button")
                             ) {
-                                listOf(5 to "5m break", 15 to "15m break", 60 to "1h break").forEach { (mins, label) ->
-                                    OutlinedButton(
-                                        onClick = {
-                                            haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                            onPauseForMinutes(mins)
-                                        },
-                                        modifier = Modifier
-                                            .weight(1f)
-                                            .height(44.dp)
-                                            .testTag("home_break_${mins}m_button"),
-                                        contentPadding = PaddingValues(horizontal = 6.dp),
-                                        shape = RoundedCornerShape(100.dp),
-                                        border = BorderStroke(1.dp, CardBorder),
-                                        colors = ButtonDefaults.outlinedButtonColors(
-                                            containerColor = CardSurfaceElevated,
-                                            contentColor = TextPrimary
-                                        )
-                                    ) {
-                                        Text(
-                                            text = label,
-                                            style = MaterialTheme.typography.labelMedium,
-                                            maxLines = 1
-                                        )
-                                    }
-                                }
+                                Text(
+                                    text = "Preview how Mindful Pause works",
+                                    style = MaterialTheme.typography.labelLarge,
+                                    color = MintTeal
+                                )
                             }
-                            Spacer(modifier = Modifier.height(4.dp))
+                        }
+                    }
+
+                    ProtectionStatus.SERVICE_DISCONNECTED -> {
+                        SurgeonCard(
+                            borderColor = AmberWarningBorder,
+                            modifier = Modifier.testTag("home_service_disconnected_card")
+                        ) {
+                            Text(
+                                text = "Protection needs a quick reconnect",
+                                style = MaterialTheme.typography.titleLarge,
+                                color = TextPrimary
+                            )
+                            Spacer(modifier = Modifier.height(6.dp))
+                            Text(
+                                text = "Accessibility permission is enabled, but Android stopped the background service. Open Accessibility Settings and switch Feed Surgeon off and back on.",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = TextSecondary
+                            )
+                            Spacer(modifier = Modifier.height(14.dp))
+                            Button(
+                                onClick = { AccessibilityStatusHelper.openAccessibilitySettings(context) },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(48.dp)
+                                    .testTag("home_reconnect_service_button"),
+                                shape = RoundedCornerShape(100.dp),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = MintTeal,
+                                    contentColor = OnMintTeal
+                                )
+                            ) {
+                                Text(
+                                    text = "Open Accessibility Settings",
+                                    style = MaterialTheme.typography.labelLarge,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                            Spacer(modifier = Modifier.height(6.dp))
+                            TextButton(
+                                onClick = { showPausePreview = true },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .testTag("home_preview_pause_button")
+                            ) {
+                                Text(
+                                    text = "Preview how Mindful Pause works",
+                                    style = MaterialTheme.typography.labelLarge,
+                                    color = MintTeal
+                                )
+                            }
+                        }
+                    }
+
+                    ProtectionStatus.NO_APPS_ACTIVE -> {
+                        SurgeonCard(
+                            borderColor = AmberWarningBorder,
+                            modifier = Modifier.testTag("home_no_apps_active_card")
+                        ) {
+                            Text(
+                                text = "No apps guarded right now",
+                                style = MaterialTheme.typography.titleLarge,
+                                color = TextPrimary
+                            )
+                            Spacer(modifier = Modifier.height(6.dp))
+                            Text(
+                                text = "Feed Surgeon is ready, but none of your installed apps are switched on below. Turn on at least one app to start guarding.",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = TextSecondary
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
                             TextButton(
                                 onClick = { showPausePreview = true },
                                 modifier = Modifier
@@ -327,11 +310,126 @@ fun HomeScreen(
                             }
                         }
                     }
+
+                    ProtectionStatus.PAUSED,
+                    ProtectionStatus.OPERATIONAL -> {
+                        val isPausedCard = effectiveStatus == ProtectionStatus.PAUSED
+                        SurgeonCard(
+                            borderColor = if (isPausedCard) AmberWarningBorder else MintTealBorder,
+                            modifier = Modifier.testTag("home_protection_control_card")
+                        ) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = if (isPausedCard) "Taking a break" else "Protection is active",
+                                        style = MaterialTheme.typography.titleMedium,
+                                        color = TextPrimary
+                                    )
+                                    Spacer(modifier = Modifier.height(2.dp))
+                                    Text(
+                                        text = if (isPausedCard) {
+                                            if (uiState.globalPauseUntilMs == Long.MAX_VALUE) {
+                                                "Paused until you turn it back on"
+                                            } else {
+                                                "$globalCountdown remaining before auto-resume"
+                                            }
+                                        } else {
+                                            val activeCount = uiState.activeInstalledCount
+                                            "Guarding $activeCount installed app${if (activeCount == 1) "" else "s"}"
+                                        },
+                                        style = MaterialTheme.typography.bodyMedium.copy(
+                                            fontFeatureSettings = "tnum"
+                                        ),
+                                        color = if (isPausedCard) AmberWarning else TextSecondary
+                                    )
+                                }
+                                Spacer(modifier = Modifier.width(10.dp))
+                                SurgeonSwitch(
+                                    checked = !isPausedCard,
+                                    onCheckedChange = { active -> onToggleGlobalPause(!active) },
+                                    testTag = "home_global_protection_switch"
+                                )
+                            }
+
+                            Spacer(modifier = Modifier.height(12.dp))
+                            if (isPausedCard) {
+                                Button(
+                                    onClick = {
+                                        haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                                        onToggleGlobalPause(false)
+                                    },
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(48.dp)
+                                        .testTag("home_resume_protection_button"),
+                                    shape = RoundedCornerShape(100.dp),
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = MintTeal,
+                                        contentColor = OnMintTeal
+                                    )
+                                ) {
+                                    Text(
+                                        text = "Resume protection now",
+                                        style = MaterialTheme.typography.labelLarge,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
+                            } else {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    listOf(5 to "5m break", 15 to "15m break", 60 to "1h break").forEach { (mins, label) ->
+                                        OutlinedButton(
+                                            onClick = {
+                                                haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                                onPauseForMinutes(mins)
+                                            },
+                                            modifier = Modifier
+                                                .weight(1f)
+                                                .height(44.dp)
+                                                .testTag("home_break_${mins}m_button"),
+                                            contentPadding = PaddingValues(horizontal = 6.dp),
+                                            shape = RoundedCornerShape(100.dp),
+                                            border = BorderStroke(1.dp, CardBorder),
+                                            colors = ButtonDefaults.outlinedButtonColors(
+                                                containerColor = CardSurfaceElevated,
+                                                contentColor = TextPrimary
+                                            )
+                                        ) {
+                                            Text(
+                                                text = label,
+                                                style = MaterialTheme.typography.labelMedium,
+                                                maxLines = 1
+                                            )
+                                        }
+                                    }
+                                }
+                                Spacer(modifier = Modifier.height(4.dp))
+                                TextButton(
+                                    onClick = { showPausePreview = true },
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .testTag("home_preview_pause_button")
+                                ) {
+                                    Text(
+                                        text = "See how Mindful Pause looks",
+                                        style = MaterialTheme.typography.labelLarge,
+                                        color = MintTeal
+                                    )
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }
 
-        // Hero wellbeing card: Distractions avoided + Time saved + 5-day trend
+        // Hero wellbeing card: Distractions avoided + Estimated time reclaimed + 5-day trend
         item {
             AnimatedContent(
                 targetState = uiState.isInitialLoading,
@@ -364,7 +462,7 @@ fun HomeScreen(
                                 )
                                 Spacer(modifier = Modifier.height(6.dp))
                                 Text(
-                                    text = "~${uiState.todayReclaimedMinutes} min saved today",
+                                    text = "~${uiState.todayReclaimedMinutes} min est. reclaimed today",
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = MintTeal
                                 )

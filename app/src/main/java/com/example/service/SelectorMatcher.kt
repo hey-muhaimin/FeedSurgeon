@@ -7,6 +7,24 @@ import com.example.data.model.LiveTreeSnapshot
 
 object SelectorMatcher {
 
+    fun matchesTargetPackage(
+        node: AccessibilityNodeInfo?,
+        targetPackage: String
+    ): Boolean {
+        return node?.packageName?.toString() == targetPackage
+    }
+
+    fun selectTargetWindowRoot(
+        targetPackage: String,
+        activeRoot: AccessibilityNodeInfo?,
+        windowRoots: List<AccessibilityNodeInfo?>
+    ): AccessibilityNodeInfo? {
+        if (matchesTargetPackage(activeRoot, targetPackage)) {
+            return activeRoot
+        }
+        return windowRoots.firstOrNull { matchesTargetPackage(it, targetPackage) }
+    }
+
     fun findMatchingSelector(
         root: AccessibilityNodeInfo,
         rule: TargetAppRuleEntity

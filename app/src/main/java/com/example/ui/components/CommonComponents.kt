@@ -87,6 +87,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -222,6 +223,7 @@ fun StatusBadgePill(
     val textColor = if (isWarning) AmberWarning else MintTeal
     Box(
         modifier = modifier
+            .semantics(mergeDescendants = true) {}
             .clip(RoundedCornerShape(100.dp))
             .background(bgColor)
             .border(1.dp, borderColor, RoundedCornerShape(100.dp))
@@ -359,7 +361,7 @@ fun MindfulPausePreviewDialog(
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
-                text = "$appName $feedLabel opened. Step back to stay intentional, or take a 5-minute pass if you meant to watch something specific.",
+                text = "$appName $feedLabel opened. Step back to stay intentional, or allow 5 minutes for this visit.",
                 style = MaterialTheme.typography.bodyMedium,
                 color = TextSecondary
             )
@@ -422,7 +424,7 @@ fun MindfulPausePreviewDialog(
                 )
             ) {
                 Text(
-                    text = "Allow for 5 minutes",
+                    text = "Allow 5 min (this visit)",
                     style = MaterialTheme.typography.labelLarge
                 )
             }
@@ -513,7 +515,7 @@ fun InterventionBanner(
                 modifier = Modifier.testTag("banner_allow_once")
             ) {
                 Text(
-                    text = "5 min pass",
+                    text = "5m pass (visit)",
                     style = MaterialTheme.typography.labelLarge,
                     color = TextPrimary
                 )

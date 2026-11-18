@@ -5,6 +5,7 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Update
+import com.example.data.model.InterventionOutcome
 import kotlinx.coroutines.flow.Flow
 
 @Dao
@@ -42,8 +43,11 @@ interface FeedSurgeonDao {
     @Insert
     suspend fun insertEvent(event: InterventionEventEntity): Long
 
-    @Query("UPDATE intervention_events SET wasAllowedOnce = 1 WHERE id = :eventId")
+    @Query("UPDATE intervention_events SET wasAllowedOnce = 1, outcome = 'ALLOWED_ONCE' WHERE id = :eventId")
     suspend fun markEventAllowedOnce(eventId: Long)
+
+    @Query("UPDATE intervention_events SET outcome = :outcome WHERE id = :eventId")
+    suspend fun updateEventOutcome(eventId: Long, outcome: InterventionOutcome)
 
     @Query("DELETE FROM intervention_events WHERE id = :eventId")
     suspend fun deleteEventById(eventId: Long)

@@ -66,6 +66,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.R
+import com.example.data.model.ProtectionStatus
 import com.example.service.AccessibilityEventLogger
 import com.example.service.AccessibilityStatusHelper
 import com.example.service.ProtectionHealthHelper
@@ -77,6 +78,7 @@ import com.example.ui.components.StatusBadgePill
 import com.example.ui.components.SurgeonCard
 import com.example.ui.components.SurgeonSwitch
 import com.example.ui.components.SurgicalSyncLoadingBar
+import com.example.ui.components.rememberCountdownLabel
 import com.example.ui.theme.CardBorder
 import com.example.ui.theme.CardSurface
 import com.example.ui.theme.CardSurfaceElevated
@@ -148,6 +150,39 @@ fun SettingsScreen(
 
         // Protection & Permission Card
         item {
+            val globalCountdown = rememberCountdownLabel(untilMs = uiState.globalPauseUntilMs)
+            val isGloballyPausedNow = globalCountdown != null
+            val effectiveStatus = when {
+                uiState.protectionStatus == ProtectionStatus.PERMISSION_NEEDED -> ProtectionStatus.PERMISSION_NEEDED
+                uiState.protectionStatus == ProtectionStatus.SERVICE_DISCONNECTED -> ProtectionStatus.SERVICE_DISCONNECTED
+                uiState.protectionStatus == ProtectionStatus.NO_APPS_ACTIVE -> ProtectionStatus.NO_APPS_ACTIVE
+                isGloballyPausedNow -> ProtectionStatus.PAUSED
+                else -> ProtectionStatus.OPERATIONAL
+            }
+            val pillText = when (effectiveStatus) {
+                ProtectionStatus.PERMISSION_NEEDED -> "Off"
+                ProtectionStatus.SERVICE_DISCONNECTED -> "Disconnected"
+                ProtectionStatus.NO_APPS_ACTIVE -> "0 apps"
+                ProtectionStatus.PAUSED -> "Paused"
+                ProtectionStatus.OPERATIONAL -> "Ready"
+            }
+            val statusSubtitle = when (effectiveStatus) {
+                ProtectionStatus.PERMISSION_NEEDED ->
+                    "Turn on Feed Surgeon in Android Settings so it can spot short feeds"
+                ProtectionStatus.SERVICE_DISCONNECTED ->
+                    "Permission is on, but Android stopped the service. Toggle Feed Surgeon off and on in Android Settings to reconnect."
+                ProtectionStatus.NO_APPS_ACTIVE ->
+                    "Service is connected, but no installed apps are switched on on Home"
+                ProtectionStatus.PAUSED ->
+                    if (uiState.globalPauseUntilMs == Long.MAX_VALUE) {
+                        "All blocking paused until you turn it back on"
+                    } else {
+                        "All blocking paused \u00B7 $globalCountdown remaining"
+                    }
+                ProtectionStatus.OPERATIONAL ->
+                    "Guarding $activeInstalledCount installed app${if (activeInstalledCount == 1) "" else "s"} on your phone"
+            }
+
             SurgeonCard {
                 SectionLabel(text = "PROTECTION")
                 Spacer(modifier = Modifier.height(12.dp))
@@ -158,29 +193,27 @@ fun SettingsScreen(
                 ) {
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = "Device permission",
+                            text = "Protection status",
                             style = MaterialTheme.typography.titleMedium,
                             color = TextPrimary
                         )
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
-                            text = if (uiState.isAccessibilityEnabled) {
-                                "Guarding $activeInstalledCount installed app${if (activeInstalledCount == 1) "" else "s"} on your phone"
-                            } else {
-                                "Turn on Feed Surgeon in Android Settings so it can spot short feeds"
-                            },
+                            text = statusSubtitle,
                             style = MaterialTheme.typography.bodyMedium,
-                            color = TextSecondary
+                            color = TextSecondary,
+                            modifier = Modifier.testTag("settings_protection_subtitle")
                         )
                     }
                     Spacer(modifier = Modifier.width(10.dp))
                     StatusBadgePill(
-                        text = if (uiState.isAccessibilityEnabled) "Ready" else "Off",
-                        isWarning = !uiState.isAccessibilityEnabled
+                        text = pillText,
+                        isWarning = effectiveStatus != ProtectionStatus.OPERATIONAL,
+                        modifier = Modifier.testTag("settings_protection_pill")
                     )
                 }
 
-                if (uiState.isAccessibilityEnabled) {
+                if (effectiveStatus == ProtectionStatus.OPERATIONAL || effectiveStatus == ProtectionStatus.PAUSED) {
                     Spacer(modifier = Modifier.height(14.dp))
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -194,14 +227,18 @@ fun SettingsScreen(
                                 color = TextPrimary
                             )
                             Text(
-                                text = "Temporarily allow Shorts & Reels across every app",
+                                text = if (isGloballyPausedNow && uiState.globalPauseUntilMs != Long.MAX_VALUE) {
+                                    "Resumes automatically in $globalCountdown"
+                                } else {
+                                    "Temporarily allow Shorts & Reels across every app"
+                                },
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = TextSecondary
                             )
                         }
                         Spacer(modifier = Modifier.width(10.dp))
                         SurgeonSwitch(
-                            checked = uiState.isGloballyPaused,
+                            checked = isGloballyPausedNow,
                             onCheckedChange = onToggleGlobalPause,
                             testTag = "settings_global_pause_switch"
                         )

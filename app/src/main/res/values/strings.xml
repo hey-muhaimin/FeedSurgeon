@@ -32,8 +32,10 @@
     <string name="status_running">Protected</string>
     <string name="status_paused">Paused</string>
     <string name="status_service_off">Setup needed</string>
+    <string name="status_disconnected">Reconnect needed</string>
+    <string name="status_no_apps">No apps active</string>
     <string name="feeds_cut_today">Distractions avoided today</string>
-    <string name="reclaimed_label">Time saved</string>
+    <string name="reclaimed_label">Est. time reclaimed</string>
     <string name="target_apps_header">YOUR APPS</string>
     <string name="allow_once">5-min passes</string>
     <string name="undo">Undo</string>

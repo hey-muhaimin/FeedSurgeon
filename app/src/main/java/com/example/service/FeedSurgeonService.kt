@@ -10,12 +10,15 @@ import com.example.FeedSurgeonApp
 import com.example.data.local.FeedSurgeonDatabase
 import com.example.data.local.TargetAppRuleEntity
 import com.example.data.model.InterventionMode
+import com.example.data.model.InterventionOutcome
 import com.example.data.repository.DiagnosticsBridge
 import com.example.worker.RulesetSyncWorker
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import java.util.concurrent.ConcurrentHashMap
@@ -24,6 +27,8 @@ class FeedSurgeonService : AccessibilityService() {
 
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private val lastBlockTimestamps = ConcurrentHashMap<String, Long>()
+    private val lastRecordedInterventionElapsed = ConcurrentHashMap<String, Long>()
+    private val inFlightVerifications = ConcurrentHashMap.newKeySet<String>()
     private val lastHealthTimestamps = ConcurrentHashMap<String, Long>()
     private val lastLogTimestamps = ConcurrentHashMap<String, Long>()
     private val consecutiveTabFallbackCounts = ConcurrentHashMap<String, Int>()
@@ -135,6 +140,9 @@ class FeedSurgeonService : AccessibilityService() {
 
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
         val pkg = event?.packageName?.toString() ?: return
+        if (!DiagnosticsBridge.isServiceConnected.value) {
+            DiagnosticsBridge.setServiceConnected(true)
+        }
         val captureLogs = isEventCaptureEnabled
         val eventType = event.eventType
         val eventClassName = event.className?.toString()
@@ -164,6 +172,13 @@ class FeedSurgeonService : AccessibilityService() {
         if (overlayShield?.isShowing() == true) {
             if (captureLogs) {
                 logEventThrottled(pkg, eventType, eventClassName, null, null, "SKIPPED:overlay_showing", nowElapsed)
+            }
+            return
+        }
+
+        if (pkg in inFlightVerifications) {
+            if (captureLogs) {
+                logEventThrottled(pkg, eventType, eventClassName, null, null, "SKIPPED:verification_in_flight", nowElapsed)
             }
             return
         }
@@ -240,7 +255,7 @@ class FeedSurgeonService : AccessibilityService() {
             }
         }
 
-        executeIntervention(rootNode, rule, matchedSelector)
+        executeIntervention(rootNode, rule, matchedSelector, nowElapsed)
     }
 
     private fun logEventThrottled(
@@ -270,76 +285,180 @@ class FeedSurgeonService : AccessibilityService() {
     }
 
     private fun resolveTargetRootNode(pkg: String): AccessibilityNodeInfo? {
-        val active = rootInActiveWindow
-        if (active?.packageName?.toString() == pkg) {
-            return active
-        }
-        val windowRoot = try {
-            windows?.firstOrNull { it.root?.packageName?.toString() == pkg }?.root
+        val windowRoots = try {
+            windows?.map { it.root } ?: emptyList()
         } catch (_: Exception) {
-            null
+            emptyList()
         }
-        return windowRoot ?: active
+        return SelectorMatcher.selectTargetWindowRoot(
+            targetPackage = pkg,
+            activeRoot = rootInActiveWindow,
+            windowRoots = windowRoots
+        )
+    }
+
+    private fun executeHomeTabThenBackFallback(
+        rootNode: AccessibilityNodeInfo?,
+        rule: TargetAppRuleEntity
+    ) {
+        val clickedHome = rootNode?.let {
+            SelectorMatcher.findHomeTabNode(it, rule.homeTabLabel)
+                ?.performAction(AccessibilityNodeInfo.ACTION_CLICK)
+        } == true
+        if (!clickedHome) {
+            performGlobalAction(GLOBAL_ACTION_BACK)
+        }
+    }
+
+    private fun isStillOnMatchedFeed(rule: TargetAppRuleEntity): Boolean {
+        val verifyRoot = resolveTargetRootNode(rule.packageName) ?: return false
+        return SelectorMatcher.findMatchingSelector(verifyRoot, rule) != null
+    }
+
+    private suspend fun verifyInterventionAndFallbackIfNeeded(
+        rule: TargetAppRuleEntity,
+        eventId: Long?
+    ) {
+        delay(350L)
+        if (!isStillOnMatchedFeed(rule)) {
+            if (eventId != null) {
+                app.interventionRepository.updateInterventionOutcome(
+                    eventId,
+                    InterventionOutcome.CONFIRMED
+                )
+            }
+            return
+        }
+
+        if (rule.interventionMode == InterventionMode.HOME_TAB || rule.interventionMode == InterventionMode.OVERLAY) {
+            performGlobalAction(GLOBAL_ACTION_BACK)
+            delay(300L)
+            val cleared = !isStillOnMatchedFeed(rule)
+            if (eventId != null) {
+                app.interventionRepository.updateInterventionOutcome(
+                    eventId,
+                    if (cleared) InterventionOutcome.CONFIRMED else InterventionOutcome.FAILED
+                )
+            }
+        } else if (eventId != null) {
+            app.interventionRepository.updateInterventionOutcome(
+                eventId,
+                InterventionOutcome.FAILED
+            )
+        }
     }
 
     private fun executeIntervention(
         rootNode: AccessibilityNodeInfo,
         rule: TargetAppRuleEntity,
-        matchedSelector: String
+        matchedSelector: String,
+        nowElapsed: Long
     ) {
-        when (rule.interventionMode) {
-            InterventionMode.BACK -> {
-                performGlobalAction(GLOBAL_ACTION_BACK)
-            }
+        inFlightVerifications.add(rule.packageName)
+        val lastRecorded = lastRecordedInterventionElapsed[rule.packageName] ?: 0L
+        val shouldRecord = nowElapsed - lastRecorded >= DEDUP_WINDOW_MS
+        if (shouldRecord) {
+            lastRecordedInterventionElapsed[rule.packageName] = nowElapsed
+        }
 
-            InterventionMode.HOME_TAB -> {
-                val homeNode = SelectorMatcher.findHomeTabNode(rootNode, rule.homeTabLabel)
-                val clicked = homeNode?.performAction(AccessibilityNodeInfo.ACTION_CLICK) == true
-                if (!clicked) {
-                    performGlobalAction(GLOBAL_ACTION_BACK)
+        val shield = overlayShield
+        if (rule.interventionMode == InterventionMode.OVERLAY && shield != null) {
+            val eventIdDeferred = CompletableDeferred<Long?>()
+            serviceScope.launch {
+                val eventId = if (shouldRecord) {
+                    app.interventionRepository.recordIntervention(
+                        rule = rule,
+                        matchedSelector = matchedSelector,
+                        actionTaken = InterventionMode.OVERLAY,
+                        outcome = InterventionOutcome.ATTEMPTED
+                    )
+                } else {
+                    null
                 }
+                eventIdDeferred.complete(eventId)
             }
 
-            InterventionMode.OVERLAY -> {
-                overlayShield?.show(
-                    appName = rule.displayName,
-                    feedLabel = rule.feedLabel,
-                    onExitFeed = {
-                        lastBlockTimestamps[rule.packageName] = SystemClock.elapsedRealtime()
-                        val freshRoot = resolveTargetRootNode(rule.packageName)
-                        val clickedHome = freshRoot?.let {
-                            SelectorMatcher.findHomeTabNode(it, rule.homeTabLabel)
-                                ?.performAction(AccessibilityNodeInfo.ACTION_CLICK)
-                        } == true
-                        if (!clickedHome) {
-                            performGlobalAction(GLOBAL_ACTION_BACK)
-                        }
-                    },
-                    onAllowOnce = {
-                        lastBlockTimestamps[rule.packageName] = SystemClock.elapsedRealtime()
-                        serviceScope.launch {
-                            app.interventionRepository.allowOnceTemporary(rule.packageName)
+            shield.show(
+                appName = rule.displayName,
+                feedLabel = rule.feedLabel,
+                onExitFeed = {
+                    lastBlockTimestamps[rule.packageName] = SystemClock.elapsedRealtime()
+                    val freshRoot = resolveTargetRootNode(rule.packageName)
+                    executeHomeTabThenBackFallback(freshRoot, rule)
+                    serviceScope.launch {
+                        try {
+                            val eventId = eventIdDeferred.await()
+                            verifyInterventionAndFallbackIfNeeded(rule, eventId)
+                        } finally {
+                            inFlightVerifications.remove(rule.packageName)
                         }
                     }
-                )
-            }
+                },
+                onAllowOnce = {
+                    lastBlockTimestamps[rule.packageName] = SystemClock.elapsedRealtime()
+                    serviceScope.launch {
+                        try {
+                            val eventId = eventIdDeferred.await()
+                            if (eventId != null) {
+                                app.interventionRepository.allowOnceForEvent(eventId, rule.packageName)
+                            } else {
+                                app.interventionRepository.allowOnceTemporary(rule.packageName)
+                            }
+                        } finally {
+                            inFlightVerifications.remove(rule.packageName)
+                        }
+                    }
+                },
+                onAttachmentFailed = {
+                    lastBlockTimestamps[rule.packageName] = SystemClock.elapsedRealtime()
+                    val freshRoot = resolveTargetRootNode(rule.packageName) ?: rootNode
+                    executeHomeTabThenBackFallback(freshRoot, rule)
+                    serviceScope.launch {
+                        try {
+                            val eventId = eventIdDeferred.await()
+                            verifyInterventionAndFallbackIfNeeded(rule, eventId)
+                        } finally {
+                            inFlightVerifications.remove(rule.packageName)
+                        }
+                    }
+                }
+            )
+            return
+        }
+
+        when (rule.interventionMode) {
+            InterventionMode.BACK -> performGlobalAction(GLOBAL_ACTION_BACK)
+            InterventionMode.HOME_TAB,
+            InterventionMode.OVERLAY -> executeHomeTabThenBackFallback(rootNode, rule)
         }
 
         serviceScope.launch {
-            app.interventionRepository.recordIntervention(
-                rule = rule,
-                matchedSelector = matchedSelector,
-                actionTaken = rule.interventionMode
-            )
+            try {
+                val eventId = if (shouldRecord) {
+                    app.interventionRepository.recordIntervention(
+                        rule = rule,
+                        matchedSelector = matchedSelector,
+                        actionTaken = rule.interventionMode,
+                        outcome = InterventionOutcome.ATTEMPTED
+                    )
+                } else {
+                    null
+                }
+                verifyInterventionAndFallbackIfNeeded(rule, eventId)
+            } finally {
+                inFlightVerifications.remove(rule.packageName)
+            }
         }
     }
 
     override fun onInterrupt() {
         overlayShield?.dismiss()
+        inFlightVerifications.clear()
     }
 
     override fun onUnbind(intent: Intent?): Boolean {
         overlayShield?.dismiss()
+        inFlightVerifications.clear()
         ForegroundProtectionNotifier.stopForegroundProtection(this)
         DiagnosticsBridge.setServiceConnected(false)
         return super.onUnbind(intent)
@@ -348,8 +467,13 @@ class FeedSurgeonService : AccessibilityService() {
     override fun onDestroy() {
         super.onDestroy()
         overlayShield?.dismiss()
+        inFlightVerifications.clear()
         ForegroundProtectionNotifier.stopForegroundProtection(this)
         DiagnosticsBridge.setServiceConnected(false)
         serviceScope.cancel()
+    }
+
+    companion object {
+        private const val DEDUP_WINDOW_MS = 2500L
     }
 }

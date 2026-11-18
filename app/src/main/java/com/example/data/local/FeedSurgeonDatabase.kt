@@ -14,7 +14,7 @@ import kotlinx.coroutines.launch
 
 @Database(
     entities = [TargetAppRuleEntity::class, InterventionEventEntity::class],
-    version = 2,
+    version = 3,
     exportSchema = false
 )
 @TypeConverters(FeedSurgeonConverters::class)
@@ -28,6 +28,14 @@ abstract class FeedSurgeonDatabase : RoomDatabase() {
         private val MIGRATION_1_2 = object : Migration(1, 2) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL("UPDATE target_app_rules SET interventionMode = 'OVERLAY'")
+            }
+        }
+
+        val MIGRATION_2_3 = object : Migration(2, 3) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    "ALTER TABLE intervention_events ADD COLUMN outcome TEXT NOT NULL DEFAULT 'CONFIRMED'"
+                )
             }
         }
 
@@ -144,7 +152,7 @@ abstract class FeedSurgeonDatabase : RoomDatabase() {
                 appContext,
                 FeedSurgeonDatabase::class.java,
                 "feed_surgeon.db"
-            ).addMigrations(MIGRATION_1_2)
+            ).addMigrations(MIGRATION_1_2, MIGRATION_2_3)
                 .addCallback(
                     object : Callback() {
                         override fun onCreate(db: SupportSQLiteDatabase) {

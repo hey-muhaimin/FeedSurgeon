@@ -179,6 +179,24 @@ fun AppDetailScreen(
                         testTag = "detail_toggle_enabled"
                     )
                 }
+                Spacer(modifier = Modifier.height(12.dp))
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .testTag("detail_blocker_health"),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Blocker health",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = TextSecondary
+                    )
+                    StatusBadgePill(
+                        text = if (rule.isOutdated) "Update recommended" else "Healthy",
+                        isWarning = rule.isOutdated
+                    )
+                }
             }
         }
 
@@ -334,7 +352,7 @@ fun AppDetailScreen(
                     }
                 } else {
                     Text(
-                        text = "Need to watch something specific? Pause ${rule.feedLabel} for a set time.",
+                        text = "Pause blocking for ${rule.displayName} ${rule.feedLabel} across all visits until the timer ends (separate from 5m single-visit passes).",
                         style = MaterialTheme.typography.bodyMedium,
                         color = TextSecondary
                     )

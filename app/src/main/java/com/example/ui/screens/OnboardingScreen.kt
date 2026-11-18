@@ -80,6 +80,7 @@ import com.example.service.ProtectionHealthHelper
 import com.example.ui.components.AppBadgeIcon
 import com.example.ui.components.CircularBackButton
 import com.example.ui.components.MindfulPausePreviewDialog
+import com.example.ui.components.SectionLabel
 import com.example.ui.components.SurgeonCard
 import com.example.ui.components.SurgeonSwitch
 import com.example.ui.theme.AmberWarning
@@ -116,6 +117,7 @@ fun OnboardingScreen(
     var step by remember { mutableIntStateOf(0) }
     var showRestrictedTip by remember { mutableStateOf(false) }
     var showPausePreview by remember { mutableStateOf(false) }
+    var openedSystemSettings by remember { mutableStateOf(false) }
 
     BackHandler(enabled = step > 0) {
         step = (step - 1).coerceAtLeast(0)
@@ -252,9 +254,24 @@ fun OnboardingScreen(
                                     style = MaterialTheme.typography.bodyLarge,
                                     color = TextPrimary
                                 )
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Text(
+                                    text = "Optional troubleshooting logs are off by default. If enabled in Settings \u2192 Advanced, only technical screen IDs are saved locally until you choose to share them.",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = TextSecondary,
+                                    modifier = Modifier.testTag("onboarding_diagnostic_disclosure_note")
+                                )
                             }
 
-                            Spacer(modifier = Modifier.height(12.dp))
+                            Spacer(modifier = Modifier.height(10.dp))
+                            Text(
+                                text = "Choosing Not now leaves protection off until you enable it later.",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = TextMuted,
+                                modifier = Modifier.testTag("onboarding_decline_note")
+                            )
+
+                            Spacer(modifier = Modifier.height(8.dp))
                             TextButton(
                                 onClick = { uriHandler.openUri(privacyPolicyUrl) },
                                 modifier = Modifier.testTag("onboarding_privacy_link")
@@ -356,43 +373,92 @@ fun OnboardingScreen(
 
                             Spacer(modifier = Modifier.height(20.dp))
 
-                            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                                sortedRules.forEach { rule ->
-                                    val isInstalled = rule.packageName in installedPackages
-                                    SurgeonCard(
-                                        modifier = Modifier.alpha(if (isInstalled) 1f else 0.72f),
-                                        onClick = { onToggleApp(rule.packageName, !rule.enabled) }
-                                    ) {
-                                        Row(
-                                            modifier = Modifier.fillMaxWidth(),
-                                            verticalAlignment = Alignment.CenterVertically
+                            val installedRules = sortedRules.filter { it.packageName in installedPackages }
+                            val notInstalledRules = sortedRules.filter { it.packageName !in installedPackages }
+
+                            if (installedRules.isNotEmpty()) {
+                                SectionLabel(
+                                    text = "INSTALLED ON YOUR PHONE",
+                                    modifier = Modifier.testTag("onboarding_installed_section")
+                                )
+                                Spacer(modifier = Modifier.height(10.dp))
+                                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                                    installedRules.forEach { rule ->
+                                        SurgeonCard(
+                                            onClick = { onToggleApp(rule.packageName, !rule.enabled) }
                                         ) {
-                                            AppBadgeIcon(packageName = rule.packageName)
-                                            Spacer(modifier = Modifier.width(14.dp))
-                                            Column(modifier = Modifier.weight(1f)) {
-                                                Text(
-                                                    text = rule.displayName,
-                                                    style = MaterialTheme.typography.titleMedium,
-                                                    color = TextPrimary
-                                                )
-                                                Spacer(modifier = Modifier.height(2.dp))
-                                                Text(
-                                                    text = if (isInstalled) {
-                                                        "Block ${rule.feedLabel}"
-                                                    } else {
-                                                        "Block ${rule.feedLabel} \u00B7 Not installed yet"
+                                            Row(
+                                                modifier = Modifier.fillMaxWidth(),
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
+                                                AppBadgeIcon(packageName = rule.packageName)
+                                                Spacer(modifier = Modifier.width(14.dp))
+                                                Column(modifier = Modifier.weight(1f)) {
+                                                    Text(
+                                                        text = rule.displayName,
+                                                        style = MaterialTheme.typography.titleMedium,
+                                                        color = TextPrimary
+                                                    )
+                                                    Spacer(modifier = Modifier.height(2.dp))
+                                                    Text(
+                                                        text = "Block ${rule.feedLabel}",
+                                                        style = MaterialTheme.typography.bodyMedium,
+                                                        color = TextSecondary
+                                                    )
+                                                }
+                                                SurgeonSwitch(
+                                                    checked = rule.enabled,
+                                                    onCheckedChange = { enabled ->
+                                                        onToggleApp(rule.packageName, enabled)
                                                     },
-                                                    style = MaterialTheme.typography.bodyMedium,
-                                                    color = if (isInstalled) TextSecondary else TextMuted
+                                                    testTag = "onboarding_app_toggle_${rule.packageName}"
                                                 )
                                             }
-                                            SurgeonSwitch(
-                                                checked = rule.enabled,
-                                                onCheckedChange = { enabled ->
-                                                    onToggleApp(rule.packageName, enabled)
-                                                },
-                                                testTag = "onboarding_app_toggle_${rule.packageName}"
-                                            )
+                                        }
+                                    }
+                                }
+                                Spacer(modifier = Modifier.height(18.dp))
+                            }
+
+                            if (notInstalledRules.isNotEmpty()) {
+                                SectionLabel(
+                                    text = "NOT INSTALLED YET",
+                                    modifier = Modifier.testTag("onboarding_not_installed_section")
+                                )
+                                Spacer(modifier = Modifier.height(10.dp))
+                                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                                    notInstalledRules.forEach { rule ->
+                                        SurgeonCard(
+                                            modifier = Modifier.alpha(0.72f),
+                                            onClick = { onToggleApp(rule.packageName, !rule.enabled) }
+                                        ) {
+                                            Row(
+                                                modifier = Modifier.fillMaxWidth(),
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
+                                                AppBadgeIcon(packageName = rule.packageName)
+                                                Spacer(modifier = Modifier.width(14.dp))
+                                                Column(modifier = Modifier.weight(1f)) {
+                                                    Text(
+                                                        text = rule.displayName,
+                                                        style = MaterialTheme.typography.titleMedium,
+                                                        color = TextPrimary
+                                                    )
+                                                    Spacer(modifier = Modifier.height(2.dp))
+                                                    Text(
+                                                        text = "Block ${rule.feedLabel} \u00B7 Not installed yet",
+                                                        style = MaterialTheme.typography.bodyMedium,
+                                                        color = TextMuted
+                                                    )
+                                                }
+                                                SurgeonSwitch(
+                                                    checked = rule.enabled,
+                                                    onCheckedChange = { enabled ->
+                                                        onToggleApp(rule.packageName, enabled)
+                                                    },
+                                                    testTag = "onboarding_app_toggle_${rule.packageName}"
+                                                )
+                                            }
                                         }
                                     }
                                 }
@@ -498,6 +564,26 @@ fun OnboardingScreen(
 
                             Spacer(modifier = Modifier.height(14.dp))
 
+                            if (openedSystemSettings && !isAccessibilityEnabled) {
+                                SurgeonCard(
+                                    borderColor = AmberWarningBorder,
+                                    modifier = Modifier.testTag("onboarding_step2_recovery_card")
+                                ) {
+                                    Text(
+                                        text = "Still turned off?",
+                                        style = MaterialTheme.typography.titleMedium,
+                                        color = AmberWarning
+                                    )
+                                    Spacer(modifier = Modifier.height(4.dp))
+                                    Text(
+                                        text = "Tap Open System Settings again, open Downloaded apps \u2192 Feed Surgeon, and switch it on. If it is grayed out, expand the restricted settings tip below.",
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = TextSecondary
+                                    )
+                                }
+                                Spacer(modifier = Modifier.height(14.dp))
+                            }
+
                             // Visual 4-step Android Settings walkthrough card
                             SurgeonCard {
                                 Text(
@@ -569,7 +655,10 @@ fun OnboardingScreen(
 
                         Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                             Button(
-                                onClick = { AccessibilityStatusHelper.openAccessibilitySettings(context) },
+                                onClick = {
+                                    openedSystemSettings = true
+                                    AccessibilityStatusHelper.openAccessibilitySettings(context)
+                                },
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .height(52.dp)
