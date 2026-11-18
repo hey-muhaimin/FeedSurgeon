@@ -26,6 +26,26 @@ class AccessibilityEventLogger(private val context: Context) {
     private val _logVersion = MutableStateFlow(0L)
     val logVersion: StateFlow<Long> = _logVersion.asStateFlow()
 
+    data class CapturedTreeSnapshot(
+        val rootPackage: String,
+        val visibleViewIds: List<String>,
+        val selectedTabs: List<String>
+    )
+
+    fun captureSnapshot(rootNode: AccessibilityNodeInfo?): CapturedTreeSnapshot {
+        if (rootNode == null) {
+            return CapturedTreeSnapshot("null", emptyList(), emptyList())
+        }
+        val rootPkg = runCatching { rootNode.packageName?.toString() }.getOrNull() ?: "null"
+        val signals = runCatching { extractStructuralSignals(rootNode) }
+            .getOrDefault(StructuralSignals(emptyList(), emptyList()))
+        return CapturedTreeSnapshot(
+            rootPackage = rootPkg,
+            visibleViewIds = signals.visibleViewIds,
+            selectedTabs = signals.selectedTabs
+        )
+    }
+
     suspend fun logEvent(
         packageName: String,
         eventType: Int,
@@ -33,31 +53,43 @@ class AccessibilityEventLogger(private val context: Context) {
         rootNode: AccessibilityNodeInfo?,
         matchedSelector: String?,
         outcome: String
+    ) {
+        val snapshot = captureSnapshot(rootNode)
+        logCapturedSnapshot(
+            packageName = packageName,
+            eventType = eventType,
+            eventClassName = eventClassName,
+            snapshot = snapshot,
+            matchedSelector = matchedSelector,
+            outcome = outcome
+        )
+    }
+
+    suspend fun logCapturedSnapshot(
+        packageName: String,
+        eventType: Int,
+        eventClassName: String?,
+        snapshot: CapturedTreeSnapshot,
+        matchedSelector: String?,
+        outcome: String
     ) = withContext(Dispatchers.IO) {
         val timestamp = SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS", Locale.US).format(Date())
         val eventLabel = eventTypeToString(eventType)
         val cls = eventClassName?.substringAfterLast('.')?.ifBlank { "Unknown" } ?: "Unknown"
-        val rootPkg = rootNode?.packageName?.toString() ?: "null"
-
-        val diagnostics = if (rootNode != null) {
-            extractStructuralSignals(rootNode)
-        } else {
-            StructuralSignals(emptyList(), emptyList())
-        }
 
         val entry = buildString {
             append('[').append(timestamp).append("] ")
             append("pkg=").append(packageName)
             append(" event=").append(eventLabel)
             append(" class=").append(cls)
-            append(" rootPkg=").append(rootPkg)
+            append(" rootPkg=").append(snapshot.rootPackage)
             append(" match=").append(matchedSelector ?: "NONE")
             append(" outcome=").append(outcome)
-            if (diagnostics.selectedTabs.isNotEmpty()) {
-                append("\n  selectedTabs=").append(diagnostics.selectedTabs.joinToString(" | "))
+            if (snapshot.selectedTabs.isNotEmpty()) {
+                append("\n  selectedTabs=").append(snapshot.selectedTabs.joinToString(" | "))
             }
-            if (diagnostics.visibleViewIds.isNotEmpty()) {
-                append("\n  visibleIds=").append(diagnostics.visibleViewIds.joinToString(", "))
+            if (snapshot.visibleViewIds.isNotEmpty()) {
+                append("\n  visibleIds=").append(snapshot.visibleViewIds.joinToString(", "))
             }
             append('\n')
         }

@@ -213,12 +213,13 @@ class FeedSurgeonService : AccessibilityService() {
         val lastLogged = lastLogTimestamps[pkg] ?: 0L
         if (!force && nowElapsed - lastLogged < 400L) return
         lastLogTimestamps[pkg] = nowElapsed
+        val snapshot = app.eventLogger.captureSnapshot(rootNode)
         serviceScope.launch {
-            app.eventLogger.logEvent(
+            app.eventLogger.logCapturedSnapshot(
                 packageName = pkg,
                 eventType = eventType,
                 eventClassName = eventClassName,
-                rootNode = rootNode,
+                snapshot = snapshot,
                 matchedSelector = matchedSelector,
                 outcome = outcome
             )
