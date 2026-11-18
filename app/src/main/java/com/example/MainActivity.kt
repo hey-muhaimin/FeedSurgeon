@@ -56,7 +56,6 @@ import com.example.ui.screens.AppDetailScreen
 import com.example.ui.screens.HomeScreen
 import com.example.ui.screens.InsightsScreen
 import com.example.ui.screens.OnboardingScreen
-import com.example.ui.screens.RuleHealthScreen
 import com.example.ui.screens.SettingsScreen
 import com.example.ui.theme.FeedSurgeonTheme
 import kotlinx.coroutines.delay
@@ -64,7 +63,6 @@ import kotlinx.coroutines.delay
 object Routes {
     const val ONBOARDING = "onboarding"
     const val HOME = "home"
-    const val RULES = "rules"
     const val INSIGHTS = "insights"
     const val SETTINGS = "settings"
     const val APP_DETAIL = "app_detail/{packageName}"
@@ -128,7 +126,6 @@ fun FeedSurgeonRoot(
 
     val selectedBottomTab = when (currentRoute) {
         Routes.HOME -> BottomTab.HOME
-        Routes.RULES -> BottomTab.RULES
         Routes.INSIGHTS -> BottomTab.INSIGHTS
         Routes.SETTINGS -> BottomTab.SETTINGS
         else -> null
@@ -137,7 +134,6 @@ fun FeedSurgeonRoot(
     fun navigateToTopLevel(tab: BottomTab) {
         val route = when (tab) {
             BottomTab.HOME -> Routes.HOME
-            BottomTab.RULES -> Routes.RULES
             BottomTab.INSIGHTS -> Routes.INSIGHTS
             BottomTab.SETTINGS -> Routes.SETTINGS
         }
@@ -159,9 +155,8 @@ fun FeedSurgeonRoot(
 
     fun tabOrder(route: String?): Int = when (route) {
         Routes.HOME -> 0
-        Routes.RULES -> 1
-        Routes.INSIGHTS -> 2
-        Routes.SETTINGS -> 3
+        Routes.INSIGHTS -> 1
+        Routes.SETTINGS -> 2
         else -> -1
     }
 
@@ -226,11 +221,15 @@ fun FeedSurgeonRoot(
                             CompositionLocalProvider(LocalAnimatedVisibilityScope provides this) {
                                 OnboardingScreen(
                                     rules = uiState.rules,
+                                    installedPackages = uiState.installedPackages,
                                     isAccessibilityEnabled = uiState.isAccessibilityEnabled,
                                     isBatteryOptimizationIgnored = uiState.isBatteryOptimizationIgnored,
                                     isNotificationPermissionGranted = uiState.isNotificationPermissionGranted,
                                     onRefreshProtectionHealth = {
                                         viewModel.refreshProtectionHealth(context)
+                                    },
+                                    onToggleApp = { pkg, enabled ->
+                                        viewModel.setRuleEnabled(pkg, enabled)
                                     },
                                     onAcceptDisclosure = { viewModel.acceptDisclosure() },
                                     onDeclineDisclosure = {
@@ -256,22 +255,30 @@ fun FeedSurgeonRoot(
                                             navController.navigate(Routes.ONBOARDING)
                                         }
                                     },
-                                    onRuleHealthCardClick = { navigateToTopLevel(BottomTab.RULES) },
+                                    onSetupClick = {
+                                        navController.navigate(Routes.ONBOARDING)
+                                    },
+                                    onToggleGlobalPause = { paused ->
+                                        viewModel.setGlobalProtectionPaused(paused)
+                                    },
+                                    onPauseForMinutes = { minutes ->
+                                        viewModel.pauseGloballyForMinutes(minutes)
+                                    },
+                                    onGlobalBreakExpired = {
+                                        viewModel.resumeGlobalProtection()
+                                    },
+                                    onAppSnoozeExpired = { pkg ->
+                                        viewModel.resumeFromSnooze(pkg)
+                                    },
+                                    onRefreshBlockersClick = {
+                                        viewModel.updateRemoteRules()
+                                    },
                                     onAppClick = { pkg ->
                                         navController.navigate(Routes.appDetail(pkg))
                                     },
                                     onToggleApp = { pkg, enabled ->
                                         viewModel.setRuleEnabled(pkg, enabled)
                                     }
-                                )
-                            }
-                        }
-
-                        composable(Routes.RULES) {
-                            CompositionLocalProvider(LocalAnimatedVisibilityScope provides this) {
-                                RuleHealthScreen(
-                                    uiState = uiState,
-                                    onUpdateRulesClick = { viewModel.updateRemoteRules() }
                                 )
                             }
                         }
@@ -290,6 +297,9 @@ fun FeedSurgeonRoot(
                                         viewModel.reopenOnboarding()
                                         navController.navigate(Routes.ONBOARDING)
                                     },
+                                    onToggleGlobalPause = { paused ->
+                                        viewModel.setGlobalProtectionPaused(paused)
+                                    },
                                     onSetAutoUpdateRules = { enabled ->
                                         viewModel.setAutoUpdateRules(enabled)
                                     },
@@ -302,7 +312,7 @@ fun FeedSurgeonRoot(
                                     onShareEventLog = {
                                         viewModel.createShareLogIntent()?.let { shareIntent ->
                                             context.startActivity(
-                                                Intent.createChooser(shareIntent, "Share accessibility log")
+                                                Intent.createChooser(shareIntent, "Share diagnostic log")
                                             )
                                         }
                                     },
@@ -329,7 +339,7 @@ fun FeedSurgeonRoot(
                                     onToggleEnabled = { enabled -> viewModel.setRuleEnabled(pkg, enabled) },
                                     onSelectMode = { mode -> viewModel.setInterventionMode(pkg, mode) },
                                     onChangeCooldown = { ms -> viewModel.setCooldownMs(pkg, ms) },
-                                    onSnooze15Minutes = { viewModel.snooze15Minutes(pkg) },
+                                    onSnoozeMinutes = { minutes -> viewModel.snoozeForMinutes(pkg, minutes) },
                                     onResumeSnooze = { viewModel.resumeFromSnooze(pkg) }
                                 )
                             }

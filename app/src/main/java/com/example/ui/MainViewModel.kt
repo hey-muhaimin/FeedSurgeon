@@ -27,9 +27,14 @@ import kotlinx.coroutines.launch
 import java.util.Calendar
 import java.util.Locale
 
+import java.text.SimpleDateFormat
+
 data class DayBarStat(
     val dayLetter: String,
+    val dayName: String,
+    val dateLabel: String,
     val count: Int,
+    val reclaimedMinutes: Int,
     val fraction: Float,
     val isToday: Boolean
 )
@@ -62,7 +67,10 @@ data class MainUiState(
     val isSyncingRules: Boolean = false,
     val syncStatusMessage: String? = null,
     val eventLogPreview: String = "",
-    val eventLogSizeBytes: Long = 0L
+    val eventLogSizeBytes: Long = 0L,
+    val isGloballyPaused: Boolean = false,
+    val globalPauseUntilMs: Long = 0L,
+    val streakDays: Int = 0
 )
 
 class MainViewModel(application: Application) : AndroidViewModel(application) {
@@ -199,7 +207,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             isSyncingRules = transient.isSyncing,
             syncStatusMessage = transient.syncMessage,
             eventLogPreview = transient.logPreview,
-            eventLogSizeBytes = transient.logSizeBytes
+            eventLogSizeBytes = transient.logSizeBytes,
+            isGloballyPaused = prefs.isGloballyPaused(nowMs),
+            globalPauseUntilMs = prefs.globalPauseUntilMs,
+            streakDays = computeStreakDays(events, nowMs)
         )
     }.stateIn(
         scope = viewModelScope,
@@ -232,7 +243,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             when (val result = rulesetRepo.autoSyncIfDue(force = false)) {
                 is RulesetSyncResult.Success -> {
                     if (!result.fromLocalCache) {
-                        _syncMessage.value = "Auto-updated to ${result.version} (${result.updatedApps} apps)"
+                        _syncMessage.value = "Updated blockers for ${result.updatedApps} apps"
                     }
                 }
                 is RulesetSyncResult.Error -> Unit
@@ -328,14 +339,36 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun snooze15Minutes(packageName: String) {
+        snoozeForMinutes(packageName, 15)
+    }
+
+    fun snoozeForMinutes(packageName: String, minutes: Int) {
         viewModelScope.launch {
-            interventionRepo.snoozeFor15Minutes(packageName)
+            interventionRepo.snoozeForMinutes(packageName, minutes)
         }
     }
 
     fun resumeFromSnooze(packageName: String) {
         viewModelScope.launch {
             interventionRepo.clearSnooze(packageName)
+        }
+    }
+
+    fun setGlobalProtectionPaused(paused: Boolean) {
+        viewModelScope.launch {
+            interventionRepo.setGlobalPause(paused)
+        }
+    }
+
+    fun pauseGloballyForMinutes(minutes: Int) {
+        viewModelScope.launch {
+            interventionRepo.pauseGloballyForMinutes(minutes)
+        }
+    }
+
+    fun resumeGlobalProtection() {
+        viewModelScope.launch {
+            interventionRepo.resumeGlobalProtection()
         }
     }
 
@@ -363,14 +396,14 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 is RulesetSyncResult.Success -> {
                     _syncMessage.value = when {
                         result.etagUnchanged ->
-                            "Ruleset unchanged (ETag verified) \u00B7 ${result.version}"
+                            "Your app blockers are already up to date"
                         result.revertedToHardcoded ->
-                            "Using bundled rules ${result.version} (${result.updatedApps} apps)"
+                            "Restored built-in protection for ${result.updatedApps} apps"
                         result.fromLocalCache ->
                             result.networkErrorReason
-                                ?: "Using local ruleset ${result.version} (${result.updatedApps} apps)"
+                                ?: "Using saved protection rules (${result.updatedApps} apps)"
                         else ->
-                            "Rules up to date \u00B7 ${result.version} (${result.updatedApps} apps)"
+                            "Updated blockers for ${result.updatedApps} apps"
                     }
                 }
                 is RulesetSyncResult.Error -> {
@@ -419,6 +452,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         nowMs: Long
     ): List<DayBarStat> {
         val cal = Calendar.getInstance()
+        val dayNameFormat = SimpleDateFormat("EEEE", Locale.getDefault())
+        val dateLabelFormat = SimpleDateFormat("MMM d", Locale.getDefault())
         val raw = (6 downTo 0).map { daysAgo ->
             val dayStart = InterventionRepository.startOfWeekDaysAgoMs(daysAgo, nowMs)
             val dayEnd = dayStart + 24L * 60 * 60 * 1000
@@ -432,17 +467,47 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 Calendar.SATURDAY -> "S"
                 else -> "S"
             }
-            Triple(letter, events.count { it.timestampMs in dayStart until dayEnd }, daysAgo == 0)
-        }
-        val max = raw.maxOfOrNull { it.second }?.coerceAtLeast(1) ?: 1
-        return raw.map { (letter, count, isToday) ->
+            val dayEvents = events.filter { it.timestampMs in dayStart until dayEnd }
             DayBarStat(
                 dayLetter = letter,
-                count = count,
-                fraction = if (count == 0) 0.14f else (0.22f + 0.78f * (count.toFloat() / max.toFloat())),
-                isToday = isToday
+                dayName = dayNameFormat.format(cal.time),
+                dateLabel = dateLabelFormat.format(cal.time),
+                count = dayEvents.size,
+                reclaimedMinutes = dayEvents.sumOf { it.reclaimedSeconds } / 60,
+                fraction = 0f,
+                isToday = daysAgo == 0
             )
         }
+        val max = raw.maxOfOrNull { it.count }?.coerceAtLeast(1) ?: 1
+        return raw.map { stat ->
+            stat.copy(
+                fraction = if (stat.count == 0) 0.14f else (0.22f + 0.78f * (stat.count.toFloat() / max.toFloat()))
+            )
+        }
+    }
+
+    private fun computeStreakDays(
+        events: List<InterventionEventEntity>,
+        nowMs: Long
+    ): Int {
+        if (events.isEmpty()) return 0
+        var streak = 0
+        var daysAgo = 0
+        while (daysAgo < 30) {
+            val dayStart = InterventionRepository.startOfWeekDaysAgoMs(daysAgo, nowMs)
+            val dayEnd = dayStart + 24L * 60 * 60 * 1000
+            val hasActivity = events.any { it.timestampMs in dayStart until dayEnd }
+            if (hasActivity) {
+                streak++
+                daysAgo++
+            } else if (daysAgo == 0) {
+                // Allow streak to continue if today has not had an event yet
+                daysAgo++
+            } else {
+                break
+            }
+        }
+        return streak
     }
 
     private fun buildAppBreakdown(

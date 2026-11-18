@@ -49,14 +49,31 @@ class InterventionRepository(
     }
 
     suspend fun snoozeFor15Minutes(packageName: String) {
+        snoozeForMinutes(packageName, 15)
+    }
+
+    suspend fun snoozeForMinutes(packageName: String, minutes: Int) {
         val current = dao.getRuleByPackage(packageName) ?: return
-        val until = System.currentTimeMillis() + 15 * 60 * 1000L
+        val until = System.currentTimeMillis() + minutes.coerceAtLeast(1) * 60 * 1000L
         dao.updateRule(current.copy(snoozeUntilMs = until))
     }
 
     suspend fun clearSnooze(packageName: String) {
         val current = dao.getRuleByPackage(packageName) ?: return
         dao.updateRule(current.copy(snoozeUntilMs = 0L, allowOnceUntilMs = 0L))
+    }
+
+    suspend fun setGlobalPause(pausedIndefinitely: Boolean) {
+        settingsDataStore.setGlobalPauseUntilMs(if (pausedIndefinitely) Long.MAX_VALUE else 0L)
+    }
+
+    suspend fun pauseGloballyForMinutes(minutes: Int) {
+        val until = System.currentTimeMillis() + minutes.coerceAtLeast(1) * 60 * 1000L
+        settingsDataStore.setGlobalPauseUntilMs(until)
+    }
+
+    suspend fun resumeGlobalProtection() {
+        settingsDataStore.setGlobalPauseUntilMs(0L)
     }
 
     suspend fun allowOnceForEvent(eventId: Long, packageName: String) {
@@ -107,7 +124,7 @@ class InterventionRepository(
                     eventId = eventId,
                     packageName = rule.packageName,
                     feedLabel = rule.feedLabel,
-                    message = "${rule.feedLabel} blocked",
+                    message = "${rule.displayName} ${rule.feedLabel} paused",
                     timestampMs = now
                 )
             )

@@ -34,6 +34,9 @@ class FeedSurgeonService : AccessibilityService() {
     @Volatile
     private var isEventCaptureEnabled: Boolean = false
 
+    @Volatile
+    private var globalPauseUntilMs: Long = 0L
+
     private var overlayShield: AccessibilityOverlayShield? = null
 
     private val app: FeedSurgeonApp
@@ -88,6 +91,7 @@ class FeedSurgeonService : AccessibilityService() {
         serviceScope.launch {
             app.settingsDataStore.preferencesFlow.collectLatest { prefs ->
                 isEventCaptureEnabled = prefs.eventCaptureEnabled
+                globalPauseUntilMs = prefs.globalPauseUntilMs
                 if (prefs.autoUpdateRules) {
                     RulesetSyncWorker.schedulePeriodicSync(this@FeedSurgeonService)
                 } else {
@@ -135,6 +139,13 @@ class FeedSurgeonService : AccessibilityService() {
         val eventType = event.eventType
         val eventClassName = event.className?.toString()
         val nowElapsed = SystemClock.elapsedRealtime()
+        val pausedUntil = globalPauseUntilMs
+        if (pausedUntil == Long.MAX_VALUE || pausedUntil > System.currentTimeMillis()) {
+            if (captureLogs) {
+                logEventThrottled(pkg, eventType, eventClassName, null, null, "SKIPPED:global_paused", nowElapsed)
+            }
+            return
+        }
 
         val rule = activeRulesByPackage[pkg]
         if (rule == null) {

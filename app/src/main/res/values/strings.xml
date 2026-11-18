@@ -6,41 +6,37 @@
 
     <!-- Navigation -->
     <string name="nav_home">Home</string>
-    <string name="nav_rules">Rules</string>
     <string name="nav_insights">Insights</string>
     <string name="nav_settings">Settings</string>
 
     <!-- Onboarding & Prominent Disclosure -->
-    <string name="onboarding_title">Before you turn this on</string>
-    <string name="onboarding_subtitle">Feed Surgeon uses Android\u2019s Accessibility Service to see which screen is open in configured target apps, only to close short-form feeds.</string>
-    <string name="onboarding_what_we_read_title">WHAT WE READ</string>
-    <string name="onboarding_what_we_read_body">Screen layout labels in configured apps\nWhether a Shorts or Reels tab is open</string>
-    <string name="onboarding_what_we_never_send_title">WHAT WE NEVER SEND</string>
-    <string name="onboarding_what_we_never_send_body">Messages, passwords or screen content\nAnything at all off your device</string>
-    <string name="onboarding_decline">Decline</string>
-    <string name="onboarding_agree">Agree</string>
-    <string name="onboarding_step2_title">Enable Feed Surgeon</string>
-    <string name="onboarding_step2_body">Find Feed Surgeon under Downloaded Apps in Android Accessibility Settings and turn it on. You can revoke access anytime.</string>
-    <string name="onboarding_open_settings">Open Accessibility Settings</string>
-    <string name="onboarding_continue_without">Continue in setup mode</string>
-    <string name="onboarding_step3_title">Protection ready</string>
-    <string name="onboarding_step3_body">Feed Surgeon is scoped strictly to your target packages and throttled every 100 ms to protect battery life.</string>
-    <string name="onboarding_finish">Go to dashboard</string>
+    <string name="onboarding_title">Take back your focus</string>
+    <string name="onboarding_subtitle">Feed Surgeon gently steps in when short-form videos open in apps you choose, so you can scroll with intention.</string>
+    <string name="onboarding_what_we_read_title">WHAT IT CHECKS</string>
+    <string name="onboarding_what_we_read_body">Whether a Shorts, Reels, or Watch feed is currently open in the apps you pick</string>
+    <string name="onboarding_what_we_never_send_title">WHAT STAYS PRIVATE</string>
+    <string name="onboarding_what_we_never_send_body">Your messages, passwords, and videos are never read or sent off your phone</string>
+    <string name="onboarding_decline">Not now</string>
+    <string name="onboarding_agree">Get started</string>
+    <string name="onboarding_apps_title">Choose apps to guard</string>
+    <string name="onboarding_apps_body">Pick which short-form feeds you want Feed Surgeon to watch out for. You can change these anytime.</string>
+    <string name="onboarding_step2_title">Turn on protection</string>
+    <string name="onboarding_step2_body">Android asks you to turn on Feed Surgeon in Accessibility Settings so it can spot when a short-form feed opens.</string>
+    <string name="onboarding_open_settings">Open System Settings</string>
+    <string name="onboarding_continue_without">Skip for now</string>
+    <string name="onboarding_step3_title">You\u2019re all set</string>
+    <string name="onboarding_step3_body">Feed Surgeon runs quietly on your phone, uses minimal battery, and can be paused anytime with one tap.</string>
+    <string name="onboarding_finish">Go to Home</string>
 
     <!-- Home -->
-    <string name="status_running">Running</string>
-    <string name="status_service_off">Service off</string>
-    <string name="feeds_cut_today">Feeds cut today</string>
-    <string name="reclaimed_label">Reclaimed</string>
-    <string name="rule_health_label">Rule health</string>
-    <string name="target_apps_header">TARGET APPS</string>
-    <string name="allow_once">Allow once</string>
+    <string name="status_running">Protected</string>
+    <string name="status_paused">Paused</string>
+    <string name="status_service_off">Setup needed</string>
+    <string name="feeds_cut_today">Distractions avoided today</string>
+    <string name="reclaimed_label">Time saved</string>
+    <string name="target_apps_header">YOUR APPS</string>
+    <string name="allow_once">5-min passes</string>
     <string name="undo">Undo</string>
-
-    <!-- Rule Health -->
-    <string name="rule_health_title">Rule health</string>
-    <string name="update_rules">Check for updates</string>
-    <string name="per_app_header">PER APP</string>
 
     <!-- Insights & Settings -->
     <string name="insights_title">Insights</string>

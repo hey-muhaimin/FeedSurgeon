@@ -63,15 +63,15 @@ class AccessibilityOverlayShield(private val context: Context) {
             }
 
             val badge = TextView(context).apply {
-                text = "FEED SURGEON SHIELD"
+                text = "MINDFUL PAUSE"
                 textSize = 11f
-                setTypeface(Typeface.MONOSPACE, Typeface.BOLD)
+                setTypeface(Typeface.SANS_SERIF, Typeface.BOLD)
                 setTextColor(Color.parseColor("#34D3A8"))
                 letterSpacing = 0.08f
             }
 
             val title = TextView(context).apply {
-                text = "$appName $feedLabel blocked"
+                text = "Take a quick breath"
                 textSize = 22f
                 setTypeface(Typeface.DEFAULT_BOLD)
                 setTextColor(Color.parseColor("#F3F6F5"))
@@ -79,14 +79,14 @@ class AccessibilityOverlayShield(private val context: Context) {
             }
 
             val body = TextView(context).apply {
-                text = "Short-form feed detected on-device. Exit back to your main feed or allow once for 5 minutes."
+                text = "$appName $feedLabel opened. Step back to stay intentional, or take a 5-minute pass if you meant to watch something specific."
                 textSize = 14f
                 setTextColor(Color.parseColor("#8B9794"))
                 setPadding(0, 0, 0, dp(20))
             }
 
             val exitButton = Button(context).apply {
-                text = "Exit $feedLabel"
+                text = "Leave $feedLabel"
                 isAllCaps = false
                 textSize = 15f
                 setTypeface(Typeface.DEFAULT_BOLD)
@@ -103,7 +103,7 @@ class AccessibilityOverlayShield(private val context: Context) {
             }
 
             val allowButton = Button(context).apply {
-                text = "Allow once (5 min)"
+                text = "Allow for 5 minutes"
                 isAllCaps = false
                 textSize = 14f
                 setTextColor(Color.parseColor("#F3F6F5"))

@@ -51,15 +51,16 @@ import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Movie
 import androidx.compose.material.icons.filled.PhotoCamera
 import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.Shield
 import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material.icons.outlined.Apps
 import androidx.compose.material.icons.outlined.BarChart
 import androidx.compose.material.icons.outlined.Home
-import androidx.compose.material.icons.outlined.Shield
 import androidx.compose.material.icons.outlined.Tune
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
@@ -67,8 +68,13 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableLongStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
@@ -78,10 +84,16 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
 import com.example.data.model.InterventionToastState
+import kotlinx.coroutines.delay
+import java.util.Locale
 import com.example.ui.theme.AmberWarning
 import com.example.ui.theme.AmberWarningBg
 import com.example.ui.theme.AmberWarningBorder
@@ -102,7 +114,6 @@ import com.example.ui.theme.TextSecondary
 
 enum class BottomTab(val label: String) {
     HOME("Home"),
-    RULES("Rules"),
     INSIGHTS("Insights"),
     SETTINGS("Settings")
 }
@@ -231,26 +242,30 @@ fun AppBadgeIcon(
     packageName: String,
     modifier: Modifier = Modifier
 ) {
-    val icon = when (packageName) {
-        "com.google.android.youtube" -> Icons.Filled.PlayArrow
-        "com.instagram.android" -> Icons.Filled.PhotoCamera
-        "com.facebook.katana" -> Icons.Filled.Movie
-        "com.snapchat.android" -> Icons.Filled.Bolt
-        "com.reddit.frontpage" -> Icons.Filled.Forum
-        else -> Icons.Outlined.Apps
+    val (icon, accentColor) = when (packageName) {
+        "com.google.android.youtube" -> Icons.Filled.PlayArrow to Color(0xFFFF5A52)
+        "com.instagram.android" -> Icons.Filled.PhotoCamera to Color(0xFFF45B8C)
+        "com.facebook.katana" -> Icons.Filled.Movie to Color(0xFF60A5FA)
+        "com.snapchat.android" -> Icons.Filled.Bolt to Color(0xFFFDE047)
+        "com.reddit.frontpage" -> Icons.Filled.Forum to Color(0xFFFF784E)
+        else -> Icons.Outlined.Apps to TextPrimary
     }
+    val hasBrandTint = accentColor != TextPrimary
+    val bgColor = if (hasBrandTint) accentColor.copy(alpha = 0.14f) else CardSurfaceElevated
+    val borderColor = if (hasBrandTint) accentColor.copy(alpha = 0.35f) else CardBorder
+
     Box(
         modifier = modifier
             .size(44.dp)
             .clip(RoundedCornerShape(12.dp))
-            .background(CardSurfaceElevated)
-            .border(1.dp, CardBorder, RoundedCornerShape(12.dp)),
+            .background(bgColor)
+            .border(1.dp, borderColor, RoundedCornerShape(12.dp)),
         contentAlignment = Alignment.Center
     ) {
         Icon(
             imageVector = icon,
             contentDescription = null,
-            tint = TextPrimary,
+            tint = accentColor,
             modifier = Modifier.size(20.dp)
         )
     }
@@ -262,9 +277,13 @@ fun SurgeonSwitch(
     onCheckedChange: (Boolean) -> Unit,
     testTag: String
 ) {
+    val haptics = LocalHapticFeedback.current
     Switch(
         checked = checked,
-        onCheckedChange = onCheckedChange,
+        onCheckedChange = { newValue ->
+            haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+            onCheckedChange(newValue)
+        },
         modifier = Modifier.testTag(testTag),
         colors = SwitchDefaults.colors(
             checkedThumbColor = ObsidianBg,
@@ -275,6 +294,153 @@ fun SurgeonSwitch(
             uncheckedBorderColor = CardBorder
         )
     )
+}
+
+@Composable
+fun rememberCountdownLabel(
+    untilMs: Long,
+    onExpired: () -> Unit = {}
+): String? {
+    if (untilMs == Long.MAX_VALUE) return "Paused until resumed"
+    if (untilMs <= 0L) return null
+
+    var nowMs by remember(untilMs) { mutableLongStateOf(System.currentTimeMillis()) }
+
+    LaunchedEffect(untilMs) {
+        while (true) {
+            val current = System.currentTimeMillis()
+            nowMs = current
+            if (current >= untilMs) {
+                onExpired()
+                break
+            }
+            delay(1000L)
+        }
+    }
+
+    val remainingMs = (untilMs - nowMs).coerceAtLeast(0L)
+    if (remainingMs <= 0L) return null
+
+    val totalSeconds = (remainingMs / 1000L).toInt()
+    val hours = totalSeconds / 3600
+    val minutes = (totalSeconds % 3600) / 60
+    val seconds = totalSeconds % 60
+    return if (hours > 0) {
+        String.format(Locale.US, "%dh %02dm", hours, minutes)
+    } else {
+        String.format(Locale.US, "%d:%02d", minutes, seconds)
+    }
+}
+
+@Composable
+fun MindfulPausePreviewDialog(
+    appName: String = "YouTube",
+    feedLabel: String = "Shorts",
+    onDismiss: () -> Unit
+) {
+    val haptics = LocalHapticFeedback.current
+    var demoOutcome by remember { mutableStateOf<String?>(null) }
+
+    Dialog(onDismissRequest = onDismiss) {
+        SurgeonCard(
+            borderColor = MintTealBorder,
+            modifier = Modifier.testTag("mindful_pause_preview_dialog")
+        ) {
+            Text(
+                text = "MINDFUL PAUSE · PREVIEW",
+                style = MaterialTheme.typography.labelSmall,
+                color = MintTeal
+            )
+            Spacer(modifier = Modifier.height(10.dp))
+            Text(
+                text = "Take a quick breath",
+                style = MaterialTheme.typography.headlineMedium,
+                color = TextPrimary
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = "$appName $feedLabel opened. Step back to stay intentional, or take a 5-minute pass if you meant to watch something specific.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = TextSecondary
+            )
+
+            if (demoOutcome != null) {
+                Spacer(modifier = Modifier.height(14.dp))
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(MintTealDark.copy(alpha = 0.65f))
+                        .border(1.dp, MintTealBorder, RoundedCornerShape(12.dp))
+                        .padding(12.dp)
+                ) {
+                    Text(
+                        text = demoOutcome.orEmpty(),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MintTeal
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(18.dp))
+            Button(
+                onClick = {
+                    haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                    demoOutcome = "Nice! In $appName, this exits $feedLabel right back to your main feed."
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(48.dp)
+                    .testTag("preview_leave_feed_button"),
+                shape = RoundedCornerShape(100.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MintTeal,
+                    contentColor = Color(0xFF061B15)
+                )
+            ) {
+                Text(
+                    text = "Leave $feedLabel",
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+            Spacer(modifier = Modifier.height(10.dp))
+            OutlinedButton(
+                onClick = {
+                    haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                    demoOutcome = "Got it — $feedLabel stays open for 5 minutes, then protection turns back on automatically."
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(48.dp)
+                    .testTag("preview_allow_5m_button"),
+                shape = RoundedCornerShape(100.dp),
+                border = BorderStroke(1.dp, CardBorder),
+                colors = ButtonDefaults.outlinedButtonColors(
+                    containerColor = CardSurfaceElevated,
+                    contentColor = TextPrimary
+                )
+            ) {
+                Text(
+                    text = "Allow for 5 minutes",
+                    style = MaterialTheme.typography.labelLarge
+                )
+            }
+            Spacer(modifier = Modifier.height(6.dp))
+            TextButton(
+                onClick = onDismiss,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .testTag("preview_close_button")
+            ) {
+                Text(
+                    text = "Close preview",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = TextSecondary
+                )
+            }
+        }
+    }
 }
 
 @Composable
@@ -347,7 +513,7 @@ fun InterventionBanner(
                 modifier = Modifier.testTag("banner_allow_once")
             ) {
                 Text(
-                    text = "Allow once",
+                    text = "5 min pass",
                     style = MaterialTheme.typography.labelLarge,
                     color = TextPrimary
                 )
@@ -396,7 +562,6 @@ fun FloatingPillNavBar(
                     val isSelected = tab == selectedTab
                     val icon = when (tab) {
                         BottomTab.HOME -> if (isSelected) Icons.Filled.Home else Icons.Outlined.Home
-                        BottomTab.RULES -> if (isSelected) Icons.Filled.Shield else Icons.Outlined.Shield
                         BottomTab.INSIGHTS -> if (isSelected) Icons.Filled.BarChart else Icons.Outlined.BarChart
                         BottomTab.SETTINGS -> if (isSelected) Icons.Filled.Tune else Icons.Outlined.Tune
                     }

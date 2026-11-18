@@ -6,18 +6,18 @@ enum class InterventionMode(
     val explanation: String
 ) {
     BACK(
-        shortLabel = "Back",
-        subtitleLabel = "Press Back",
-        explanation = "Triggers Android's global Back action immediately when the short-form feed opens."
+        shortLabel = "Go back",
+        subtitleLabel = "Gently go back",
+        explanation = "Automatically steps back out of the short-form feed as soon as it opens."
     ),
     HOME_TAB(
         shortLabel = "Home tab",
-        subtitleLabel = "Go to Home tab",
-        explanation = "Taps Home inside the app. Safest for cold launches from links."
+        subtitleLabel = "Switch to Home",
+        explanation = "Returns you to the app's main Home tab. Best when opening links from friends."
     ),
     OVERLAY(
-        shortLabel = "Overlay",
-        subtitleLabel = "Show shield overlay",
-        explanation = "Covers the short-form feed with a native accessibility shield requiring no extra permission."
+        shortLabel = "Reminder",
+        subtitleLabel = "Calm reminder",
+        explanation = "Shows a calm full-screen pause card so you can step away intentionally."
     )
 }

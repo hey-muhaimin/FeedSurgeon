@@ -1,5 +1,6 @@
 package com.example.ui.screens
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -21,21 +22,19 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.Slider
-import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -47,17 +46,46 @@ import com.example.ui.components.SectionLabel
 import com.example.ui.components.StatusBadgePill
 import com.example.ui.components.SurgeonCard
 import com.example.ui.components.SurgeonSwitch
+import com.example.ui.components.rememberCountdownLabel
 import com.example.ui.components.surgeonSharedBounds
+import com.example.ui.theme.AmberWarning
 import com.example.ui.theme.CardBorder
-import com.example.ui.theme.CardSurface
 import com.example.ui.theme.CardSurfaceElevated
 import com.example.ui.theme.MintTeal
-import com.example.ui.theme.MonoTypography
 import com.example.ui.theme.ObsidianBg
 import com.example.ui.theme.OnMintTeal
 import com.example.ui.theme.TextPrimary
 import com.example.ui.theme.TextSecondary
-import kotlin.math.roundToInt
+
+private enum class ResponseSpeedPreset(
+    val label: String,
+    val description: String,
+    val cooldownMs: Int
+) {
+    INSTANT(
+        label = "Instant",
+        description = "Steps in right away as soon as the feed opens.",
+        cooldownMs = 500
+    ),
+    BALANCED(
+        label = "Balanced",
+        description = "Recommended pace. Smoothly avoids accidental double-taps.",
+        cooldownMs = 900
+    ),
+    GENTLE(
+        label = "Gentle",
+        description = "Waits briefly before stepping in so transitions feel calm.",
+        cooldownMs = 1400
+    );
+
+    companion object {
+        fun fromCooldownMs(cooldownMs: Int): ResponseSpeedPreset = when {
+            cooldownMs <= 650 -> INSTANT
+            cooldownMs <= 1150 -> BALANCED
+            else -> GENTLE
+        }
+    }
+}
 
 @Composable
 fun AppDetailScreen(
@@ -66,9 +94,11 @@ fun AppDetailScreen(
     onToggleEnabled: (Boolean) -> Unit,
     onSelectMode: (InterventionMode) -> Unit,
     onChangeCooldown: (Int) -> Unit,
-    onSnooze15Minutes: () -> Unit,
+    onSnoozeMinutes: (Int) -> Unit,
     onResumeSnooze: () -> Unit
 ) {
+    BackHandler(onBack = onBack)
+
     if (rule == null) {
         Column(
             modifier = Modifier
@@ -77,16 +107,18 @@ fun AppDetailScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             CircularBackButton(onClick = onBack)
-            Text("Rule not found.", style = MaterialTheme.typography.bodyLarge, color = TextSecondary)
+            Text("App settings not found.", style = MaterialTheme.typography.bodyLarge, color = TextSecondary)
         }
         return
     }
 
-    val isSnoozed = rule.isCurrentlySnoozed()
-    var sliderCooldown by remember(rule.packageName, rule.cooldownMs) {
-        mutableFloatStateOf(rule.cooldownMs.toFloat())
-    }
-    val displayedCooldown = ((sliderCooldown / 50f).roundToInt() * 50).coerceIn(500, 1500)
+    val haptics = LocalHapticFeedback.current
+    val snoozeCountdown = rememberCountdownLabel(
+        untilMs = rule.snoozeUntilMs,
+        onExpired = onResumeSnooze
+    )
+    val isSnoozed = snoozeCountdown != null
+    val currentPreset = ResponseSpeedPreset.fromCooldownMs(rule.cooldownMs)
 
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -132,9 +164,9 @@ fun AppDetailScreen(
                         )
                         Spacer(modifier = Modifier.height(6.dp))
                         val pillText = when {
-                            isSnoozed -> "Snoozed"
-                            rule.enabled -> "Active"
-                            else -> "Paused"
+                            snoozeCountdown != null -> "Break \u00B7 $snoozeCountdown"
+                            rule.enabled -> "Protected"
+                            else -> "Off"
                         }
                         StatusBadgePill(
                             text = pillText,
@@ -153,7 +185,7 @@ fun AppDetailScreen(
         // Intervention Mode Segmented Pill Card
         item {
             SurgeonCard {
-                SectionLabel(text = "WHEN ${rule.feedLabel.uppercase()} OPENS")
+                SectionLabel(text = "HOW TO STEP IN")
                 Spacer(modifier = Modifier.height(14.dp))
                 Row(
                     modifier = Modifier
@@ -168,9 +200,13 @@ fun AppDetailScreen(
                         Box(
                             modifier = Modifier
                                 .weight(1f)
+                                .minimumInteractiveComponentSize()
                                 .clip(RoundedCornerShape(100.dp))
                                 .background(if (selected) MintTeal else Color.Transparent)
-                                .clickable { onSelectMode(mode) }
+                                .clickable {
+                                    haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                    onSelectMode(mode)
+                                }
                                 .padding(vertical = 12.dp)
                                 .testTag("mode_${mode.name.lowercase()}"),
                             contentAlignment = Alignment.Center
@@ -200,71 +236,138 @@ fun AppDetailScreen(
             }
         }
 
-        // Cooldown Slider Card
+        // Response Speed Presets
         item {
             SurgeonCard {
+                SectionLabel(text = "RESPONSE SPEED")
+                Spacer(modifier = Modifier.height(14.dp))
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(100.dp))
+                        .background(ObsidianBg)
+                        .padding(4.dp),
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
-                    SectionLabel(text = "COOLDOWN")
-                    Text(
-                        text = "$displayedCooldown ms",
-                        style = MonoTypography.code,
-                        color = TextPrimary,
-                        modifier = Modifier.testTag("cooldown_value_text")
-                    )
+                    ResponseSpeedPreset.entries.forEach { preset ->
+                        val selected = preset == currentPreset
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .minimumInteractiveComponentSize()
+                                .clip(RoundedCornerShape(100.dp))
+                                .background(if (selected) MintTeal else Color.Transparent)
+                                .clickable {
+                                    haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                    onChangeCooldown(preset.cooldownMs)
+                                }
+                                .padding(vertical = 12.dp)
+                                .testTag("speed_preset_${preset.name.lowercase()}"),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = preset.label,
+                                style = MaterialTheme.typography.labelLarge,
+                                fontWeight = if (selected) FontWeight.Bold else FontWeight.SemiBold,
+                                color = if (selected) OnMintTeal else TextSecondary,
+                                maxLines = 1
+                            )
+                        }
+                    }
                 }
-                Spacer(modifier = Modifier.height(10.dp))
-                Slider(
-                    value = sliderCooldown,
-                    onValueChange = { raw -> sliderCooldown = raw },
-                    onValueChangeFinished = {
-                        val snapped = ((sliderCooldown / 50f).roundToInt() * 50).coerceIn(500, 1500)
-                        onChangeCooldown(snapped)
-                    },
-                    valueRange = 500f..1500f,
-                    colors = SliderDefaults.colors(
-                        thumbColor = Color.White,
-                        activeTrackColor = MintTeal,
-                        inactiveTrackColor = CardSurfaceElevated
-                    ),
-                    modifier = Modifier.testTag("cooldown_slider")
-                )
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Text("500 ms", style = MonoTypography.caption, color = TextSecondary)
-                    Text("1500 ms", style = MonoTypography.caption, color = TextSecondary)
+                Spacer(modifier = Modifier.height(14.dp))
+                AnimatedContent(
+                    targetState = currentPreset,
+                    transitionSpec = { fadeIn(tween(180)) togetherWith fadeOut(tween(140)) },
+                    label = "speed_preset_explanation"
+                ) { preset ->
+                    Text(
+                        text = preset.description,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = TextSecondary
+                    )
                 }
             }
         }
 
-        // Snooze Button
+        // Take a Break Card with live countdown timer
         item {
-            OutlinedButton(
-                onClick = { if (isSnoozed) onResumeSnooze() else onSnooze15Minutes() },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(54.dp)
-                    .testTag("snooze_button"),
-                shape = RoundedCornerShape(100.dp),
-                border = BorderStroke(1.dp, if (isSnoozed) MintTeal else CardBorder),
-                colors = ButtonDefaults.outlinedButtonColors(
-                    containerColor = CardSurface,
-                    contentColor = if (isSnoozed) MintTeal else TextPrimary
-                )
-            ) {
-                Text(
-                    text = if (isSnoozed) {
-                        "Snoozed \u00B7 Resume blocking ${rule.feedLabel}"
-                    } else {
-                        "Allow ${rule.feedLabel} for 15 minutes"
-                    },
-                    style = MaterialTheme.typography.titleMedium
-                )
+            SurgeonCard {
+                SectionLabel(text = "TAKE A BREAK")
+                Spacer(modifier = Modifier.height(8.dp))
+                if (snoozeCountdown != null) {
+                    Text(
+                        text = "$snoozeCountdown remaining",
+                        style = MaterialTheme.typography.headlineMedium.copy(
+                            fontFeatureSettings = "tnum"
+                        ),
+                        color = AmberWarning,
+                        modifier = Modifier.testTag("snooze_countdown_text")
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = "${rule.displayName} ${rule.feedLabel} will automatically start blocking again when the timer ends.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = TextSecondary
+                    )
+                    Spacer(modifier = Modifier.height(14.dp))
+                    Button(
+                        onClick = {
+                            haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                            onResumeSnooze()
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(50.dp)
+                            .testTag("snooze_button"),
+                        shape = RoundedCornerShape(100.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MintTeal,
+                            contentColor = OnMintTeal
+                        )
+                    ) {
+                        Text(
+                            text = "Resume blocking ${rule.feedLabel}",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                } else {
+                    Text(
+                        text = "Need to watch something specific? Pause ${rule.feedLabel} for a set time.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = TextSecondary
+                    )
+                    Spacer(modifier = Modifier.height(14.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        listOf(5 to "5 min", 15 to "15 min", 60 to "1 hr").forEach { (minutes, label) ->
+                            OutlinedButton(
+                                onClick = {
+                                    haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                    onSnoozeMinutes(minutes)
+                                },
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .height(48.dp)
+                                    .testTag("snooze_${minutes}m_button"),
+                                shape = RoundedCornerShape(100.dp),
+                                border = BorderStroke(1.dp, CardBorder),
+                                colors = ButtonDefaults.outlinedButtonColors(
+                                    containerColor = CardSurfaceElevated,
+                                    contentColor = TextPrimary
+                                )
+                            ) {
+                                Text(
+                                    text = label,
+                                    style = MaterialTheme.typography.labelLarge
+                                )
+                            }
+                        }
+                    }
+                }
             }
         }
     }

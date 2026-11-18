@@ -10,6 +10,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -31,9 +32,13 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -43,22 +48,32 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.R
 import com.example.data.local.TargetAppRuleEntity
 import com.example.ui.MainUiState
 import com.example.ui.components.AppBadgeIcon
+import com.example.ui.components.MindfulPausePreviewDialog
 import com.example.ui.components.SectionLabel
 import com.example.ui.components.StatusBadgePill
 import com.example.ui.components.SurgeonCard
 import com.example.ui.components.SurgeonSkeletonCard
 import com.example.ui.components.SurgeonSwitch
+import com.example.ui.components.rememberCountdownLabel
 import com.example.ui.components.surgeonSharedBounds
 import com.example.ui.theme.AmberWarning
+import com.example.ui.theme.AmberWarningBorder
 import com.example.ui.theme.BarInactive
+import com.example.ui.theme.CardBorder
+import com.example.ui.theme.CardSurfaceElevated
 import com.example.ui.theme.MintTeal
+import com.example.ui.theme.MintTealBorder
+import com.example.ui.theme.OnMintTeal
 import com.example.ui.theme.TextMuted
 import com.example.ui.theme.TextPrimary
 import com.example.ui.theme.TextSecondary
@@ -67,10 +82,16 @@ import com.example.ui.theme.TextSecondary
 fun HomeScreen(
     uiState: MainUiState,
     onStatusClick: () -> Unit,
-    onRuleHealthCardClick: () -> Unit,
+    onSetupClick: () -> Unit,
+    onToggleGlobalPause: (Boolean) -> Unit,
+    onPauseForMinutes: (Int) -> Unit,
+    onGlobalBreakExpired: () -> Unit,
+    onAppSnoozeExpired: (String) -> Unit,
+    onRefreshBlockersClick: () -> Unit,
     onAppClick: (String) -> Unit,
     onToggleApp: (String, Boolean) -> Unit
 ) {
+    val haptics = LocalHapticFeedback.current
     val installedRules = remember(uiState.rules, uiState.installedPackages) {
         uiState.rules.filter { it.packageName in uiState.installedPackages }
     }
@@ -78,6 +99,24 @@ fun HomeScreen(
         uiState.rules.filter { it.packageName !in uiState.installedPackages }
     }
     var showNotInstalled by remember { mutableStateOf(false) }
+    var showPausePreview by remember { mutableStateOf(false) }
+
+    val globalCountdown = rememberCountdownLabel(
+        untilMs = uiState.globalPauseUntilMs,
+        onExpired = onGlobalBreakExpired
+    )
+    val isGloballyPausedNow = globalCountdown != null
+
+    val statusLabel = when {
+        !uiState.isAccessibilityEnabled -> stringResource(R.string.status_service_off)
+        isGloballyPausedNow -> stringResource(R.string.status_paused)
+        else -> stringResource(R.string.status_running)
+    }
+    val statusColor = when {
+        !uiState.isAccessibilityEnabled -> AmberWarning
+        isGloballyPausedNow -> AmberWarning
+        else -> MintTeal
+    }
 
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -113,15 +152,11 @@ fun HomeScreen(
                         modifier = Modifier
                             .size(8.dp)
                             .clip(CircleShape)
-                            .background(if (uiState.isAccessibilityEnabled) MintTeal else AmberWarning)
+                            .background(statusColor)
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = if (uiState.isAccessibilityEnabled) {
-                            stringResource(R.string.status_running)
-                        } else {
-                            stringResource(R.string.status_service_off)
-                        },
+                        text = statusLabel,
                         style = MaterialTheme.typography.bodyMedium,
                         color = TextSecondary
                     )
@@ -129,7 +164,174 @@ fun HomeScreen(
             }
         }
 
-        // Hero card: Feeds cut today + 5-bar trend
+        // Actionable Setup Card when Accessibility permission is off, or Master Protection Control when active
+        if (!uiState.isInitialLoading) {
+            item {
+                if (!uiState.isAccessibilityEnabled) {
+                    SurgeonCard(
+                        borderColor = AmberWarningBorder,
+                        modifier = Modifier.testTag("home_setup_needed_card")
+                    ) {
+                        Text(
+                            text = "Protection isn\u2019t active yet",
+                            style = MaterialTheme.typography.titleLarge,
+                            color = TextPrimary
+                        )
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Text(
+                            text = "Turn on Feed Surgeon in Android Settings so it can gently close Shorts and Reels for you.",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = TextSecondary
+                        )
+                        Spacer(modifier = Modifier.height(14.dp))
+                        Button(
+                            onClick = onSetupClick,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(48.dp)
+                                .testTag("home_turn_on_protection_button"),
+                            shape = RoundedCornerShape(100.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MintTeal,
+                                contentColor = OnMintTeal
+                            )
+                        ) {
+                            Text(
+                                text = "Turn on protection",
+                                style = MaterialTheme.typography.labelLarge,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(6.dp))
+                        TextButton(
+                            onClick = { showPausePreview = true },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .testTag("home_preview_pause_button")
+                        ) {
+                            Text(
+                                text = "Preview how Mindful Pause works",
+                                style = MaterialTheme.typography.labelLarge,
+                                color = MintTeal
+                            )
+                        }
+                    }
+                } else {
+                    SurgeonCard(
+                        borderColor = if (isGloballyPausedNow) AmberWarningBorder else MintTealBorder,
+                        modifier = Modifier.testTag("home_protection_control_card")
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = if (isGloballyPausedNow) "Taking a break" else "Protection is active",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    color = TextPrimary
+                                )
+                                Spacer(modifier = Modifier.height(2.dp))
+                                Text(
+                                    text = if (isGloballyPausedNow) {
+                                        if (uiState.globalPauseUntilMs == Long.MAX_VALUE) {
+                                            "Paused until you turn it back on"
+                                        } else {
+                                            "$globalCountdown remaining before auto-resume"
+                                        }
+                                    } else {
+                                        val activeCount = installedRules.count { it.enabled }
+                                        "Guarding $activeCount installed app${if (activeCount == 1) "" else "s"}"
+                                    },
+                                    style = MaterialTheme.typography.bodyMedium.copy(
+                                        fontFeatureSettings = "tnum"
+                                    ),
+                                    color = if (isGloballyPausedNow) AmberWarning else TextSecondary
+                                )
+                            }
+                            Spacer(modifier = Modifier.width(10.dp))
+                            SurgeonSwitch(
+                                checked = !isGloballyPausedNow,
+                                onCheckedChange = { active -> onToggleGlobalPause(!active) },
+                                testTag = "home_global_protection_switch"
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(12.dp))
+                        if (isGloballyPausedNow) {
+                            Button(
+                                onClick = {
+                                    haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                                    onToggleGlobalPause(false)
+                                },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(48.dp)
+                                    .testTag("home_resume_protection_button"),
+                                shape = RoundedCornerShape(100.dp),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = MintTeal,
+                                    contentColor = OnMintTeal
+                                )
+                            ) {
+                                Text(
+                                    text = "Resume protection now",
+                                    style = MaterialTheme.typography.labelLarge,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        } else {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                listOf(5 to "5m break", 15 to "15m break", 60 to "1h break").forEach { (mins, label) ->
+                                    OutlinedButton(
+                                        onClick = {
+                                            haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                            onPauseForMinutes(mins)
+                                        },
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .height(44.dp)
+                                            .testTag("home_break_${mins}m_button"),
+                                        contentPadding = PaddingValues(horizontal = 6.dp),
+                                        shape = RoundedCornerShape(100.dp),
+                                        border = BorderStroke(1.dp, CardBorder),
+                                        colors = ButtonDefaults.outlinedButtonColors(
+                                            containerColor = CardSurfaceElevated,
+                                            contentColor = TextPrimary
+                                        )
+                                    ) {
+                                        Text(
+                                            text = label,
+                                            style = MaterialTheme.typography.labelMedium,
+                                            maxLines = 1
+                                        )
+                                    }
+                                }
+                            }
+                            Spacer(modifier = Modifier.height(4.dp))
+                            TextButton(
+                                onClick = { showPausePreview = true },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .testTag("home_preview_pause_button")
+                            ) {
+                                Text(
+                                    text = "See how Mindful Pause looks",
+                                    style = MaterialTheme.typography.labelLarge,
+                                    color = MintTeal
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // Hero wellbeing card: Distractions avoided + Time saved + 5-day trend
         item {
             AnimatedContent(
                 targetState = uiState.isInitialLoading,
@@ -137,7 +339,7 @@ fun HomeScreen(
                 label = "home_hero_loading"
             ) { loading ->
                 if (loading) {
-                    SurgeonSkeletonCard(heightDp = 112)
+                    SurgeonSkeletonCard(heightDp = 132)
                 } else {
                     SurgeonCard {
                         Row(
@@ -145,7 +347,7 @@ fun HomeScreen(
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.Bottom
                         ) {
-                            Column {
+                            Column(modifier = Modifier.weight(1f)) {
                                 Text(
                                     text = stringResource(R.string.feeds_cut_today),
                                     style = MaterialTheme.typography.bodyMedium,
@@ -154,16 +356,24 @@ fun HomeScreen(
                                 Spacer(modifier = Modifier.height(6.dp))
                                 Text(
                                     text = uiState.todayCutsCount.toString(),
-                                    style = MaterialTheme.typography.displayLarge,
+                                    style = MaterialTheme.typography.displayLarge.copy(
+                                        fontFeatureSettings = "tnum"
+                                    ),
                                     color = TextPrimary,
                                     modifier = Modifier.testTag("today_cuts_count")
+                                )
+                                Spacer(modifier = Modifier.height(6.dp))
+                                Text(
+                                    text = "~${uiState.todayReclaimedMinutes} min saved today",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MintTeal
                                 )
                             }
 
                             Row(
                                 horizontalArrangement = Arrangement.spacedBy(7.dp),
                                 verticalAlignment = Alignment.Bottom,
-                                modifier = Modifier.height(64.dp)
+                                modifier = Modifier.height(68.dp)
                             ) {
                                 uiState.fiveDayBars.forEachIndexed { index, fraction ->
                                     val isToday = index == uiState.fiveDayBars.lastIndex
@@ -187,51 +397,48 @@ fun HomeScreen(
             }
         }
 
-        // Reclaimed + Rule health row
-        item {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                SurgeonCard(modifier = Modifier.weight(1f)) {
+        // Contextual blocker refresh card ONLY when an installed app layout actually needs an update
+        if (uiState.staleRulesCount > 0 && !uiState.isInitialLoading) {
+            item {
+                SurgeonCard(
+                    borderColor = AmberWarningBorder,
+                    modifier = Modifier.testTag("home_stale_blocker_card")
+                ) {
                     Text(
-                        text = "~${uiState.todayReclaimedMinutes} min",
-                        style = MaterialTheme.typography.headlineMedium,
+                        text = "An app updated its layout",
+                        style = MaterialTheme.typography.titleMedium,
                         color = TextPrimary
                     )
-                    Spacer(modifier = Modifier.height(6.dp))
+                    Spacer(modifier = Modifier.height(4.dp))
                     Text(
-                        text = stringResource(R.string.reclaimed_label),
+                        text = "Refresh blockers so Feed Surgeon stays accurate after recent app updates.",
                         style = MaterialTheme.typography.bodyMedium,
                         color = TextSecondary
                     )
-                }
-
-                SurgeonCard(
-                    modifier = Modifier
-                        .weight(1f)
-                        .testTag("home_rule_health_card"),
-                    onClick = onRuleHealthCardClick
-                ) {
-                    val stale = uiState.staleRulesCount
-                    Text(
-                        text = if (stale > 0) "$stale stale" else "Healthy",
-                        style = MaterialTheme.typography.headlineMedium,
-                        color = if (stale > 0) AmberWarning else MintTeal
-                    )
-                    Spacer(modifier = Modifier.height(6.dp))
-                    Text(
-                        text = stringResource(R.string.rule_health_label),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = TextSecondary
-                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    OutlinedButton(
+                        onClick = onRefreshBlockersClick,
+                        enabled = !uiState.isSyncingRules,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(48.dp)
+                            .testTag("home_refresh_blockers_button"),
+                        shape = RoundedCornerShape(100.dp),
+                        border = BorderStroke(1.dp, AmberWarningBorder),
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            containerColor = CardSurfaceElevated,
+                            contentColor = AmberWarning
+                        )
+                    ) {
+                        Text(if (uiState.isSyncingRules) "Refreshing..." else "Refresh blockers")
+                    }
                 }
             }
         }
 
-        // TARGET APPS header with installed count
+        // YOUR APPS header with installed count
         item {
-            Spacer(modifier = Modifier.height(6.dp))
+            Spacer(modifier = Modifier.height(4.dp))
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -239,7 +446,7 @@ fun HomeScreen(
             ) {
                 SectionLabel(text = stringResource(R.string.target_apps_header))
                 Text(
-                    text = "${installedRules.size} installed",
+                    text = "${installedRules.size} on phone",
                     style = MaterialTheme.typography.bodyMedium,
                     color = TextSecondary,
                     modifier = Modifier.testTag("installed_apps_count")
@@ -255,13 +462,13 @@ fun HomeScreen(
             item {
                 SurgeonCard(modifier = Modifier.testTag("no_installed_apps_card")) {
                     Text(
-                        text = "No supported apps installed",
+                        text = "No supported apps found yet",
                         style = MaterialTheme.typography.titleMedium,
                         color = TextPrimary
                     )
                     Spacer(modifier = Modifier.height(6.dp))
                     Text(
-                        text = "Install YouTube, Instagram, Facebook, Snapchat, or Reddit on this device and they will appear here automatically.",
+                        text = "When YouTube, Instagram, Facebook, Snapchat, or Reddit are installed on your phone, they will show up here automatically.",
                         style = MaterialTheme.typography.bodyMedium,
                         color = TextSecondary
                     )
@@ -273,6 +480,8 @@ fun HomeScreen(
                     modifier = Modifier.animateItem(),
                     rule = rule,
                     isInstalled = true,
+                    isGloballyPaused = isGloballyPausedNow,
+                    onAppSnoozeExpired = { onAppSnoozeExpired(rule.packageName) },
                     onClick = { onAppClick(rule.packageName) },
                     onToggle = { enabled -> onToggleApp(rule.packageName, enabled) }
                 )
@@ -292,7 +501,7 @@ fun HomeScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "Not installed on device (${notInstalledRules.size})",
+                        text = "Other supported apps (${notInstalledRules.size})",
                         style = MaterialTheme.typography.bodyMedium,
                         color = TextMuted
                     )
@@ -302,7 +511,7 @@ fun HomeScreen(
                         } else {
                             Icons.Filled.KeyboardArrowDown
                         },
-                        contentDescription = if (showNotInstalled) "Hide uninstalled apps" else "Show uninstalled apps",
+                        contentDescription = if (showNotInstalled) "Hide other apps" else "Show other apps",
                         tint = TextMuted
                     )
                 }
@@ -319,6 +528,8 @@ fun HomeScreen(
                             TargetAppRowCard(
                                 rule = rule,
                                 isInstalled = false,
+                                isGloballyPaused = isGloballyPausedNow,
+                                onAppSnoozeExpired = { onAppSnoozeExpired(rule.packageName) },
                                 onClick = { onAppClick(rule.packageName) },
                                 onToggle = { enabled -> onToggleApp(rule.packageName, enabled) }
                             )
@@ -328,16 +539,32 @@ fun HomeScreen(
             }
         }
     }
+
+    if (showPausePreview) {
+        val sampleApp = installedRules.firstOrNull()
+        MindfulPausePreviewDialog(
+            appName = sampleApp?.displayName ?: "YouTube",
+            feedLabel = sampleApp?.feedLabel ?: "Shorts",
+            onDismiss = { showPausePreview = false }
+        )
+    }
 }
 
 @Composable
 private fun TargetAppRowCard(
     rule: TargetAppRuleEntity,
     isInstalled: Boolean,
+    isGloballyPaused: Boolean,
+    onAppSnoozeExpired: () -> Unit,
     onClick: () -> Unit,
     onToggle: (Boolean) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val snoozeCountdown = rememberCountdownLabel(
+        untilMs = rule.snoozeUntilMs,
+        onExpired = onAppSnoozeExpired
+    )
+
     SurgeonCard(
         modifier = modifier
             .then(if (isInstalled) Modifier.surgeonSharedBounds("app_card_${rule.packageName}") else Modifier)
@@ -360,19 +587,30 @@ private fun TargetAppRowCard(
                 Spacer(modifier = Modifier.height(4.dp))
                 if (!isInstalled) {
                     Text(
-                        text = "${rule.feedLabel} \u00B7 Not installed",
+                        text = "${rule.feedLabel} \u00B7 Not on this phone",
                         style = MaterialTheme.typography.bodyMedium,
                         color = TextMuted
                     )
                 } else if (rule.isOutdated) {
                     StatusBadgePill(
-                        text = "Layout update needed",
+                        text = "Needs refresh",
                         isWarning = true
                     )
-                } else if (rule.isCurrentlySnoozed()) {
+                } else if (snoozeCountdown != null) {
                     StatusBadgePill(
-                        text = "${rule.feedLabel} snoozed",
+                        text = "Break \u00B7 $snoozeCountdown",
                         isWarning = true
+                    )
+                } else if (isGloballyPaused) {
+                    StatusBadgePill(
+                        text = "On break",
+                        isWarning = true
+                    )
+                } else if (!rule.enabled) {
+                    Text(
+                        text = "${rule.feedLabel} \u00B7 Off",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = TextMuted
                     )
                 } else {
                     Text(

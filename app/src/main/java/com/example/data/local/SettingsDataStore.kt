@@ -27,8 +27,11 @@ data class AppPreferences(
     val lastRulesetCheckMs: Long = 0L,
     val reclaimedSecondsPerCut: Int = 165,
     val showInterventionBanner: Boolean = true,
-    val cachedRulesetJson: String = BUNDLED_RULESET_JSON
+    val cachedRulesetJson: String = BUNDLED_RULESET_JSON,
+    val globalPauseUntilMs: Long = 0L
 ) {
+    fun isGloballyPaused(nowMs: Long = System.currentTimeMillis()): Boolean =
+        globalPauseUntilMs == Long.MAX_VALUE || globalPauseUntilMs > nowMs
     companion object {
         const val DEFAULT_RULESET_VERSION = "v2026.11.18"
         const val DEFAULT_GIST_URL =
@@ -116,6 +119,7 @@ class SettingsDataStore(private val context: Context) {
         val RECLAIMED_SECONDS_PER_CUT = intPreferencesKey("reclaimed_seconds_per_cut")
         val SHOW_INTERVENTION_BANNER = booleanPreferencesKey("show_intervention_banner")
         val CACHED_RULESET_JSON = stringPreferencesKey("cached_ruleset_json")
+        val GLOBAL_PAUSE_UNTIL_MS = longPreferencesKey("global_pause_until_ms")
     }
 
     val preferencesFlow: Flow<AppPreferences> = context.feedSurgeonDataStore.data.map { prefs ->
@@ -130,7 +134,8 @@ class SettingsDataStore(private val context: Context) {
             lastRulesetCheckMs = prefs[Keys.LAST_RULESET_CHECK_MS] ?: 0L,
             reclaimedSecondsPerCut = prefs[Keys.RECLAIMED_SECONDS_PER_CUT] ?: 165,
             showInterventionBanner = prefs[Keys.SHOW_INTERVENTION_BANNER] ?: true,
-            cachedRulesetJson = prefs[Keys.CACHED_RULESET_JSON] ?: AppPreferences.BUNDLED_RULESET_JSON
+            cachedRulesetJson = prefs[Keys.CACHED_RULESET_JSON] ?: AppPreferences.BUNDLED_RULESET_JSON,
+            globalPauseUntilMs = prefs[Keys.GLOBAL_PAUSE_UNTIL_MS] ?: 0L
         )
     }
 
@@ -167,6 +172,12 @@ class SettingsDataStore(private val context: Context) {
     suspend fun setShowInterventionBanner(show: Boolean) {
         context.feedSurgeonDataStore.edit { prefs ->
             prefs[Keys.SHOW_INTERVENTION_BANNER] = show
+        }
+    }
+
+    suspend fun setGlobalPauseUntilMs(untilMs: Long) {
+        context.feedSurgeonDataStore.edit { prefs ->
+            prefs[Keys.GLOBAL_PAUSE_UNTIL_MS] = untilMs
         }
     }
 
