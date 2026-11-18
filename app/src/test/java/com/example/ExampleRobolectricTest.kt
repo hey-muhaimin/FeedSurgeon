@@ -1,5 +1,6 @@
 package com.example
 
+import android.app.Notification
 import android.content.Context
 import android.content.pm.PackageInfo
 import androidx.test.core.app.ApplicationProvider
@@ -17,10 +18,17 @@ import com.example.data.model.LiveTreeSnapshot
 import com.example.data.repository.RulesetRepository
 import com.example.data.repository.RulesetSyncResult
 import com.example.service.AccessibilityEventLogger
+import com.example.service.ForegroundProtectionNotifier
 import com.example.service.InstalledAppDetector
 import com.example.service.SelectorMatcher
 import com.example.worker.RulesetSyncWorker
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.OkHttpClient
+import okhttp3.Protocol
+import okhttp3.Response
+import okhttp3.ResponseBody.Companion.toResponseBody
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
@@ -178,5 +186,92 @@ class ExampleRobolectricTest {
         val worker = TestListenableWorkerBuilder<RulesetSyncWorker>(context).build()
         val result = worker.doWork()
         assertTrue(result is ListenableWorker.Result.Success)
+    }
+
+    @Test
+    fun `foreground protection notifier builds ongoing silent notification`() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val notification = ForegroundProtectionNotifier.buildNotification(context, 3)
+        assertTrue((notification.flags and Notification.FLAG_ONGOING_EVENT) != 0)
+        assertEquals(
+            "Feed Surgeon active",
+            notification.extras.getCharSequence(Notification.EXTRA_TITLE)?.toString()
+        )
+        assertEquals(
+            "Protecting 3 installed apps on-device",
+            notification.extras.getCharSequence(Notification.EXTRA_TEXT)?.toString()
+        )
+    }
+
+    @Test
+    fun `ruleset repository verifies gist etag via HEAD before downloading full ruleset`() = runTest {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val db = FeedSurgeonDatabase.getInstance(context)
+        val settings = SettingsDataStore(context)
+        settings.saveFetchedRuleset(
+            version = AppPreferences.DEFAULT_RULESET_VERSION,
+            rawJson = AppPreferences.BUNDLED_RULESET_JSON,
+            checkedAtMs = 1L,
+            etag = "\"abc123etag\""
+        )
+
+        val seenMethods = mutableListOf<String>()
+        val mockClient = OkHttpClient.Builder()
+            .addInterceptor { chain ->
+                val req = chain.request()
+                seenMethods += req.method
+                if (req.method == "HEAD") {
+                    Response.Builder()
+                        .request(req)
+                        .protocol(Protocol.HTTP_1_1)
+                        .code(200)
+                        .message("OK")
+                        .header("ETag", "\"abc123etag\"")
+                        .body("".toResponseBody("application/json".toMediaType()))
+                        .build()
+                } else {
+                    throw AssertionError("Unexpected GET request when HEAD ETag matched")
+                }
+            }
+            .build()
+
+        val repo = RulesetRepository(context, db.feedSurgeonDao(), settings, okHttpClient = mockClient)
+        repo.ensureLocalCacheSeeded()
+        val result = repo.syncFromRemoteOrFallback()
+
+        assertTrue(result is RulesetSyncResult.Success)
+        val success = result as RulesetSyncResult.Success
+        assertTrue(success.etagUnchanged)
+        assertTrue(success.fromLocalCache)
+        assertEquals(listOf("HEAD"), seenMethods)
+    }
+
+    @Test
+    fun `ruleset repository reverts to hardcoded json on repeated network failures`() = runTest {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val db = FeedSurgeonDatabase.getInstance(context)
+        val settings = SettingsDataStore(context)
+        settings.saveFetchedRuleset(
+            version = "v2099.01.01",
+            rawJson = "{corrupted_json",
+            checkedAtMs = 123L,
+            etag = "\"stale-etag\""
+        )
+        File(context.filesDir, "ruleset_cache.json").writeText("{corrupted_json")
+
+        val failingClient = OkHttpClient.Builder()
+            .addInterceptor { throw java.io.IOException("Simulated offline error") }
+            .build()
+
+        val repo = RulesetRepository(context, db.feedSurgeonDao(), settings, okHttpClient = failingClient)
+        val fallback = repo.revertToHardcodedRuleset("Repeated failures")
+
+        assertTrue(fallback is RulesetSyncResult.Success)
+        val success = fallback as RulesetSyncResult.Success
+        assertTrue(success.revertedToHardcoded)
+        assertEquals(AppPreferences.DEFAULT_RULESET_VERSION, success.version)
+        assertEquals(5, success.updatedApps)
+        assertEquals("", settings.preferencesFlow.first().rulesetEtag)
+        assertEquals(5, db.feedSurgeonDao().getAllRulesSnapshot().size)
     }
 }

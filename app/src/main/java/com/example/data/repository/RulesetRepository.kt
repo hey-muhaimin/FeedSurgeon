@@ -26,7 +26,9 @@ sealed interface RulesetSyncResult {
         val version: String,
         val updatedApps: Int,
         val fromLocalCache: Boolean,
-        val networkErrorReason: String? = null
+        val networkErrorReason: String? = null,
+        val etagUnchanged: Boolean = false,
+        val revertedToHardcoded: Boolean = false
     ) : RulesetSyncResult
 
     data class Error(val message: String) : RulesetSyncResult
@@ -66,7 +68,8 @@ class RulesetRepository(
                 settingsDataStore.saveFetchedRuleset(
                     version = bundledParsed.version,
                     rawJson = bundledJson,
-                    checkedAtMs = 0L
+                    checkedAtMs = 0L,
+                    etag = ""
                 )
             }
         }
@@ -99,14 +102,73 @@ class RulesetRepository(
         syncMutex.withLock {
             val prefs = settingsDataStore.preferencesFlow.first()
             val targetUrl = prefs.rulesetEndpointUrl.trim().ifEmpty { AppPreferences.DEFAULT_GIST_URL }
+            val savedEtag = prefs.rulesetEtag.trim()
+            val cachedPair = readValidCachedPayload(prefs)
 
             try {
-                val request = Request.Builder()
+                // Step 1: Verify the remote Gist ETag via HEAD before downloading the full JSON body
+                if (savedEtag.isNotEmpty() && cachedPair != null) {
+                    val headRequest = Request.Builder()
+                        .url(targetUrl)
+                        .head()
+                        .header("If-None-Match", savedEtag)
+                        .header("Accept", "application/json")
+                        .build()
+
+                    okHttpClient.newCall(headRequest).execute().use { headResponse ->
+                        val remoteEtag = headResponse.header("ETag")?.trim().orEmpty()
+                        val etagMatched = headResponse.code == 304 ||
+                            (headResponse.isSuccessful &&
+                                remoteEtag.isNotEmpty() &&
+                                normalizeEtag(remoteEtag) == normalizeEtag(savedEtag))
+
+                        if (etagMatched) {
+                            applyPayloadToDatabase(cachedPair.first)
+                            settingsDataStore.updateLastCheckedOnly(
+                                checkedAtMs = System.currentTimeMillis(),
+                                etag = remoteEtag.ifEmpty { savedEtag }
+                            )
+                            return@withLock RulesetSyncResult.Success(
+                                version = cachedPair.first.version,
+                                updatedApps = cachedPair.first.apps.size,
+                                fromLocalCache = true,
+                                etagUnchanged = true
+                            )
+                        }
+                        if (headResponse.code >= 500 || headResponse.code == 429) {
+                            return@withLock applyLocalCacheFallback(
+                                prefs = prefs,
+                                reason = "Using cached ruleset ${prefs.rulesetVersion} (HEAD HTTP ${headResponse.code})",
+                                isTransientNetworkIssue = true
+                            )
+                        }
+                    }
+                }
+
+                // Step 2: ETag changed or not yet cached — fetch full ruleset with conditional If-None-Match
+                val getBuilder = Request.Builder()
                     .url(targetUrl)
                     .header("Accept", "application/json")
-                    .build()
+                if (savedEtag.isNotEmpty() && cachedPair != null) {
+                    getBuilder.header("If-None-Match", savedEtag)
+                }
 
-                okHttpClient.newCall(request).execute().use { response ->
+                okHttpClient.newCall(getBuilder.build()).execute().use { response ->
+                    if (response.code == 304 && cachedPair != null) {
+                        val remoteEtag = response.header("ETag")?.trim().orEmpty().ifEmpty { savedEtag }
+                        applyPayloadToDatabase(cachedPair.first)
+                        settingsDataStore.updateLastCheckedOnly(
+                            checkedAtMs = System.currentTimeMillis(),
+                            etag = remoteEtag
+                        )
+                        return@withLock RulesetSyncResult.Success(
+                            version = cachedPair.first.version,
+                            updatedApps = cachedPair.first.apps.size,
+                            fromLocalCache = true,
+                            etagUnchanged = true
+                        )
+                    }
+
                     if (!response.isSuccessful) {
                         return@withLock applyLocalCacheFallback(
                             prefs = prefs,
@@ -114,6 +176,7 @@ class RulesetRepository(
                             isTransientNetworkIssue = response.code >= 500 || response.code == 429
                         )
                     }
+
                     val body = response.body?.string().orEmpty()
                     val remoteParsed = parseAndValidate(body)
                         ?: return@withLock applyLocalCacheFallback(
@@ -135,12 +198,14 @@ class RulesetRepository(
                         )
                     }
 
+                    val responseEtag = response.header("ETag")?.trim().orEmpty()
                     writeLocalCacheFile(body)
                     applyPayloadToDatabase(remoteParsed)
                     settingsDataStore.saveFetchedRuleset(
                         version = remoteParsed.version,
                         rawJson = body,
-                        checkedAtMs = System.currentTimeMillis()
+                        checkedAtMs = System.currentTimeMillis(),
+                        etag = responseEtag
                     )
                     RulesetSyncResult.Success(
                         version = remoteParsed.version,
@@ -155,10 +220,50 @@ class RulesetRepository(
                     isTransientNetworkIssue = true
                 )
             } catch (e: Exception) {
-                RulesetSyncResult.Error("Ruleset check failed: ${e.message ?: "unknown error"}")
+                applyLocalCacheFallback(
+                    prefs = prefs,
+                    reason = "Ruleset check failed: ${e.message ?: "unknown error"}",
+                    isTransientNetworkIssue = true
+                )
             }
         }
     }
+
+    suspend fun revertToHardcodedRuleset(reason: String): RulesetSyncResult =
+        withContext(Dispatchers.IO) {
+            syncMutex.withLock {
+                val hardcodedJson = AppPreferences.BUNDLED_RULESET_JSON
+                val parsed = parseAndValidate(hardcodedJson)
+                    ?: return@withLock RulesetSyncResult.Error("Hardcoded ruleset invalid: $reason")
+                writeLocalCacheFile(hardcodedJson)
+                applyPayloadToDatabase(parsed)
+                settingsDataStore.saveFetchedRuleset(
+                    version = parsed.version,
+                    rawJson = hardcodedJson,
+                    checkedAtMs = System.currentTimeMillis(),
+                    etag = ""
+                )
+                RulesetSyncResult.Success(
+                    version = parsed.version,
+                    updatedApps = parsed.apps.size,
+                    fromLocalCache = true,
+                    networkErrorReason = reason,
+                    revertedToHardcoded = true
+                )
+            }
+        }
+
+    private fun readValidCachedPayload(prefs: AppPreferences): Pair<RemoteRulesetPayload, String>? {
+        val candidateJson = when {
+            localCacheFile.exists() -> runCatching { localCacheFile.readText() }.getOrDefault("")
+            else -> ""
+        }.ifBlank { prefs.cachedRulesetJson }
+        val parsed = parseAndValidate(candidateJson) ?: return null
+        return parsed to candidateJson
+    }
+
+    private fun normalizeEtag(etag: String): String =
+        etag.trim().removePrefix("W/").removePrefix("w/").trim('"')
 
     private suspend fun applyLocalCacheFallback(
         prefs: AppPreferences,
@@ -188,8 +293,29 @@ class RulesetRepository(
                 networkErrorReason = if (isTransientNetworkIssue) reason else null
             )
         } else {
-            settingsDataStore.updateLastCheckedOnly(System.currentTimeMillis())
-            RulesetSyncResult.Error(reason)
+            // If cached JSON was corrupt or unreadable, immediately restore the hardcoded fallback
+            val hardcodedJson = AppPreferences.BUNDLED_RULESET_JSON
+            val hardcodedParsed = parseAndValidate(hardcodedJson)
+            if (hardcodedParsed != null) {
+                writeLocalCacheFile(hardcodedJson)
+                applyPayloadToDatabase(hardcodedParsed)
+                settingsDataStore.saveFetchedRuleset(
+                    version = hardcodedParsed.version,
+                    rawJson = hardcodedJson,
+                    checkedAtMs = System.currentTimeMillis(),
+                    etag = ""
+                )
+                RulesetSyncResult.Success(
+                    version = hardcodedParsed.version,
+                    updatedApps = hardcodedParsed.apps.size,
+                    fromLocalCache = true,
+                    networkErrorReason = reason,
+                    revertedToHardcoded = true
+                )
+            } else {
+                settingsDataStore.updateLastCheckedOnly(System.currentTimeMillis())
+                RulesetSyncResult.Error(reason)
+            }
         }
     }
 

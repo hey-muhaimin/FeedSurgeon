@@ -1,6 +1,10 @@
 package com.example.ui.screens
 
+import android.Manifest
+import android.os.Build
 import android.text.format.DateUtils
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -50,6 +54,7 @@ import androidx.compose.ui.unit.dp
 import com.example.R
 import com.example.service.AccessibilityEventLogger
 import com.example.service.AccessibilityStatusHelper
+import com.example.service.ProtectionHealthHelper
 import com.example.ui.MainUiState
 import com.example.ui.components.SectionLabel
 import com.example.ui.components.StatusBadgePill
@@ -80,13 +85,20 @@ fun SettingsScreen(
     onShareEventLog: () -> Unit,
     onSetReclaimedSeconds: (Int) -> Unit,
     onSetShowBanner: (Boolean) -> Unit,
-    onClearHistory: () -> Unit
+    onClearHistory: () -> Unit,
+    onRefreshProtectionHealth: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val uriHandler = LocalUriHandler.current
     val privacyPolicyUrl = stringResource(R.string.privacy_policy_url)
     val prefs = uiState.preferences
     var showLogDialog by remember { mutableStateOf(false) }
+
+    val notificationPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) {
+        onRefreshProtectionHealth()
+    }
 
     val activeInstalledCount = uiState.rules.count {
         it.enabled && it.packageName in uiState.installedPackages
@@ -171,6 +183,114 @@ fun SettingsScreen(
                         )
                     ) {
                         Text("Disclosure")
+                    }
+                }
+            }
+        }
+
+        // Background Persistence & Battery Optimization card
+        item {
+            SurgeonCard {
+                SectionLabel(text = "BACKGROUND PROTECTION")
+                Spacer(modifier = Modifier.height(12.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "Battery optimization",
+                            style = MaterialTheme.typography.titleMedium,
+                            color = TextPrimary
+                        )
+                        Spacer(modifier = Modifier.height(2.dp))
+                        Text(
+                            text = if (uiState.isBatteryOptimizationIgnored) {
+                                "Unrestricted — foreground protection stays active if cleared from recents"
+                            } else {
+                                "System battery saver may throttle monitoring when backgrounded"
+                            },
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = TextSecondary
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(10.dp))
+                    StatusBadgePill(
+                        text = if (uiState.isBatteryOptimizationIgnored) "Unrestricted" else "Throttled",
+                        isWarning = !uiState.isBatteryOptimizationIgnored
+                    )
+                }
+
+                if (!uiState.isBatteryOptimizationIgnored) {
+                    Spacer(modifier = Modifier.height(12.dp))
+                    OutlinedButton(
+                        onClick = { ProtectionHealthHelper.requestIgnoreBatteryOptimizations(context) },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(48.dp)
+                            .testTag("settings_battery_optimization_button"),
+                        shape = RoundedCornerShape(100.dp),
+                        border = BorderStroke(1.dp, CardBorder),
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            containerColor = CardSurfaceElevated,
+                            contentColor = MintTeal
+                        )
+                    ) {
+                        Text("Allow unrestricted battery", fontWeight = FontWeight.SemiBold)
+                    }
+                }
+
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "Ongoing notification",
+                                style = MaterialTheme.typography.titleMedium,
+                                color = TextPrimary
+                            )
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text(
+                                text = if (uiState.isNotificationPermissionGranted) {
+                                    "Foreground service indicator enabled"
+                                } else {
+                                    "Allow notification permission so the foreground indicator is visible"
+                                },
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = TextSecondary
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(10.dp))
+                        StatusBadgePill(
+                            text = if (uiState.isNotificationPermissionGranted) "Allowed" else "Hidden",
+                            isWarning = !uiState.isNotificationPermissionGranted
+                        )
+                    }
+
+                    if (!uiState.isNotificationPermissionGranted) {
+                        Spacer(modifier = Modifier.height(10.dp))
+                        OutlinedButton(
+                            onClick = {
+                                notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                            },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(48.dp)
+                                .testTag("settings_notification_permission_button"),
+                            shape = RoundedCornerShape(100.dp),
+                            border = BorderStroke(1.dp, CardBorder),
+                            colors = ButtonDefaults.outlinedButtonColors(
+                                containerColor = CardSurfaceElevated,
+                                contentColor = TextPrimary
+                            )
+                        ) {
+                            Text("Enable foreground notification")
+                        }
                     }
                 }
             }

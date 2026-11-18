@@ -23,6 +23,7 @@ data class AppPreferences(
     val eventCaptureEnabled: Boolean = false,
     val rulesetVersion: String = DEFAULT_RULESET_VERSION,
     val rulesetEndpointUrl: String = DEFAULT_GIST_URL,
+    val rulesetEtag: String = "",
     val lastRulesetCheckMs: Long = 0L,
     val reclaimedSecondsPerCut: Int = 165,
     val showInterventionBanner: Boolean = true,
@@ -110,6 +111,7 @@ class SettingsDataStore(private val context: Context) {
         val EVENT_CAPTURE_ENABLED = booleanPreferencesKey("event_capture_enabled")
         val RULESET_VERSION = stringPreferencesKey("ruleset_version")
         val RULESET_ENDPOINT_URL = stringPreferencesKey("ruleset_endpoint_url")
+        val RULESET_ETAG = stringPreferencesKey("ruleset_etag")
         val LAST_RULESET_CHECK_MS = longPreferencesKey("last_ruleset_check_ms")
         val RECLAIMED_SECONDS_PER_CUT = intPreferencesKey("reclaimed_seconds_per_cut")
         val SHOW_INTERVENTION_BANNER = booleanPreferencesKey("show_intervention_banner")
@@ -124,6 +126,7 @@ class SettingsDataStore(private val context: Context) {
             eventCaptureEnabled = prefs[Keys.EVENT_CAPTURE_ENABLED] ?: false,
             rulesetVersion = prefs[Keys.RULESET_VERSION] ?: AppPreferences.DEFAULT_RULESET_VERSION,
             rulesetEndpointUrl = prefs[Keys.RULESET_ENDPOINT_URL] ?: AppPreferences.DEFAULT_GIST_URL,
+            rulesetEtag = prefs[Keys.RULESET_ETAG] ?: "",
             lastRulesetCheckMs = prefs[Keys.LAST_RULESET_CHECK_MS] ?: 0L,
             reclaimedSecondsPerCut = prefs[Keys.RECLAIMED_SECONDS_PER_CUT] ?: 165,
             showInterventionBanner = prefs[Keys.SHOW_INTERVENTION_BANNER] ?: true,
@@ -167,17 +170,28 @@ class SettingsDataStore(private val context: Context) {
         }
     }
 
-    suspend fun saveFetchedRuleset(version: String, rawJson: String, checkedAtMs: Long) {
+    suspend fun saveFetchedRuleset(
+        version: String,
+        rawJson: String,
+        checkedAtMs: Long,
+        etag: String? = null
+    ) {
         context.feedSurgeonDataStore.edit { prefs ->
             prefs[Keys.RULESET_VERSION] = version
             prefs[Keys.CACHED_RULESET_JSON] = rawJson
             prefs[Keys.LAST_RULESET_CHECK_MS] = checkedAtMs
+            if (etag != null) {
+                prefs[Keys.RULESET_ETAG] = etag
+            }
         }
     }
 
-    suspend fun updateLastCheckedOnly(checkedAtMs: Long) {
+    suspend fun updateLastCheckedOnly(checkedAtMs: Long, etag: String? = null) {
         context.feedSurgeonDataStore.edit { prefs ->
             prefs[Keys.LAST_RULESET_CHECK_MS] = checkedAtMs
+            if (etag != null) {
+                prefs[Keys.RULESET_ETAG] = etag
+            }
         }
     }
 }

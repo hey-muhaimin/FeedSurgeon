@@ -39,16 +39,27 @@ class FeedSurgeonService : AccessibilityService() {
     private val app: FeedSurgeonApp
         get() = applicationContext as FeedSurgeonApp
 
+    @Volatile
+    private var activeInstalledRuleCount: Int = 0
+
     override fun onServiceConnected() {
         super.onServiceConnected()
         DiagnosticsBridge.setServiceConnected(true)
         overlayShield = AccessibilityOverlayShield(this)
 
         // Pre-seed immediately so zero accessibility events are missed before Room emits
-        activeRulesByPackage = FeedSurgeonDatabase.defaultBuiltInRules()
+        val defaults = FeedSurgeonDatabase.defaultBuiltInRules()
+        activeRulesByPackage = defaults
             .filter { it.enabled }
             .associateBy { it.packageName }
         updateServicePackageScope(FeedSurgeonDatabase.BUILT_IN_PACKAGE_NAMES.toList())
+
+        val initialInstalled = InstalledAppDetector.getInstalledPackages(
+            this,
+            FeedSurgeonDatabase.BUILT_IN_PACKAGE_NAMES.toList()
+        )
+        activeInstalledRuleCount = activeRulesByPackage.keys.count { it in initialInstalled }
+        ForegroundProtectionNotifier.startForegroundProtection(this, activeInstalledRuleCount)
 
         // Schedule WorkManager periodic Gist sync directly from FeedSurgeonService lifecycle
         RulesetSyncWorker.schedulePeriodicSync(this)
@@ -61,6 +72,16 @@ class FeedSurgeonService : AccessibilityService() {
                 val enabledMap = rules.filter { it.enabled }.associateBy { it.packageName }
                 activeRulesByPackage = enabledMap
                 updateServicePackageScope(rules.map { it.packageName })
+
+                val installedNow = InstalledAppDetector.getInstalledPackages(
+                    this@FeedSurgeonService,
+                    rules.map { it.packageName }
+                )
+                activeInstalledRuleCount = enabledMap.keys.count { it in installedNow }
+                ForegroundProtectionNotifier.updateNotification(
+                    this@FeedSurgeonService,
+                    activeInstalledRuleCount
+                )
             }
         }
 
@@ -74,6 +95,17 @@ class FeedSurgeonService : AccessibilityService() {
                 }
             }
         }
+    }
+
+    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        ForegroundProtectionNotifier.startForegroundProtection(this, activeInstalledRuleCount)
+        return START_STICKY
+    }
+
+    override fun onTaskRemoved(rootIntent: Intent?) {
+        super.onTaskRemoved(rootIntent)
+        // Re-assert foreground status so clearing the UI from recents keeps monitoring active
+        ForegroundProtectionNotifier.startForegroundProtection(this, activeInstalledRuleCount)
     }
 
     private fun updateServicePackageScope(packages: List<String>) {
@@ -297,6 +329,7 @@ class FeedSurgeonService : AccessibilityService() {
 
     override fun onUnbind(intent: Intent?): Boolean {
         overlayShield?.dismiss()
+        ForegroundProtectionNotifier.stopForegroundProtection(this)
         DiagnosticsBridge.setServiceConnected(false)
         return super.onUnbind(intent)
     }
@@ -304,6 +337,7 @@ class FeedSurgeonService : AccessibilityService() {
     override fun onDestroy() {
         super.onDestroy()
         overlayShield?.dismiss()
+        ForegroundProtectionNotifier.stopForegroundProtection(this)
         DiagnosticsBridge.setServiceConnected(false)
         serviceScope.cancel()
     }

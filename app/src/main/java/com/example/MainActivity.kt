@@ -227,6 +227,11 @@ fun FeedSurgeonRoot(
                                 OnboardingScreen(
                                     rules = uiState.rules,
                                     isAccessibilityEnabled = uiState.isAccessibilityEnabled,
+                                    isBatteryOptimizationIgnored = uiState.isBatteryOptimizationIgnored,
+                                    isNotificationPermissionGranted = uiState.isNotificationPermissionGranted,
+                                    onRefreshProtectionHealth = {
+                                        viewModel.refreshProtectionHealth(context)
+                                    },
                                     onAcceptDisclosure = { viewModel.acceptDisclosure() },
                                     onDeclineDisclosure = {
                                         viewModel.declineDisclosure()
@@ -303,7 +308,10 @@ fun FeedSurgeonRoot(
                                     },
                                     onSetReclaimedSeconds = { sec -> viewModel.setReclaimedSecondsPerCut(sec) },
                                     onSetShowBanner = { show -> viewModel.setShowInterventionBanner(show) },
-                                    onClearHistory = { viewModel.clearHistory() }
+                                    onClearHistory = { viewModel.clearHistory() },
+                                    onRefreshProtectionHealth = {
+                                        viewModel.refreshProtectionHealth(context)
+                                    }
                                 )
                             }
                         }

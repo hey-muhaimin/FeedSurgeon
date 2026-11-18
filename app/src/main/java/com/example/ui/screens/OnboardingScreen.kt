@@ -1,5 +1,9 @@
 package com.example.ui.screens
 
+import android.Manifest
+import android.os.Build
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.FastOutSlowInEasing
@@ -58,9 +62,11 @@ import androidx.compose.ui.unit.dp
 import com.example.R
 import com.example.data.local.TargetAppRuleEntity
 import com.example.service.AccessibilityStatusHelper
+import com.example.service.ProtectionHealthHelper
 import com.example.ui.components.SurgeonCard
 import com.example.ui.theme.CardBorder
 import com.example.ui.theme.CardSurface
+import com.example.ui.theme.CardSurfaceElevated
 import com.example.ui.theme.CoralDanger
 import com.example.ui.theme.MintTeal
 import com.example.ui.theme.MintTealDark
@@ -74,6 +80,9 @@ import com.example.ui.theme.TextSecondary
 fun OnboardingScreen(
     rules: List<TargetAppRuleEntity>,
     isAccessibilityEnabled: Boolean,
+    isBatteryOptimizationIgnored: Boolean = false,
+    isNotificationPermissionGranted: Boolean = true,
+    onRefreshProtectionHealth: () -> Unit = {},
     onAcceptDisclosure: () -> Unit,
     onDeclineDisclosure: () -> Unit,
     onCompleteOnboarding: () -> Unit
@@ -82,6 +91,12 @@ fun OnboardingScreen(
     val uriHandler = LocalUriHandler.current
     val privacyPolicyUrl = stringResource(R.string.privacy_policy_url)
     var step by remember { mutableIntStateOf(0) }
+
+    val notificationPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) {
+        onRefreshProtectionHealth()
+    }
 
     Column(
         modifier = Modifier
@@ -425,12 +440,56 @@ fun OnboardingScreen(
                                 )
                                 Spacer(modifier = Modifier.height(10.dp))
                                 Text(
-                                    text = "\u2022 Lightweight checking protects battery life\n\u2022 Smart cooldown prevents back-navigation loops\n\u2022 100% private on-device history & local rule cache",
+                                    text = "\u2022 Persistent foreground protection survives cleared recents\n\u2022 Smart cooldown prevents back-navigation loops\n\u2022 100% private on-device history & ETag-verified rules",
                                     style = MaterialTheme.typography.bodyLarge,
                                     color = TextPrimary
                                 )
                             }
+
+                            if (!isBatteryOptimizationIgnored) {
+                                Spacer(modifier = Modifier.height(14.dp))
+                                OutlinedButton(
+                                    onClick = {
+                                        ProtectionHealthHelper.requestIgnoreBatteryOptimizations(context)
+                                    },
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(48.dp)
+                                        .testTag("onboarding_battery_optimization_button"),
+                                    shape = RoundedCornerShape(100.dp),
+                                    border = BorderStroke(1.dp, CardBorder),
+                                    colors = ButtonDefaults.outlinedButtonColors(
+                                        containerColor = CardSurfaceElevated,
+                                        contentColor = MintTeal
+                                    )
+                                ) {
+                                    Text("Allow unrestricted battery", fontWeight = FontWeight.SemiBold)
+                                }
+                            }
+
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && !isNotificationPermissionGranted) {
+                                Spacer(modifier = Modifier.height(10.dp))
+                                OutlinedButton(
+                                    onClick = {
+                                        notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                                    },
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(48.dp)
+                                        .testTag("onboarding_notification_permission_button"),
+                                    shape = RoundedCornerShape(100.dp),
+                                    border = BorderStroke(1.dp, CardBorder),
+                                    colors = ButtonDefaults.outlinedButtonColors(
+                                        containerColor = CardSurfaceElevated,
+                                        contentColor = TextPrimary
+                                    )
+                                ) {
+                                    Text("Allow foreground notification")
+                                }
+                            }
                         }
+
+                        Spacer(modifier = Modifier.height(12.dp))
 
                         Button(
                             onClick = onCompleteOnboarding,

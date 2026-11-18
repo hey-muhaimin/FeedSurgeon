@@ -16,6 +16,7 @@ import com.example.data.repository.InterventionRepository
 import com.example.data.repository.RulesetSyncResult
 import com.example.service.AccessibilityStatusHelper
 import com.example.service.InstalledAppDetector
+import com.example.service.ProtectionHealthHelper
 import com.example.worker.RulesetSyncWorker
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -46,6 +47,8 @@ data class MainUiState(
     val rules: List<TargetAppRuleEntity> = emptyList(),
     val installedPackages: Set<String> = emptySet(),
     val isAccessibilityEnabled: Boolean = false,
+    val isBatteryOptimizationIgnored: Boolean = false,
+    val isNotificationPermissionGranted: Boolean = true,
     val todayCutsCount: Int = 0,
     val todayReclaimedMinutes: Int = 0,
     val fiveDayBars: List<Float> = listOf(0.15f, 0.15f, 0.15f, 0.15f, 0.15f),
@@ -72,6 +75,12 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val _accessibilityEnabled = MutableStateFlow(
         AccessibilityStatusHelper.isServiceEnabled(application)
     )
+    private val _batteryOptimizationIgnored = MutableStateFlow(
+        ProtectionHealthHelper.isIgnoringBatteryOptimizations(application)
+    )
+    private val _notificationPermissionGranted = MutableStateFlow(
+        ProtectionHealthHelper.isNotificationPermissionGranted(application)
+    )
     private val _installedPackages = MutableStateFlow<Set<String>>(emptySet())
     private val _isSyncingRules = MutableStateFlow(false)
     private val _syncMessage = MutableStateFlow<String?>(null)
@@ -90,6 +99,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     private data class TransientState(
         val accessibilityEnabled: Boolean,
+        val batteryOptimizationIgnored: Boolean,
+        val notificationPermissionGranted: Boolean,
         val installedPackages: Set<String>,
         val isSyncing: Boolean,
         val syncMessage: String?,
@@ -116,14 +127,24 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         val fifth: E
     )
 
-    private val transientFlow = combine(
+    private val environmentFlow = combine(
         _accessibilityEnabled,
-        _installedPackages,
+        _batteryOptimizationIgnored,
+        _notificationPermissionGranted,
+        _installedPackages
+    ) { accessibilityEnabled, batteryIgnored, notifGranted, installedPackages ->
+        Tuple5(accessibilityEnabled, batteryIgnored, notifGranted, installedPackages, Unit)
+    }
+
+    private val transientFlow = combine(
+        environmentFlow,
         syncAndLogFlow
-    ) { accessibilityEnabled, installedPackages, extra ->
+    ) { env, extra ->
         TransientState(
-            accessibilityEnabled = accessibilityEnabled,
-            installedPackages = installedPackages,
+            accessibilityEnabled = env.first,
+            batteryOptimizationIgnored = env.second,
+            notificationPermissionGranted = env.third,
+            installedPackages = env.fourth,
             isSyncing = extra.first,
             syncMessage = extra.second,
             toast = extra.third,
@@ -163,6 +184,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             rules = rules,
             installedPackages = installed,
             isAccessibilityEnabled = transient.accessibilityEnabled,
+            isBatteryOptimizationIgnored = transient.batteryOptimizationIgnored,
+            isNotificationPermissionGranted = transient.notificationPermissionGranted,
             todayCutsCount = todayEvents.size,
             todayReclaimedMinutes = todaySeconds / 60,
             fiveDayBars = fiveDayBars,
@@ -186,6 +209,14 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     fun refreshAccessibilityStatus(context: Context) {
         _accessibilityEnabled.value = AccessibilityStatusHelper.isServiceEnabled(context)
+        refreshProtectionHealth(context)
+    }
+
+    fun refreshProtectionHealth(context: Context) {
+        _batteryOptimizationIgnored.value =
+            ProtectionHealthHelper.isIgnoringBatteryOptimizations(context)
+        _notificationPermissionGranted.value =
+            ProtectionHealthHelper.isNotificationPermissionGranted(context)
     }
 
     fun refreshInstalledApps(context: Context) {
@@ -330,11 +361,16 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             _syncMessage.value = null
             when (val result = rulesetRepo.syncFromRemoteOrFallback()) {
                 is RulesetSyncResult.Success -> {
-                    _syncMessage.value = if (result.fromLocalCache) {
-                        result.networkErrorReason
-                            ?: "Using local ruleset ${result.version} (${result.updatedApps} apps)"
-                    } else {
-                        "Rules up to date \u00B7 ${result.version} (${result.updatedApps} apps)"
+                    _syncMessage.value = when {
+                        result.etagUnchanged ->
+                            "Ruleset unchanged (ETag verified) \u00B7 ${result.version}"
+                        result.revertedToHardcoded ->
+                            "Using bundled rules ${result.version} (${result.updatedApps} apps)"
+                        result.fromLocalCache ->
+                            result.networkErrorReason
+                                ?: "Using local ruleset ${result.version} (${result.updatedApps} apps)"
+                        else ->
+                            "Rules up to date \u00B7 ${result.version} (${result.updatedApps} apps)"
                     }
                 }
                 is RulesetSyncResult.Error -> {
