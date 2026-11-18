@@ -27,7 +27,6 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -49,7 +48,6 @@ import com.example.ui.components.surgeonSharedElement
 import com.example.ui.theme.CardBorder
 import com.example.ui.theme.CardSurface
 import com.example.ui.theme.CardSurfaceElevated
-import com.example.ui.theme.CoralDanger
 import com.example.ui.theme.MintTeal
 import com.example.ui.theme.MonoTypography
 import com.example.ui.theme.ObsidianBg
@@ -66,8 +64,7 @@ fun AppDetailScreen(
     onSelectMode: (InterventionMode) -> Unit,
     onChangeCooldown: (Int) -> Unit,
     onSnooze15Minutes: () -> Unit,
-    onResumeSnooze: () -> Unit,
-    onDeleteCustomRule: () -> Unit
+    onResumeSnooze: () -> Unit
 ) {
     if (rule == null) {
         Column(
@@ -241,25 +238,6 @@ fun AppDetailScreen(
             }
         }
 
-        // Selectors Card
-        item {
-            SurgeonCard {
-                SectionLabel(text = "SELECTORS")
-                Spacer(modifier = Modifier.height(12.dp))
-                val lines = buildList {
-                    addAll(rule.shortViewIdsForDisplay)
-                    if (rule.tabFallbackLabel.isNotBlank()) {
-                        add("tab \"${rule.tabFallbackLabel}\" selected")
-                    }
-                }
-                Text(
-                    text = lines.joinToString("\n"),
-                    style = MonoTypography.code,
-                    color = TextSecondary
-                )
-            }
-        }
-
         // Snooze Button
         item {
             OutlinedButton(
@@ -283,25 +261,6 @@ fun AppDetailScreen(
                     },
                     style = MaterialTheme.typography.titleMedium
                 )
-            }
-
-            if (!rule.isBuiltIn) {
-                Spacer(modifier = Modifier.height(10.dp))
-                TextButton(
-                    onClick = {
-                        onDeleteCustomRule()
-                        onBack()
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .testTag("delete_custom_rule_button")
-                ) {
-                    Text(
-                        text = "Delete custom rule",
-                        style = MaterialTheme.typography.labelLarge,
-                        color = CoralDanger
-                    )
-                }
             }
         }
     }

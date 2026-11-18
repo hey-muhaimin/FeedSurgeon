@@ -6,7 +6,6 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -25,7 +24,6 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -44,7 +42,6 @@ import com.example.ui.components.SurgicalSyncLoadingBar
 import com.example.ui.components.surgeonSharedBounds
 import com.example.ui.theme.AmberWarningBorder
 import com.example.ui.theme.CardBorder
-import com.example.ui.theme.CardSurfaceElevated
 import com.example.ui.theme.MintTeal
 import com.example.ui.theme.MonoTypography
 import com.example.ui.theme.OnMintTeal
@@ -54,21 +51,20 @@ import com.example.ui.theme.TextSecondary
 @Composable
 fun RuleHealthScreen(
     uiState: MainUiState,
-    onUpdateRulesClick: () -> Unit,
-    onTestNowClick: (String) -> Unit,
-    onOpenDeveloperPanel: () -> Unit
+    onUpdateRulesClick: () -> Unit
 ) {
     val prefs = uiState.preferences
     val outdatedRule = uiState.rules.firstOrNull { it.isOutdated }
     val checkedLabel = if (prefs.lastRulesetCheckMs == 0L) {
-        "Bundled ruleset \u00B7 tap to check remote JSON"
+        val modeLabel = if (prefs.autoUpdateRules) "auto-update on" else "auto-update off"
+        "Saved locally on device \u00B7 $modeLabel"
     } else {
         val rel = DateUtils.getRelativeTimeSpanString(
             prefs.lastRulesetCheckMs,
             System.currentTimeMillis(),
             DateUtils.MINUTE_IN_MILLIS
         )
-        "Checked $rel \u00B7 remote JSON cached"
+        "Checked $rel \u00B7 saved locally"
     }
 
     LazyColumn(
@@ -90,11 +86,11 @@ fun RuleHealthScreen(
             )
         }
 
-        // Ruleset version & update card
+        // Ruleset version & automatic sync card
         item {
             SurgeonCard {
                 Text(
-                    text = "Ruleset",
+                    text = "Protection rules",
                     style = MaterialTheme.typography.bodyMedium,
                     color = TextSecondary
                 )
@@ -123,7 +119,7 @@ fun RuleHealthScreen(
                     if (statusMsg != null) {
                         Text(
                             text = statusMsg,
-                            style = MonoTypography.caption,
+                            style = MaterialTheme.typography.bodyMedium,
                             color = MintTeal,
                             modifier = Modifier.padding(top = 6.dp)
                         )
@@ -152,7 +148,7 @@ fun RuleHealthScreen(
                         Spacer(modifier = Modifier.width(8.dp))
                     }
                     Text(
-                        text = if (uiState.isSyncingRules) "Updating rules..." else stringResource(R.string.update_rules),
+                        text = if (uiState.isSyncingRules) "Checking..." else stringResource(R.string.update_rules),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold
                     )
@@ -166,15 +162,12 @@ fun RuleHealthScreen(
         }
 
         items(uiState.rules, key = { it.packageName }) { rule ->
-            val total = rule.totalSelectorCount.coerceAtLeast(rule.viewIds.size)
-            val matched = rule.matchedSelectorCount.coerceAtLeast(0)
             val subtitle = if (rule.isOutdated) {
-                val missing = (total - matched).coerceAtLeast(1)
-                "$total selectors \u00B7 $missing missing"
+                "${rule.feedLabel} \u00B7 layout update needed"
             } else {
-                "$total selectors \u00B7 all match"
+                "${rule.feedLabel} \u00B7 protection ready"
             }
-            SurgeonCard(onClick = { onTestNowClick(rule.packageName) }) {
+            SurgeonCard {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically
@@ -190,69 +183,42 @@ fun RuleHealthScreen(
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
                             text = subtitle,
-                            style = MonoTypography.caption,
+                            style = MaterialTheme.typography.bodyMedium,
                             color = TextSecondary
                         )
                     }
                     StatusBadgePill(
-                        text = if (rule.isOutdated) "Outdated" else "Healthy",
+                        text = if (rule.isOutdated) "Update needed" else "Healthy",
                         isWarning = rule.isOutdated
                     )
                 }
             }
         }
 
-        // Contextual Test / Warning Card
+        // Contextual status card (no developer tools)
         item {
-            val focusRule = outdatedRule ?: uiState.rules.firstOrNull()
-            if (focusRule != null) {
-                SurgeonCard(
-                    borderColor = if (outdatedRule != null) AmberWarningBorder else CardBorder
-                ) {
-                    Text(
-                        text = if (outdatedRule != null) {
-                            "${outdatedRule.feedLabel} may slip through"
-                        } else {
-                            "Inspect live view hierarchy"
-                        },
-                        style = MaterialTheme.typography.titleLarge,
-                        color = TextPrimary
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        text = if (outdatedRule != null) {
-                            "${outdatedRule.displayName} changed its layout. Update rules, then test."
-                        } else {
-                            "Verify active selectors against the latest Accessibility node tree or inspect View IDs in the Developer panel."
-                        },
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = TextSecondary
-                    )
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                        OutlinedButton(
-                            onClick = {
-                                onTestNowClick(focusRule.packageName)
-                                onOpenDeveloperPanel()
-                            },
-                            modifier = Modifier
-                                .weight(1f)
-                                .height(48.dp)
-                                .testTag("test_now_button"),
-                            shape = RoundedCornerShape(100.dp),
-                            border = BorderStroke(1.dp, CardBorder),
-                            colors = ButtonDefaults.outlinedButtonColors(
-                                containerColor = CardSurfaceElevated,
-                                contentColor = TextPrimary
-                            )
-                        ) {
-                            Text(
-                                text = stringResource(R.string.test_now),
-                                style = MaterialTheme.typography.labelLarge
-                            )
-                        }
-                    }
-                }
+            SurgeonCard(
+                borderColor = if (outdatedRule != null) AmberWarningBorder else CardBorder
+            ) {
+                Text(
+                    text = if (outdatedRule != null) {
+                        "${outdatedRule.feedLabel} may slip through"
+                    } else {
+                        "Automatic protection active"
+                    },
+                    style = MaterialTheme.typography.titleLarge,
+                    color = TextPrimary
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = if (outdatedRule != null) {
+                        "${outdatedRule.displayName} updated its app layout. Tap Check for updates above to refresh local rules."
+                    } else {
+                        "Blocking rules are stored locally on your device and update automatically when new app layouts are published."
+                    },
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = TextSecondary
+                )
             }
         }
     }

@@ -25,12 +25,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Add
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -62,8 +58,7 @@ fun HomeScreen(
     onStatusClick: () -> Unit,
     onRuleHealthCardClick: () -> Unit,
     onAppClick: (String) -> Unit,
-    onToggleApp: (String, Boolean) -> Unit,
-    onAddCustomAppClick: () -> Unit
+    onToggleApp: (String, Boolean) -> Unit
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -126,50 +121,50 @@ fun HomeScreen(
                     SurgeonSkeletonCard(heightDp = 112)
                 } else {
                     SurgeonCard {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.Bottom
-                    ) {
-                        Column {
-                            Text(
-                                text = stringResource(R.string.feeds_cut_today),
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = TextSecondary
-                            )
-                            Spacer(modifier = Modifier.height(6.dp))
-                            Text(
-                                text = uiState.todayCutsCount.toString(),
-                                style = MaterialTheme.typography.displayLarge,
-                                color = TextPrimary,
-                                modifier = Modifier.testTag("today_cuts_count")
-                            )
-                        }
-
                         Row(
-                            horizontalArrangement = Arrangement.spacedBy(7.dp),
-                            verticalAlignment = Alignment.Bottom,
-                            modifier = Modifier.height(64.dp)
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.Bottom
                         ) {
-                            uiState.fiveDayBars.forEachIndexed { index, fraction ->
-                                val isToday = index == uiState.fiveDayBars.lastIndex
-                                val animatedFraction by animateFloatAsState(
-                                    targetValue = fraction,
-                                    animationSpec = tween(durationMillis = 360, easing = FastOutSlowInEasing),
-                                    label = "home_spark_bar_$index"
+                            Column {
+                                Text(
+                                    text = stringResource(R.string.feeds_cut_today),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = TextSecondary
                                 )
-                                Box(
-                                    modifier = Modifier
-                                        .width(10.dp)
-                                        .height((60f * animatedFraction).dp)
-                                        .clip(RoundedCornerShape(5.dp))
-                                        .background(if (isToday) MintTeal else BarInactive)
+                                Spacer(modifier = Modifier.height(6.dp))
+                                Text(
+                                    text = uiState.todayCutsCount.toString(),
+                                    style = MaterialTheme.typography.displayLarge,
+                                    color = TextPrimary,
+                                    modifier = Modifier.testTag("today_cuts_count")
                                 )
+                            }
+
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(7.dp),
+                                verticalAlignment = Alignment.Bottom,
+                                modifier = Modifier.height(64.dp)
+                            ) {
+                                uiState.fiveDayBars.forEachIndexed { index, fraction ->
+                                    val isToday = index == uiState.fiveDayBars.lastIndex
+                                    val animatedFraction by animateFloatAsState(
+                                        targetValue = fraction,
+                                        animationSpec = tween(durationMillis = 360, easing = FastOutSlowInEasing),
+                                        label = "home_spark_bar_$index"
+                                    )
+                                    Box(
+                                        modifier = Modifier
+                                            .width(10.dp)
+                                            .height((60f * animatedFraction).dp)
+                                            .clip(RoundedCornerShape(5.dp))
+                                            .background(if (isToday) MintTeal else BarInactive)
+                                    )
+                                }
                             }
                         }
                     }
                 }
-            }
             }
         }
 
@@ -219,30 +214,7 @@ fun HomeScreen(
         // TARGET APPS header
         item {
             Spacer(modifier = Modifier.height(6.dp))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                SectionLabel(text = stringResource(R.string.target_apps_header))
-                TextButton(
-                    onClick = onAddCustomAppClick,
-                    modifier = Modifier.testTag("add_custom_app_button")
-                ) {
-                    Icon(
-                        imageVector = Icons.Outlined.Add,
-                        contentDescription = null,
-                        tint = MintTeal,
-                        modifier = Modifier.size(16.dp)
-                    )
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text(
-                        text = "Add custom",
-                        style = MaterialTheme.typography.labelLarge,
-                        color = MintTeal
-                    )
-                }
-            }
+            SectionLabel(text = stringResource(R.string.target_apps_header))
         }
 
         if (uiState.isInitialLoading) {
@@ -294,7 +266,7 @@ private fun TargetAppRowCard(
                 Spacer(modifier = Modifier.height(4.dp))
                 if (rule.isOutdated) {
                     StatusBadgePill(
-                        text = "Selector outdated",
+                        text = "Layout update needed",
                         isWarning = true
                     )
                 } else if (rule.isCurrentlySnoozed()) {

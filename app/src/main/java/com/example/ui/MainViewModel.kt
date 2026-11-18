@@ -10,12 +10,10 @@ import com.example.data.local.InterventionEventEntity
 import com.example.data.local.TargetAppRuleEntity
 import com.example.data.model.InterventionMode
 import com.example.data.model.InterventionToastState
-import com.example.data.model.LiveTreeSnapshot
 import com.example.data.repository.DiagnosticsBridge
 import com.example.data.repository.InterventionRepository
 import com.example.data.repository.RulesetSyncResult
 import com.example.service.AccessibilityStatusHelper
-import com.example.service.SelectorMatcher
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -53,12 +51,9 @@ data class MainUiState(
     val weeklyReclaimedText: String = "0 min",
     val weeklyAllowedOnceCount: Int = 0,
     val byAppBreakdown: List<AppBreakdownStat> = emptyList(),
-    val liveSnapshot: LiveTreeSnapshot? = null,
     val recentToast: InterventionToastState? = null,
     val isSyncingRules: Boolean = false,
-    val syncStatusMessage: String? = null,
-    val selectorTestQuery: String = "id/reel_watch_fragment_root",
-    val selectorTestMatchCount: Int? = null
+    val syncStatusMessage: String? = null
 )
 
 class MainViewModel(application: Application) : AndroidViewModel(application) {
@@ -72,16 +67,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     )
     private val _isSyncingRules = MutableStateFlow(false)
     private val _syncMessage = MutableStateFlow<String?>(null)
-    private val _selectorQuery = MutableStateFlow("id/reel_watch_fragment_root")
-    private val _selectorMatchCount = MutableStateFlow<Int?>(null)
 
     private data class TransientState(
         val accessibilityEnabled: Boolean,
         val isSyncing: Boolean,
         val syncMessage: String?,
-        val selectorQuery: String,
-        val selectorMatchCount: Int?,
-        val liveSnapshot: LiveTreeSnapshot?,
         val toast: InterventionToastState?
     )
 
@@ -89,19 +79,13 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         _accessibilityEnabled,
         _isSyncingRules,
         _syncMessage,
-        _selectorQuery,
-        _selectorMatchCount,
-        DiagnosticsBridge.liveSnapshot,
         DiagnosticsBridge.recentToast
-    ) { values ->
+    ) { accessibilityEnabled, isSyncing, syncMessage, toast ->
         TransientState(
-            accessibilityEnabled = values[0] as Boolean,
-            isSyncing = values[1] as Boolean,
-            syncMessage = values[2] as String?,
-            selectorQuery = values[3] as String,
-            selectorMatchCount = values[4] as Int?,
-            liveSnapshot = values[5] as LiveTreeSnapshot?,
-            toast = values[6] as InterventionToastState?
+            accessibilityEnabled = accessibilityEnabled,
+            isSyncing = isSyncing,
+            syncMessage = syncMessage,
+            toast = toast
         )
     }
 
@@ -127,11 +111,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         val byApp = buildAppBreakdown(rules, weekEvents)
         val staleCount = rules.count { it.isOutdated }
 
-        val activeSnapshot = transient.liveSnapshot
-            ?: DiagnosticsBridge.createDiagnosticSampleSnapshot("com.google.android.youtube")
-        val initialMatchCount = transient.selectorMatchCount
-            ?: DiagnosticsBridge.countSelectorMatches(transient.selectorQuery, activeSnapshot)
-
         MainUiState(
             isInitialLoading = false,
             preferences = prefs,
@@ -146,12 +125,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             weeklyReclaimedText = weekReclaimedText,
             weeklyAllowedOnceCount = weekAllowedOnce,
             byAppBreakdown = byApp,
-            liveSnapshot = activeSnapshot,
             recentToast = transient.toast,
             isSyncingRules = transient.isSyncing,
-            syncStatusMessage = transient.syncMessage,
-            selectorTestQuery = transient.selectorQuery,
-            selectorTestMatchCount = initialMatchCount
+            syncStatusMessage = transient.syncMessage
         )
     }.stateIn(
         scope = viewModelScope,
@@ -161,6 +137,29 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     fun refreshAccessibilityStatus(context: Context) {
         _accessibilityEnabled.value = AccessibilityStatusHelper.isServiceEnabled(context)
+    }
+
+    fun triggerAutoSyncIfNeeded() {
+        viewModelScope.launch {
+            rulesetRepo.ensureLocalCacheSeeded()
+            when (val result = rulesetRepo.autoSyncIfDue(force = false)) {
+                is RulesetSyncResult.Success -> {
+                    if (!result.fromLocalCache) {
+                        _syncMessage.value = "Auto-updated to ${result.version} (${result.updatedApps} apps)"
+                    }
+                }
+                is RulesetSyncResult.Error -> Unit
+            }
+        }
+    }
+
+    fun setAutoUpdateRules(enabled: Boolean) {
+        viewModelScope.launch {
+            settingsDataStore.setAutoUpdateRules(enabled)
+            if (enabled) {
+                triggerAutoSyncIfNeeded()
+            }
+        }
     }
 
     fun acceptDisclosure() {
@@ -230,23 +229,16 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    fun dismissToast() {
-        DiagnosticsBridge.dismissToast()
-    }
-
-    fun updateRemoteRules(customUrl: String? = null) {
+    fun updateRemoteRules() {
         viewModelScope.launch {
             _isSyncingRules.value = true
             _syncMessage.value = null
-            if (customUrl != null) {
-                settingsDataStore.setRulesetEndpointUrl(customUrl)
-            }
-            when (val result = rulesetRepo.syncFromRemoteOrFallback(customUrl)) {
+            when (val result = rulesetRepo.syncFromRemoteOrFallback()) {
                 is RulesetSyncResult.Success -> {
-                    _syncMessage.value = if (result.fromBundledFallback) {
-                        "Synced bundled ruleset ${result.version} (${result.updatedApps} apps)"
+                    _syncMessage.value = if (result.fromLocalCache) {
+                        "Using local ruleset ${result.version} (${result.updatedApps} apps)"
                     } else {
-                        "Updated to ${result.version} (${result.updatedApps} apps)"
+                        "Rules up to date \u00B7 ${result.version} (${result.updatedApps} apps)"
                     }
                 }
                 is RulesetSyncResult.Error -> {
@@ -254,113 +246,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 }
             }
             _isSyncingRules.value = false
-        }
-    }
-
-    fun saveRulesetEndpointUrl(url: String) {
-        viewModelScope.launch {
-            settingsDataStore.setRulesetEndpointUrl(url)
-            _syncMessage.value = "Endpoint URL saved locally"
-        }
-    }
-
-    fun restoreBundledRules() {
-        viewModelScope.launch {
-            _isSyncingRules.value = true
-            when (val result = rulesetRepo.restoreBundledRuleset()) {
-                is RulesetSyncResult.Success -> {
-                    _syncMessage.value = "Restored ${result.version}"
-                }
-                is RulesetSyncResult.Error -> {
-                    _syncMessage.value = result.message
-                }
-            }
-            _isSyncingRules.value = false
-        }
-    }
-
-    fun updateSelectorTestQuery(query: String) {
-        _selectorQuery.value = query
-        val snapshot = uiState.value.liveSnapshot
-        _selectorMatchCount.value = DiagnosticsBridge.countSelectorMatches(query, snapshot)
-    }
-
-    fun runSelectorTest() {
-        val query = _selectorQuery.value
-        val snapshot = uiState.value.liveSnapshot
-        _selectorMatchCount.value = DiagnosticsBridge.countSelectorMatches(query, snapshot)
-    }
-
-    fun runRuleHealthCheck(packageName: String) {
-        viewModelScope.launch {
-            val rules = uiState.value.rules
-            val target = rules.firstOrNull { it.packageName == packageName } ?: return@launch
-            val currentLive = DiagnosticsBridge.liveSnapshot.value
-            val snapshot = if (currentLive != null && currentLive.packageName == packageName) {
-                currentLive
-            } else {
-                DiagnosticsBridge.createDiagnosticSampleSnapshot(packageName).also {
-                    DiagnosticsBridge.publishSnapshot(it)
-                }
-            }
-            val matched = SelectorMatcher.matchSelectorInSnapshot(snapshot, target)
-            val matchedCount = target.viewIds.count { id ->
-                snapshot.nodes.any { it.viewId == id }
-            }.let { if (it == 0 && matched != null) 1 else it }
-
-            interventionRepo.updateSelectorHealth(
-                packageName = packageName,
-                matchedCount = matchedCount.coerceAtLeast(if (matched != null) 1 else 0),
-                totalCount = target.viewIds.size.coerceAtLeast(1),
-                outdated = matched == null
-            )
-            _syncMessage.value = if (matched != null) {
-                "${target.displayName} verified against node tree ($matchedCount/${target.viewIds.size} IDs)"
-            } else {
-                "No selectors matched in current ${target.displayName} snapshot"
-            }
-        }
-    }
-
-    fun triggerDiagnosticIntervention(rule: TargetAppRuleEntity) {
-        viewModelScope.launch {
-            val selector = rule.viewIds.firstOrNull() ?: "tab:\"${rule.tabFallbackLabel}\""
-            interventionRepo.recordIntervention(
-                rule = rule,
-                matchedSelector = selector,
-                actionTaken = rule.interventionMode
-            )
-        }
-    }
-
-    fun saveCustomRule(
-        packageName: String,
-        displayName: String,
-        feedLabel: String,
-        viewIdsText: String,
-        tabFallbackLabel: String,
-        homeTabLabel: String,
-        interventionMode: InterventionMode
-    ) {
-        viewModelScope.launch {
-            val ids = viewIdsText.split(",", "\n", "|")
-                .map { it.trim() }
-                .filter { it.isNotEmpty() }
-            interventionRepo.upsertCustomRule(
-                packageName = packageName,
-                displayName = displayName,
-                feedLabel = feedLabel,
-                viewIds = ids,
-                tabFallbackLabel = tabFallbackLabel,
-                homeTabLabel = homeTabLabel,
-                interventionMode = interventionMode
-            )
-        }
-    }
-
-    fun deleteCustomRule(packageName: String) {
-        viewModelScope.launch {
-            interventionRepo.deleteCustomRule(packageName)
         }
     }
 
@@ -380,10 +265,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             interventionRepo.clearHistory()
         }
-    }
-
-    fun clearSyncMessage() {
-        _syncMessage.value = null
     }
 
     private fun buildFiveDaySparkline(

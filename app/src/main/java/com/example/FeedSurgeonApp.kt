@@ -26,13 +26,15 @@ class FeedSurgeonApp : Application() {
     }
 
     val rulesetRepository: RulesetRepository by lazy {
-        RulesetRepository(database.feedSurgeonDao(), settingsDataStore)
+        RulesetRepository(this, database.feedSurgeonDao(), settingsDataStore)
     }
 
     override fun onCreate() {
         super.onCreate()
         appScope.launch {
             interventionRepository.ensureDefaultRulesSeeded()
+            rulesetRepository.ensureLocalCacheSeeded()
+            rulesetRepository.autoSyncIfDue(force = false)
         }
     }
 }

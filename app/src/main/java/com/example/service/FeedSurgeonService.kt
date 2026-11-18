@@ -21,7 +21,7 @@ class FeedSurgeonService : AccessibilityService() {
 
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private val lastBlockTimestamps = ConcurrentHashMap<String, Long>()
-    private val lastSnapshotTimestamps = ConcurrentHashMap<String, Long>()
+    private val lastHealthTimestamps = ConcurrentHashMap<String, Long>()
 
     @Volatile
     private var activeRulesByPackage: Map<String, TargetAppRuleEntity> = emptyMap()
@@ -38,6 +38,8 @@ class FeedSurgeonService : AccessibilityService() {
 
         serviceScope.launch {
             app.interventionRepository.ensureDefaultRulesSeeded()
+            app.rulesetRepository.ensureLocalCacheSeeded()
+            app.rulesetRepository.autoSyncIfDue(force = false)
             app.interventionRepository.allRules.collectLatest { rules ->
                 val enabledMap = rules.filter { it.enabled }.associateBy { it.packageName }
                 activeRulesByPackage = enabledMap
@@ -49,7 +51,13 @@ class FeedSurgeonService : AccessibilityService() {
     private fun updateServicePackageScope(packages: List<String>) {
         val currentInfo = serviceInfo ?: AccessibilityServiceInfo()
         val scopedPackages = packages.distinct().ifEmpty {
-            listOf("com.google.android.youtube", "com.instagram.android")
+            listOf(
+                "com.google.android.youtube",
+                "com.instagram.android",
+                "com.facebook.katana",
+                "com.snapchat.android",
+                "com.reddit.frontpage"
+            )
         }.toTypedArray()
 
         currentInfo.apply {
@@ -77,24 +85,26 @@ class FeedSurgeonService : AccessibilityService() {
 
         val matchedSelector = SelectorMatcher.findMatchingSelector(rootNode, rule)
 
-        // Publish sanitized live node tree snapshot at most every 500ms for Developer panel
-        val lastSnap = lastSnapshotTimestamps[pkg] ?: 0L
-        if (nowElapsed - lastSnap >= 500L) {
-            lastSnapshotTimestamps[pkg] = nowElapsed
-            val snapshot = SelectorMatcher.captureSanitizedTree(rootNode, rule, matchedSelector)
-            DiagnosticsBridge.publishSnapshot(snapshot)
-
-            val viewIdsMatchedCount = rule.viewIds.count { id ->
-                rootNode.findAccessibilityNodeInfosByViewId(id).isNotEmpty()
-            }
-            if (matchedSelector != null) {
+        // Update selector health automatically: if only tab fallback matched while View IDs missed,
+        // mark outdated so background rule updates know the host app layout shifted.
+        if (matchedSelector != null) {
+            val lastHealth = lastHealthTimestamps[pkg] ?: 0L
+            if (nowElapsed - lastHealth >= 500L) {
+                lastHealthTimestamps[pkg] = nowElapsed
+                val viewIdsMatchedCount = rule.viewIds.count { id ->
+                    rootNode.findAccessibilityNodeInfosByViewId(id).isNotEmpty()
+                }
+                val isTabFallbackOnly = matchedSelector.startsWith("tab:") && viewIdsMatchedCount == 0
                 serviceScope.launch {
                     app.interventionRepository.updateSelectorHealth(
                         packageName = rule.packageName,
-                        matchedCount = viewIdsMatchedCount.coerceAtLeast(1),
+                        matchedCount = viewIdsMatchedCount,
                         totalCount = rule.viewIds.size.coerceAtLeast(1),
-                        outdated = false
+                        outdated = isTabFallbackOnly
                     )
+                    if (isTabFallbackOnly) {
+                        app.rulesetRepository.autoSyncIfDue(force = false)
+                    }
                 }
             }
         }

@@ -34,17 +34,13 @@
     <string name="reclaimed_label">Reclaimed</string>
     <string name="rule_health_label">Rule health</string>
     <string name="target_apps_header">TARGET APPS</string>
-    <string name="add_custom_app">Add custom app</string>
     <string name="allow_once">Allow once</string>
     <string name="undo">Undo</string>
 
-    <!-- Rule Health & Developer Panel -->
+    <!-- Rule Health -->
     <string name="rule_health_title">Rule health</string>
-    <string name="update_rules">Update rules</string>
+    <string name="update_rules">Check for updates</string>
     <string name="per_app_header">PER APP</string>
-    <string name="test_now">Test now</string>
-    <string name="developer_panel_title">Developer panel</string>
-    <string name="run_test">Run test</string>
 
     <!-- Insights & Settings -->
     <string name="insights_title">Insights</string>

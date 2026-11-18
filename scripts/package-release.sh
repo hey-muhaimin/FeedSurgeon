@@ -9,8 +9,9 @@ usage() {
   cat <<EOF
 Usage: $(basename "$0") [--bump major|minor|patch] [--mode debug|release|all] [--skip-tests]
 
-Runs verification tests, optionally bumps the app version, builds APK/AAB artifacts,
-and bundles outputs into ./bundled-apk/ with SHA-256 checksums and RELEASE_INFO.txt.
+Validates and syncs bundled ruleset.json, runs verification tests, optionally bumps
+the app version, builds APK/AAB artifacts, and bundles outputs into ./bundled-apk/
+with SHA-256 checksums and RELEASE_INFO.txt.
 EOF
 }
 
@@ -27,6 +28,8 @@ while [[ $# -gt 0 ]]; do
     *) echo "Unknown option: $1" >&2; usage; exit 1 ;;
   esac
 done
+
+"$SCRIPT_DIR/sync-ruleset.sh" --validate-only
 
 if [[ -n "$BUMP" ]]; then
   "$SCRIPT_DIR/bump-version.sh" "--${BUMP}"

@@ -58,13 +58,8 @@ import androidx.compose.material.icons.outlined.BarChart
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Shield
 import androidx.compose.material.icons.outlined.Tune
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
@@ -74,9 +69,6 @@ import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
@@ -87,10 +79,8 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import com.example.data.model.InterventionMode
 import com.example.data.model.InterventionToastState
 import com.example.ui.theme.AmberWarning
 import com.example.ui.theme.AmberWarningBg
@@ -102,12 +92,10 @@ import com.example.ui.theme.CoralDanger
 import com.example.ui.theme.MintTeal
 import com.example.ui.theme.MintTealBorder
 import com.example.ui.theme.MintTealDark
-import com.example.ui.theme.MonoTypography
 import com.example.ui.theme.NavPillBorder
 import com.example.ui.theme.NavPillSurface
 import com.example.ui.theme.ObsidianBg
 import com.example.ui.theme.ObsidianGlow
-import com.example.ui.theme.OnMintTeal
 import com.example.ui.theme.TextMuted
 import com.example.ui.theme.TextPrimary
 import com.example.ui.theme.TextSecondary
@@ -552,153 +540,6 @@ fun SurgicalSyncLoadingBar(
             )
         }
     }
-}
-
-@Composable
-fun CustomAppRuleDialog(
-    onDismiss: () -> Unit,
-    onSave: (
-        packageName: String,
-        displayName: String,
-        feedLabel: String,
-        viewIdsText: String,
-        tabFallback: String,
-        mode: InterventionMode
-    ) -> Unit
-) {
-    var packageName by remember { mutableStateOf("") }
-    var displayName by remember { mutableStateOf("") }
-    var feedLabel by remember { mutableStateOf("Clips") }
-    var viewIdsText by remember { mutableStateOf("") }
-    var tabFallback by remember { mutableStateOf("") }
-    var selectedMode by remember { mutableStateOf(InterventionMode.BACK) }
-    var errorText by remember { mutableStateOf<String?>(null) }
-
-    val fieldColors = OutlinedTextFieldDefaults.colors(
-        focusedBorderColor = MintTeal,
-        unfocusedBorderColor = CardBorder,
-        focusedTextColor = TextPrimary,
-        unfocusedTextColor = TextPrimary,
-        focusedLabelColor = MintTeal,
-        unfocusedLabelColor = TextSecondary
-    )
-
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        containerColor = CardSurface,
-        titleContentColor = TextPrimary,
-        textContentColor = TextSecondary,
-        title = {
-            Text(
-                text = "Add custom app rule",
-                style = MaterialTheme.typography.titleLarge,
-                color = TextPrimary
-            )
-        },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                OutlinedTextField(
-                    value = displayName,
-                    onValueChange = { displayName = it },
-                    label = { Text("App name (e.g. Reddit)") },
-                    singleLine = true,
-                    colors = fieldColors,
-                    modifier = Modifier.fillMaxWidth()
-                )
-                OutlinedTextField(
-                    value = packageName,
-                    onValueChange = { packageName = it },
-                    label = { Text("Package ID (e.g. com.reddit.frontpage)") },
-                    singleLine = true,
-                    textStyle = MonoTypography.caption,
-                    colors = fieldColors,
-                    modifier = Modifier.fillMaxWidth()
-                )
-                OutlinedTextField(
-                    value = feedLabel,
-                    onValueChange = { feedLabel = it },
-                    label = { Text("Feed label (e.g. Watch)") },
-                    singleLine = true,
-                    colors = fieldColors,
-                    modifier = Modifier.fillMaxWidth()
-                )
-                OutlinedTextField(
-                    value = viewIdsText,
-                    onValueChange = { viewIdsText = it },
-                    label = { Text("View IDs (comma separated)") },
-                    textStyle = MonoTypography.caption,
-                    colors = fieldColors,
-                    modifier = Modifier.fillMaxWidth()
-                )
-                OutlinedTextField(
-                    value = tabFallback,
-                    onValueChange = { tabFallback = it },
-                    label = { Text("Fallback tab label (optional)") },
-                    singleLine = true,
-                    colors = fieldColors,
-                    modifier = Modifier.fillMaxWidth()
-                )
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
-                ) {
-                    InterventionMode.entries.forEach { mode ->
-                        val active = mode == selectedMode
-                        Box(
-                            modifier = Modifier
-                                .weight(1f)
-                                .clip(RoundedCornerShape(100.dp))
-                                .background(if (active) MintTeal else CardSurfaceElevated)
-                                .clickable { selectedMode = mode }
-                                .padding(vertical = 8.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                text = mode.shortLabel,
-                                style = MaterialTheme.typography.labelMedium,
-                                color = if (active) OnMintTeal else TextSecondary,
-                                maxLines = 1
-                            )
-                        }
-                    }
-                }
-                if (errorText != null) {
-                    Text(
-                        text = errorText!!,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = CoralDanger
-                    )
-                }
-            }
-        },
-        confirmButton = {
-            Button(
-                onClick = {
-                    val pkg = packageName.trim()
-                    if (!pkg.contains(".")) {
-                        errorText = "Enter a valid Android package ID (e.g. com.example.app)."
-                        return@Button
-                    }
-                    if (viewIdsText.isBlank() && tabFallback.isBlank()) {
-                        errorText = "Provide at least one View ID or fallback tab label."
-                        return@Button
-                    }
-                    onSave(pkg, displayName, feedLabel, viewIdsText, tabFallback, selectedMode)
-                },
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MintTeal,
-                    contentColor = OnMintTeal
-                )
-            ) {
-                Text("Save rule", fontWeight = FontWeight.SemiBold)
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text("Cancel", color = TextSecondary)
-            }
-        }
-    )
 }
 
 @Composable

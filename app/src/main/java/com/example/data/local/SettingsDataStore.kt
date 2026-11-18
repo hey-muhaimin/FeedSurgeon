@@ -19,6 +19,7 @@ private val Context.feedSurgeonDataStore: DataStore<Preferences> by preferencesD
 data class AppPreferences(
     val disclosureAccepted: Boolean = false,
     val onboardingCompleted: Boolean = false,
+    val autoUpdateRules: Boolean = true,
     val rulesetVersion: String = DEFAULT_RULESET_VERSION,
     val rulesetEndpointUrl: String = DEFAULT_GIST_URL,
     val lastRulesetCheckMs: Long = 0L,
@@ -29,7 +30,8 @@ data class AppPreferences(
     companion object {
         const val DEFAULT_RULESET_VERSION = "v2026.11.18"
         const val DEFAULT_GIST_URL =
-            "https://gist.githubusercontent.com/hey-muhaimin/1ebadd94effdba1255d42661ef218fc9/raw/8df1bb113c19da45adc96e7f9d213662522bf58d/ruleset.json"
+            "https://gist.githubusercontent.com/hey-muhaimin/1ebadd94effdba1255d42661ef218fc9/raw/ruleset.json"
+        const val AUTO_SYNC_INTERVAL_MS = 6L * 60L * 60L * 1000L
 
         val BUNDLED_RULESET_JSON = """
             {
@@ -103,6 +105,7 @@ class SettingsDataStore(private val context: Context) {
     private object Keys {
         val DISCLOSURE_ACCEPTED = booleanPreferencesKey("disclosure_accepted")
         val ONBOARDING_COMPLETED = booleanPreferencesKey("onboarding_completed")
+        val AUTO_UPDATE_RULES = booleanPreferencesKey("auto_update_rules")
         val RULESET_VERSION = stringPreferencesKey("ruleset_version")
         val RULESET_ENDPOINT_URL = stringPreferencesKey("ruleset_endpoint_url")
         val LAST_RULESET_CHECK_MS = longPreferencesKey("last_ruleset_check_ms")
@@ -115,6 +118,7 @@ class SettingsDataStore(private val context: Context) {
         AppPreferences(
             disclosureAccepted = prefs[Keys.DISCLOSURE_ACCEPTED] ?: false,
             onboardingCompleted = prefs[Keys.ONBOARDING_COMPLETED] ?: false,
+            autoUpdateRules = prefs[Keys.AUTO_UPDATE_RULES] ?: true,
             rulesetVersion = prefs[Keys.RULESET_VERSION] ?: AppPreferences.DEFAULT_RULESET_VERSION,
             rulesetEndpointUrl = prefs[Keys.RULESET_ENDPOINT_URL] ?: AppPreferences.DEFAULT_GIST_URL,
             lastRulesetCheckMs = prefs[Keys.LAST_RULESET_CHECK_MS] ?: 0L,
@@ -136,9 +140,9 @@ class SettingsDataStore(private val context: Context) {
         }
     }
 
-    suspend fun setRulesetEndpointUrl(url: String) {
+    suspend fun setAutoUpdateRules(enabled: Boolean) {
         context.feedSurgeonDataStore.edit { prefs ->
-            prefs[Keys.RULESET_ENDPOINT_URL] = url.trim()
+            prefs[Keys.AUTO_UPDATE_RULES] = enabled
         }
     }
 

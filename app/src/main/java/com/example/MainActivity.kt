@@ -26,9 +26,7 @@ import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -48,13 +46,11 @@ import androidx.navigation.navArgument
 import com.example.ui.MainViewModel
 import com.example.ui.components.AtmosphericBackground
 import com.example.ui.components.BottomTab
-import com.example.ui.components.CustomAppRuleDialog
 import com.example.ui.components.FloatingPillNavBar
 import com.example.ui.components.InterventionBanner
 import com.example.ui.components.LocalAnimatedVisibilityScope
 import com.example.ui.components.LocalSharedTransitionScope
 import com.example.ui.screens.AppDetailScreen
-import com.example.ui.screens.DeveloperPanelScreen
 import com.example.ui.screens.HomeScreen
 import com.example.ui.screens.InsightsScreen
 import com.example.ui.screens.OnboardingScreen
@@ -69,7 +65,6 @@ object Routes {
     const val INSIGHTS = "insights"
     const val SETTINGS = "settings"
     const val APP_DETAIL = "app_detail/{packageName}"
-    const val DEVELOPER_PANEL = "developer_panel"
 
     fun appDetail(packageName: String): String = "app_detail/$packageName"
 }
@@ -100,10 +95,9 @@ fun FeedSurgeonRoot(
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = backStackEntry?.destination?.route
 
-    var showCustomAppDialog by remember { mutableStateOf(false) }
-
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
         viewModel.refreshAccessibilityStatus(context)
+        viewModel.triggerAutoSyncIfNeeded()
     }
 
     val startDestination = if (uiState.preferences.onboardingCompleted) {
@@ -240,8 +234,7 @@ fun FeedSurgeonRoot(
                                     },
                                     onToggleApp = { pkg, enabled ->
                                         viewModel.setRuleEnabled(pkg, enabled)
-                                    },
-                                    onAddCustomAppClick = { showCustomAppDialog = true }
+                                    }
                                 )
                             }
                         }
@@ -250,11 +243,7 @@ fun FeedSurgeonRoot(
                             CompositionLocalProvider(LocalAnimatedVisibilityScope provides this) {
                                 RuleHealthScreen(
                                     uiState = uiState,
-                                    onUpdateRulesClick = { viewModel.updateRemoteRules() },
-                                    onTestNowClick = { pkg -> viewModel.runRuleHealthCheck(pkg) },
-                                    onOpenDeveloperPanel = {
-                                        navController.navigate(Routes.DEVELOPER_PANEL)
-                                    }
+                                    onUpdateRulesClick = { viewModel.updateRemoteRules() }
                                 )
                             }
                         }
@@ -269,17 +258,14 @@ fun FeedSurgeonRoot(
                             CompositionLocalProvider(LocalAnimatedVisibilityScope provides this) {
                                 SettingsScreen(
                                     uiState = uiState,
-                                    onOpenDeveloperPanel = {
-                                        navController.navigate(Routes.DEVELOPER_PANEL)
-                                    },
                                     onReopenDisclosure = {
                                         viewModel.reopenOnboarding()
                                         navController.navigate(Routes.ONBOARDING)
                                     },
-                                    onAddCustomAppClick = { showCustomAppDialog = true },
-                                    onSaveEndpointUrl = { url -> viewModel.saveRulesetEndpointUrl(url) },
-                                    onSyncRemoteRules = { url -> viewModel.updateRemoteRules(url) },
-                                    onRestoreBundledRules = { viewModel.restoreBundledRules() },
+                                    onSetAutoUpdateRules = { enabled ->
+                                        viewModel.setAutoUpdateRules(enabled)
+                                    },
+                                    onCheckRulesNow = { viewModel.updateRemoteRules() },
                                     onSetReclaimedSeconds = { sec -> viewModel.setReclaimedSecondsPerCut(sec) },
                                     onSetShowBanner = { show -> viewModel.setShowInterventionBanner(show) },
                                     onClearHistory = { viewModel.clearHistory() }
@@ -301,22 +287,7 @@ fun FeedSurgeonRoot(
                                     onSelectMode = { mode -> viewModel.setInterventionMode(pkg, mode) },
                                     onChangeCooldown = { ms -> viewModel.setCooldownMs(pkg, ms) },
                                     onSnooze15Minutes = { viewModel.snooze15Minutes(pkg) },
-                                    onResumeSnooze = { viewModel.resumeFromSnooze(pkg) },
-                                    onDeleteCustomRule = { viewModel.deleteCustomRule(pkg) }
-                                )
-                            }
-                        }
-
-                        composable(Routes.DEVELOPER_PANEL) {
-                            CompositionLocalProvider(LocalAnimatedVisibilityScope provides this) {
-                                DeveloperPanelScreen(
-                                    uiState = uiState,
-                                    onBack = { navController.popBackStack() },
-                                    onQueryChange = { q -> viewModel.updateSelectorTestQuery(q) },
-                                    onRunTest = { viewModel.runSelectorTest() },
-                                    onTriggerDiagnosticIntervention = { rule ->
-                                        viewModel.triggerDiagnosticIntervention(rule)
-                                    }
+                                    onResumeSnooze = { viewModel.resumeFromSnooze(pkg) }
                                 )
                             }
                         }
@@ -352,23 +323,5 @@ fun FeedSurgeonRoot(
                 }
             }
         }
-    }
-
-    if (showCustomAppDialog) {
-        CustomAppRuleDialog(
-            onDismiss = { showCustomAppDialog = false },
-            onSave = { pkg, name, feedLabel, viewIdsText, tabFallback, mode ->
-                viewModel.saveCustomRule(
-                    packageName = pkg,
-                    displayName = name,
-                    feedLabel = feedLabel,
-                    viewIdsText = viewIdsText,
-                    tabFallbackLabel = tabFallback,
-                    homeTabLabel = "Home",
-                    interventionMode = mode
-                )
-                showCustomAppDialog = false
-            }
-        )
     }
 }
