@@ -1,0 +1,5 @@
+App: Feed Surgeon
+Version Name: 1.0
+Version Code: 1
+Build Mode: debug
+Timestamp (UTC): 2026-11-18T13:37:22Z

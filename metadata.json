@@ -1,0 +1,6 @@
+{
+  "name": "Feed Surgeon",
+  "description": "Real-time Accessibility Service feed blocker for YouTube Shorts, Instagram Reels, and custom short-form video feeds.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

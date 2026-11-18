@@ -1,0 +1,52 @@
+<resources>
+    <string name="app_name">Feed Surgeon</string>
+    <string name="accessibility_service_desc">Inspects active screen labels and view IDs in configured apps (such as YouTube and Instagram) strictly on-device to exit short-form video feeds like Shorts and Reels. No screen content is ever stored off-device or transmitted.</string>
+
+    <!-- Navigation -->
+    <string name="nav_home">Home</string>
+    <string name="nav_rules">Rules</string>
+    <string name="nav_insights">Insights</string>
+    <string name="nav_settings">Settings</string>
+
+    <!-- Onboarding & Prominent Disclosure -->
+    <string name="onboarding_title">Before you turn this on</string>
+    <string name="onboarding_subtitle">Feed Surgeon uses Android\u2019s Accessibility Service to see which screen is open in YouTube, Instagram, and configured apps, only to close Shorts and Reels.</string>
+    <string name="onboarding_what_we_read_title">WHAT WE READ</string>
+    <string name="onboarding_what_we_read_body">Screen layout labels in configured apps\nWhether a Shorts or Reels tab is open</string>
+    <string name="onboarding_what_we_never_send_title">WHAT WE NEVER SEND</string>
+    <string name="onboarding_what_we_never_send_body">Messages, passwords or screen content\nAnything at all off your device</string>
+    <string name="onboarding_decline">Decline</string>
+    <string name="onboarding_agree">Agree</string>
+    <string name="onboarding_step2_title">Enable Feed Surgeon</string>
+    <string name="onboarding_step2_body">Find Feed Surgeon under Downloaded Apps in Android Accessibility Settings and turn it on. You can revoke access anytime.</string>
+    <string name="onboarding_open_settings">Open Accessibility Settings</string>
+    <string name="onboarding_continue_without">Continue in setup mode</string>
+    <string name="onboarding_step3_title">Protection ready</string>
+    <string name="onboarding_step3_body">Feed Surgeon is scoped strictly to your target packages and throttled every 100 ms to protect battery life.</string>
+    <string name="onboarding_finish">Go to dashboard</string>
+
+    <!-- Home -->
+    <string name="status_running">Running</string>
+    <string name="status_service_off">Service off</string>
+    <string name="feeds_cut_today">Feeds cut today</string>
+    <string name="reclaimed_label">Reclaimed</string>
+    <string name="rule_health_label">Rule health</string>
+    <string name="target_apps_header">TARGET APPS</string>
+    <string name="add_custom_app">Add custom app</string>
+    <string name="allow_once">Allow once</string>
+    <string name="undo">Undo</string>
+
+    <!-- Rule Health & Developer Panel -->
+    <string name="rule_health_title">Rule health</string>
+    <string name="update_rules">Update rules</string>
+    <string name="per_app_header">PER APP</string>
+    <string name="test_now">Test now</string>
+    <string name="developer_panel_title">Developer panel</string>
+    <string name="run_test">Run test</string>
+
+    <!-- Insights & Settings -->
+    <string name="insights_title">Insights</string>
+    <string name="this_week">This week</string>
+    <string name="by_app_header">BY APP</string>
+    <string name="settings_title">Settings</string>
+</resources>
