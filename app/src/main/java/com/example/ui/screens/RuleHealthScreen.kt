@@ -26,8 +26,10 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -39,12 +41,12 @@ import com.example.ui.components.SectionLabel
 import com.example.ui.components.StatusBadgePill
 import com.example.ui.components.SurgeonCard
 import com.example.ui.components.SurgicalSyncLoadingBar
-import com.example.ui.components.surgeonSharedBounds
 import com.example.ui.theme.AmberWarningBorder
 import com.example.ui.theme.CardBorder
 import com.example.ui.theme.MintTeal
 import com.example.ui.theme.MonoTypography
 import com.example.ui.theme.OnMintTeal
+import com.example.ui.theme.TextMuted
 import com.example.ui.theme.TextPrimary
 import com.example.ui.theme.TextSecondary
 
@@ -54,7 +56,12 @@ fun RuleHealthScreen(
     onUpdateRulesClick: () -> Unit
 ) {
     val prefs = uiState.preferences
-    val outdatedRule = uiState.rules.firstOrNull { it.isOutdated }
+    val sortedRules = remember(uiState.rules, uiState.installedPackages) {
+        uiState.rules.sortedByDescending { it.packageName in uiState.installedPackages }
+    }
+    val outdatedRule = sortedRules.firstOrNull {
+        it.isOutdated && it.packageName in uiState.installedPackages
+    }
     val checkedLabel = if (prefs.lastRulesetCheckMs == 0L) {
         val modeLabel = if (prefs.autoUpdateRules) "auto-update on" else "auto-update off"
         "Saved locally on device \u00B7 $modeLabel"
@@ -158,13 +165,14 @@ fun RuleHealthScreen(
             SectionLabel(text = stringResource(R.string.per_app_header))
         }
 
-        items(uiState.rules, key = { it.packageName }) { rule ->
-            val subtitle = if (rule.isOutdated) {
-                "${rule.feedLabel} \u00B7 layout update needed"
-            } else {
-                "${rule.feedLabel} \u00B7 protection ready"
+        items(sortedRules, key = { it.packageName }) { rule ->
+            val isInstalled = rule.packageName in uiState.installedPackages
+            val subtitle = when {
+                !isInstalled -> "${rule.feedLabel} \u00B7 app not installed"
+                rule.isOutdated -> "${rule.feedLabel} \u00B7 layout update needed"
+                else -> "${rule.feedLabel} \u00B7 protection ready"
             }
-            SurgeonCard {
+            SurgeonCard(modifier = Modifier.alpha(if (isInstalled) 1f else 0.72f)) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically
@@ -181,18 +189,25 @@ fun RuleHealthScreen(
                         Text(
                             text = subtitle,
                             style = MaterialTheme.typography.bodyMedium,
-                            color = TextSecondary
+                            color = if (isInstalled) TextSecondary else TextMuted
                         )
                     }
-                    StatusBadgePill(
-                        text = if (rule.isOutdated) "Update needed" else "Healthy",
-                        isWarning = rule.isOutdated
-                    )
+                    when {
+                        !isInstalled -> Text(
+                            text = "Not installed",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = TextMuted
+                        )
+                        else -> StatusBadgePill(
+                            text = if (rule.isOutdated) "Update needed" else "Healthy",
+                            isWarning = rule.isOutdated
+                        )
+                    }
                 }
             }
         }
 
-        // Contextual status card (no developer tools)
+        // Contextual status card
         item {
             SurgeonCard(
                 borderColor = if (outdatedRule != null) AmberWarningBorder else CardBorder
@@ -211,7 +226,7 @@ fun RuleHealthScreen(
                     text = if (outdatedRule != null) {
                         "${outdatedRule.displayName} updated its app layout. Tap Check for updates above to refresh local rules."
                     } else {
-                        "Blocking rules are stored locally on your device and update automatically when new app layouts are published."
+                        "Blocking rules are cached locally in DataStore and updated periodically in the background via WorkManager."
                     },
                     style = MaterialTheme.typography.bodyMedium,
                     color = TextSecondary

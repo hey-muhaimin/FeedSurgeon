@@ -5,6 +5,7 @@ import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
+import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 import com.example.data.model.InterventionMode
 import kotlinx.coroutines.CoroutineScope
@@ -13,7 +14,7 @@ import kotlinx.coroutines.launch
 
 @Database(
     entities = [TargetAppRuleEntity::class, InterventionEventEntity::class],
-    version = 1,
+    version = 2,
     exportSchema = false
 )
 @TypeConverters(FeedSurgeonConverters::class)
@@ -23,6 +24,12 @@ abstract class FeedSurgeonDatabase : RoomDatabase() {
     companion object {
         @Volatile
         private var INSTANCE: FeedSurgeonDatabase? = null
+
+        private val MIGRATION_1_2 = object : Migration(1, 2) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("UPDATE target_app_rules SET interventionMode = 'OVERLAY'")
+            }
+        }
 
         val BUILT_IN_PACKAGE_NAMES = setOf(
             "com.google.android.youtube",
@@ -38,7 +45,7 @@ abstract class FeedSurgeonDatabase : RoomDatabase() {
                 displayName = "YouTube",
                 feedLabel = "Shorts",
                 enabled = true,
-                interventionMode = InterventionMode.HOME_TAB,
+                interventionMode = InterventionMode.OVERLAY,
                 cooldownMs = 800,
                 homeTabLabel = "Home",
                 viewIdsRaw = listOf(
@@ -57,7 +64,7 @@ abstract class FeedSurgeonDatabase : RoomDatabase() {
                 displayName = "Instagram",
                 feedLabel = "Reels",
                 enabled = true,
-                interventionMode = InterventionMode.BACK,
+                interventionMode = InterventionMode.OVERLAY,
                 cooldownMs = 800,
                 homeTabLabel = "Home",
                 viewIdsRaw = listOf(
@@ -75,7 +82,7 @@ abstract class FeedSurgeonDatabase : RoomDatabase() {
                 displayName = "Facebook",
                 feedLabel = "Reels",
                 enabled = true,
-                interventionMode = InterventionMode.BACK,
+                interventionMode = InterventionMode.OVERLAY,
                 cooldownMs = 800,
                 homeTabLabel = "Home",
                 viewIdsRaw = listOf(
@@ -93,7 +100,7 @@ abstract class FeedSurgeonDatabase : RoomDatabase() {
                 displayName = "Snapchat",
                 feedLabel = "Spotlight",
                 enabled = true,
-                interventionMode = InterventionMode.BACK,
+                interventionMode = InterventionMode.OVERLAY,
                 cooldownMs = 800,
                 homeTabLabel = "Chat",
                 viewIdsRaw = listOf(
@@ -111,7 +118,7 @@ abstract class FeedSurgeonDatabase : RoomDatabase() {
                 displayName = "Reddit",
                 feedLabel = "Watch",
                 enabled = true,
-                interventionMode = InterventionMode.BACK,
+                interventionMode = InterventionMode.OVERLAY,
                 cooldownMs = 800,
                 homeTabLabel = "Home",
                 viewIdsRaw = listOf(
@@ -137,16 +144,17 @@ abstract class FeedSurgeonDatabase : RoomDatabase() {
                 appContext,
                 FeedSurgeonDatabase::class.java,
                 "feed_surgeon.db"
-            ).addCallback(
-                object : Callback() {
-                    override fun onCreate(db: SupportSQLiteDatabase) {
-                        super.onCreate(db)
-                        CoroutineScope(Dispatchers.IO).launch {
-                            getInstance(appContext).feedSurgeonDao().upsertRules(defaultBuiltInRules())
+            ).addMigrations(MIGRATION_1_2)
+                .addCallback(
+                    object : Callback() {
+                        override fun onCreate(db: SupportSQLiteDatabase) {
+                            super.onCreate(db)
+                            CoroutineScope(Dispatchers.IO).launch {
+                                getInstance(appContext).feedSurgeonDao().upsertRules(defaultBuiltInRules())
+                            }
                         }
                     }
-                }
-            ).build()
+                ).build()
         }
     }
 }

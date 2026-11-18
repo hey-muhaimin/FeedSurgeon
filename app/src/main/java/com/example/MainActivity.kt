@@ -1,5 +1,6 @@
 package com.example
 
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
@@ -96,6 +97,7 @@ fun FeedSurgeonRoot(
 
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
         viewModel.refreshAccessibilityStatus(context)
+        viewModel.refreshInstalledApps(context)
         viewModel.triggerAutoSyncIfNeeded()
     }
 
@@ -287,6 +289,18 @@ fun FeedSurgeonRoot(
                                         viewModel.setAutoUpdateRules(enabled)
                                     },
                                     onCheckRulesNow = { viewModel.updateRemoteRules() },
+                                    onSetEventCaptureEnabled = { enabled ->
+                                        viewModel.setEventCaptureEnabled(enabled)
+                                    },
+                                    onRefreshEventLog = { viewModel.refreshEventLog() },
+                                    onClearEventLog = { viewModel.clearEventLog() },
+                                    onShareEventLog = {
+                                        viewModel.createShareLogIntent()?.let { shareIntent ->
+                                            context.startActivity(
+                                                Intent.createChooser(shareIntent, "Share accessibility log")
+                                            )
+                                        }
+                                    },
                                     onSetReclaimedSeconds = { sec -> viewModel.setReclaimedSecondsPerCut(sec) },
                                     onSetShowBanner = { show -> viewModel.setShowInterventionBanner(show) },
                                     onClearHistory = { viewModel.clearHistory() }

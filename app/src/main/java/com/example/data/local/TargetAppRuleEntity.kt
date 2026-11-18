@@ -10,7 +10,7 @@ data class TargetAppRuleEntity(
     val displayName: String,
     val feedLabel: String,
     val enabled: Boolean = true,
-    val interventionMode: InterventionMode = InterventionMode.HOME_TAB,
+    val interventionMode: InterventionMode = InterventionMode.OVERLAY,
     val cooldownMs: Int = 800,
     val homeTabLabel: String = "Home",
     val viewIdsRaw: String,

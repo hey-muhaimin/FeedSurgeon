@@ -20,6 +20,7 @@ data class AppPreferences(
     val disclosureAccepted: Boolean = false,
     val onboardingCompleted: Boolean = false,
     val autoUpdateRules: Boolean = true,
+    val eventCaptureEnabled: Boolean = false,
     val rulesetVersion: String = DEFAULT_RULESET_VERSION,
     val rulesetEndpointUrl: String = DEFAULT_GIST_URL,
     val lastRulesetCheckMs: Long = 0L,
@@ -106,6 +107,7 @@ class SettingsDataStore(private val context: Context) {
         val DISCLOSURE_ACCEPTED = booleanPreferencesKey("disclosure_accepted")
         val ONBOARDING_COMPLETED = booleanPreferencesKey("onboarding_completed")
         val AUTO_UPDATE_RULES = booleanPreferencesKey("auto_update_rules")
+        val EVENT_CAPTURE_ENABLED = booleanPreferencesKey("event_capture_enabled")
         val RULESET_VERSION = stringPreferencesKey("ruleset_version")
         val RULESET_ENDPOINT_URL = stringPreferencesKey("ruleset_endpoint_url")
         val LAST_RULESET_CHECK_MS = longPreferencesKey("last_ruleset_check_ms")
@@ -119,6 +121,7 @@ class SettingsDataStore(private val context: Context) {
             disclosureAccepted = prefs[Keys.DISCLOSURE_ACCEPTED] ?: false,
             onboardingCompleted = prefs[Keys.ONBOARDING_COMPLETED] ?: false,
             autoUpdateRules = prefs[Keys.AUTO_UPDATE_RULES] ?: true,
+            eventCaptureEnabled = prefs[Keys.EVENT_CAPTURE_ENABLED] ?: false,
             rulesetVersion = prefs[Keys.RULESET_VERSION] ?: AppPreferences.DEFAULT_RULESET_VERSION,
             rulesetEndpointUrl = prefs[Keys.RULESET_ENDPOINT_URL] ?: AppPreferences.DEFAULT_GIST_URL,
             lastRulesetCheckMs = prefs[Keys.LAST_RULESET_CHECK_MS] ?: 0L,
@@ -143,6 +146,12 @@ class SettingsDataStore(private val context: Context) {
     suspend fun setAutoUpdateRules(enabled: Boolean) {
         context.feedSurgeonDataStore.edit { prefs ->
             prefs[Keys.AUTO_UPDATE_RULES] = enabled
+        }
+    }
+
+    suspend fun setEventCaptureEnabled(enabled: Boolean) {
+        context.feedSurgeonDataStore.edit { prefs ->
+            prefs[Keys.EVENT_CAPTURE_ENABLED] = enabled
         }
     }
 

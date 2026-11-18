@@ -22,7 +22,13 @@ import java.io.IOException
 import java.util.concurrent.TimeUnit
 
 sealed interface RulesetSyncResult {
-    data class Success(val version: String, val updatedApps: Int, val fromLocalCache: Boolean) : RulesetSyncResult
+    data class Success(
+        val version: String,
+        val updatedApps: Int,
+        val fromLocalCache: Boolean,
+        val networkErrorReason: String? = null
+    ) : RulesetSyncResult
+
     data class Error(val message: String) : RulesetSyncResult
 }
 
@@ -104,14 +110,16 @@ class RulesetRepository(
                     if (!response.isSuccessful) {
                         return@withLock applyLocalCacheFallback(
                             prefs = prefs,
-                            reason = "Using local ruleset ${prefs.rulesetVersion} (HTTP ${response.code})"
+                            reason = "Using local ruleset ${prefs.rulesetVersion} (HTTP ${response.code})",
+                            isTransientNetworkIssue = response.code >= 500 || response.code == 429
                         )
                     }
                     val body = response.body?.string().orEmpty()
                     val remoteParsed = parseAndValidate(body)
                         ?: return@withLock applyLocalCacheFallback(
                             prefs = prefs,
-                            reason = "Remote ruleset format invalid; kept local ${prefs.rulesetVersion}"
+                            reason = "Remote ruleset format invalid; kept local ${prefs.rulesetVersion}",
+                            isTransientNetworkIssue = false
                         )
 
                     val bundledJson = loadBundledAssetOrFallbackJson()
@@ -122,7 +130,8 @@ class RulesetRepository(
                     if (compareVersions(remoteParsed.version, currentLocalVersion) < 0) {
                         return@withLock applyLocalCacheFallback(
                             prefs = prefs,
-                            reason = "Local ruleset $currentLocalVersion is newer than remote ${remoteParsed.version}"
+                            reason = "Local ruleset $currentLocalVersion is newer than remote ${remoteParsed.version}",
+                            isTransientNetworkIssue = false
                         )
                     }
 
@@ -139,10 +148,11 @@ class RulesetRepository(
                         fromLocalCache = false
                     )
                 }
-            } catch (_: IOException) {
+            } catch (e: IOException) {
                 applyLocalCacheFallback(
                     prefs = prefs,
-                    reason = "Offline \u00B7 using cached ruleset ${prefs.rulesetVersion}"
+                    reason = "Offline (${e.javaClass.simpleName}) \u00B7 using cached ruleset ${prefs.rulesetVersion}",
+                    isTransientNetworkIssue = true
                 )
             } catch (e: Exception) {
                 RulesetSyncResult.Error("Ruleset check failed: ${e.message ?: "unknown error"}")
@@ -152,12 +162,15 @@ class RulesetRepository(
 
     private suspend fun applyLocalCacheFallback(
         prefs: AppPreferences,
-        reason: String
+        reason: String,
+        isTransientNetworkIssue: Boolean
     ): RulesetSyncResult {
         val cachedJson = when {
             localCacheFile.exists() -> runCatching { localCacheFile.readText() }.getOrDefault("")
             else -> ""
-        }.ifBlank { loadBundledAssetOrFallbackJson() }
+        }.ifBlank {
+            prefs.cachedRulesetJson.ifBlank { loadBundledAssetOrFallbackJson() }
+        }
 
         val parsed = parseAndValidate(cachedJson)
         return if (parsed != null) {
@@ -171,7 +184,8 @@ class RulesetRepository(
             RulesetSyncResult.Success(
                 version = parsed.version,
                 updatedApps = parsed.apps.size,
-                fromLocalCache = true
+                fromLocalCache = true,
+                networkErrorReason = if (isTransientNetworkIssue) reason else null
             )
         } else {
             settingsDataStore.updateLastCheckedOnly(System.currentTimeMillis())
@@ -226,11 +240,7 @@ class RulesetRepository(
                 displayName = remote.displayName.ifBlank { prev?.displayName ?: remote.packageName },
                 feedLabel = remote.feedLabel,
                 enabled = prev?.enabled ?: true,
-                interventionMode = prev?.interventionMode ?: if (remote.packageName == "com.google.android.youtube") {
-                    InterventionMode.HOME_TAB
-                } else {
-                    InterventionMode.BACK
-                },
+                interventionMode = prev?.interventionMode ?: InterventionMode.OVERLAY,
                 cooldownMs = prev?.cooldownMs ?: 800,
                 homeTabLabel = remote.homeTabLabel.ifBlank { "Home" },
                 viewIdsRaw = remote.viewIds.joinToString("|"),

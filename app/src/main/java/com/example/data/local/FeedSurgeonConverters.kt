@@ -9,5 +9,5 @@ class FeedSurgeonConverters {
 
     @TypeConverter
     fun toInterventionMode(value: String): InterventionMode =
-        InterventionMode.entries.firstOrNull { it.name == value } ?: InterventionMode.BACK
+        InterventionMode.entries.firstOrNull { it.name == value } ?: InterventionMode.OVERLAY
 }

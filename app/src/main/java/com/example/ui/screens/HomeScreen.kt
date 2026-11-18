@@ -1,11 +1,14 @@
 package com.example.ui.screens
 
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -25,12 +28,20 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
@@ -45,10 +56,10 @@ import com.example.ui.components.SurgeonCard
 import com.example.ui.components.SurgeonSkeletonCard
 import com.example.ui.components.SurgeonSwitch
 import com.example.ui.components.surgeonSharedBounds
-import com.example.ui.components.surgeonSharedElement
 import com.example.ui.theme.AmberWarning
 import com.example.ui.theme.BarInactive
 import com.example.ui.theme.MintTeal
+import com.example.ui.theme.TextMuted
 import com.example.ui.theme.TextPrimary
 import com.example.ui.theme.TextSecondary
 
@@ -60,6 +71,14 @@ fun HomeScreen(
     onAppClick: (String) -> Unit,
     onToggleApp: (String, Boolean) -> Unit
 ) {
+    val installedRules = remember(uiState.rules, uiState.installedPackages) {
+        uiState.rules.filter { it.packageName in uiState.installedPackages }
+    }
+    val notInstalledRules = remember(uiState.rules, uiState.installedPackages) {
+        uiState.rules.filter { it.packageName !in uiState.installedPackages }
+    }
+    var showNotInstalled by remember { mutableStateOf(false) }
+
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(
@@ -210,24 +229,102 @@ fun HomeScreen(
             }
         }
 
-        // TARGET APPS header
+        // TARGET APPS header with installed count
         item {
             Spacer(modifier = Modifier.height(6.dp))
-            SectionLabel(text = stringResource(R.string.target_apps_header))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                SectionLabel(text = stringResource(R.string.target_apps_header))
+                Text(
+                    text = "${installedRules.size} installed",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = TextSecondary,
+                    modifier = Modifier.testTag("installed_apps_count")
+                )
+            }
         }
 
         if (uiState.isInitialLoading) {
             items(2) {
                 SurgeonSkeletonCard(heightDp = 80)
             }
+        } else if (installedRules.isEmpty()) {
+            item {
+                SurgeonCard(modifier = Modifier.testTag("no_installed_apps_card")) {
+                    Text(
+                        text = "No supported apps installed",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = TextPrimary
+                    )
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Text(
+                        text = "Install YouTube, Instagram, Facebook, Snapchat, or Reddit on this device and they will appear here automatically.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = TextSecondary
+                    )
+                }
+            }
         } else {
-            items(uiState.rules, key = { it.packageName }) { rule ->
+            items(installedRules, key = { it.packageName }) { rule ->
                 TargetAppRowCard(
                     modifier = Modifier.animateItem(),
                     rule = rule,
+                    isInstalled = true,
                     onClick = { onAppClick(rule.packageName) },
                     onToggle = { enabled -> onToggleApp(rule.packageName, enabled) }
                 )
+            }
+        }
+
+        if (notInstalledRules.isNotEmpty() && !uiState.isInitialLoading) {
+            item {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(12.dp))
+                        .clickable { showNotInstalled = !showNotInstalled }
+                        .padding(vertical = 8.dp, horizontal = 4.dp)
+                        .testTag("toggle_not_installed_apps"),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Not installed on device (${notInstalledRules.size})",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = TextMuted
+                    )
+                    Icon(
+                        imageVector = if (showNotInstalled) {
+                            Icons.Filled.KeyboardArrowUp
+                        } else {
+                            Icons.Filled.KeyboardArrowDown
+                        },
+                        contentDescription = if (showNotInstalled) "Hide uninstalled apps" else "Show uninstalled apps",
+                        tint = TextMuted
+                    )
+                }
+            }
+
+            item {
+                AnimatedVisibility(
+                    visible = showNotInstalled,
+                    enter = fadeIn(tween(180)) + expandVertically(),
+                    exit = fadeOut(tween(140)) + shrinkVertically()
+                ) {
+                    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        notInstalledRules.forEach { rule ->
+                            TargetAppRowCard(
+                                rule = rule,
+                                isInstalled = false,
+                                onClick = { onAppClick(rule.packageName) },
+                                onToggle = { enabled -> onToggleApp(rule.packageName, enabled) }
+                            )
+                        }
+                    }
+                }
             }
         }
     }
@@ -236,13 +333,15 @@ fun HomeScreen(
 @Composable
 private fun TargetAppRowCard(
     rule: TargetAppRuleEntity,
+    isInstalled: Boolean,
     onClick: () -> Unit,
     onToggle: (Boolean) -> Unit,
     modifier: Modifier = Modifier
 ) {
     SurgeonCard(
         modifier = modifier
-            .surgeonSharedBounds("app_card_${rule.packageName}")
+            .then(if (isInstalled) Modifier.surgeonSharedBounds("app_card_${rule.packageName}") else Modifier)
+            .alpha(if (isInstalled) 1f else 0.72f)
             .testTag("target_app_card_${rule.packageName}"),
         onClick = onClick
     ) {
@@ -259,7 +358,13 @@ private fun TargetAppRowCard(
                     color = TextPrimary
                 )
                 Spacer(modifier = Modifier.height(4.dp))
-                if (rule.isOutdated) {
+                if (!isInstalled) {
+                    Text(
+                        text = "${rule.feedLabel} \u00B7 Not installed",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = TextMuted
+                    )
+                } else if (rule.isOutdated) {
                     StatusBadgePill(
                         text = "Layout update needed",
                         isWarning = true

@@ -11,6 +11,7 @@ import com.example.data.local.FeedSurgeonDatabase
 import com.example.data.local.TargetAppRuleEntity
 import com.example.data.model.InterventionMode
 import com.example.data.repository.DiagnosticsBridge
+import com.example.worker.RulesetSyncWorker
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -24,10 +25,14 @@ class FeedSurgeonService : AccessibilityService() {
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private val lastBlockTimestamps = ConcurrentHashMap<String, Long>()
     private val lastHealthTimestamps = ConcurrentHashMap<String, Long>()
+    private val lastLogTimestamps = ConcurrentHashMap<String, Long>()
     private val consecutiveTabFallbackCounts = ConcurrentHashMap<String, Int>()
 
     @Volatile
     private var activeRulesByPackage: Map<String, TargetAppRuleEntity> = emptyMap()
+
+    @Volatile
+    private var isEventCaptureEnabled: Boolean = false
 
     private var overlayShield: AccessibilityOverlayShield? = null
 
@@ -45,6 +50,9 @@ class FeedSurgeonService : AccessibilityService() {
             .associateBy { it.packageName }
         updateServicePackageScope(FeedSurgeonDatabase.BUILT_IN_PACKAGE_NAMES.toList())
 
+        // Schedule WorkManager periodic Gist sync directly from FeedSurgeonService lifecycle
+        RulesetSyncWorker.schedulePeriodicSync(this)
+
         serviceScope.launch {
             app.interventionRepository.ensureDefaultRulesSeeded()
             app.rulesetRepository.ensureLocalCacheSeeded()
@@ -53,6 +61,17 @@ class FeedSurgeonService : AccessibilityService() {
                 val enabledMap = rules.filter { it.enabled }.associateBy { it.packageName }
                 activeRulesByPackage = enabledMap
                 updateServicePackageScope(rules.map { it.packageName })
+            }
+        }
+
+        serviceScope.launch {
+            app.settingsDataStore.preferencesFlow.collectLatest { prefs ->
+                isEventCaptureEnabled = prefs.eventCaptureEnabled
+                if (prefs.autoUpdateRules) {
+                    RulesetSyncWorker.schedulePeriodicSync(this@FeedSurgeonService)
+                } else {
+                    RulesetSyncWorker.cancelPeriodicSync(this@FeedSurgeonService)
+                }
             }
         }
     }
@@ -80,26 +99,76 @@ class FeedSurgeonService : AccessibilityService() {
 
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
         val pkg = event?.packageName?.toString() ?: return
-        val rule = activeRulesByPackage[pkg] ?: return
-        if (!rule.enabled) return
-
-        val rootNode = resolveTargetRootNode(pkg) ?: return
+        val captureLogs = isEventCaptureEnabled
+        val eventType = event.eventType
+        val eventClassName = event.className?.toString()
         val nowElapsed = SystemClock.elapsedRealtime()
+
+        val rule = activeRulesByPackage[pkg]
+        if (rule == null) {
+            if (captureLogs) {
+                logEventThrottled(pkg, eventType, eventClassName, null, null, "SKIPPED:no_active_rule", nowElapsed)
+            }
+            return
+        }
+        if (!rule.enabled) {
+            if (captureLogs) {
+                logEventThrottled(pkg, eventType, eventClassName, null, null, "SKIPPED:rule_disabled", nowElapsed)
+            }
+            return
+        }
+
+        if (overlayShield?.isShowing() == true) {
+            if (captureLogs) {
+                logEventThrottled(pkg, eventType, eventClassName, null, null, "SKIPPED:overlay_showing", nowElapsed)
+            }
+            return
+        }
+
+        val rootNode = resolveTargetRootNode(pkg)
+        if (rootNode == null) {
+            if (captureLogs) {
+                logEventThrottled(pkg, eventType, eventClassName, null, null, "SKIPPED:no_root_window", nowElapsed)
+            }
+            return
+        }
 
         val matchedSelector = SelectorMatcher.findMatchingSelector(rootNode, rule)
         if (matchedSelector == null) {
+            if (captureLogs) {
+                logEventThrottled(pkg, eventType, eventClassName, rootNode, null, "NO_MATCH", nowElapsed)
+            }
             return
         }
 
         if (rule.isCurrentlySnoozed(System.currentTimeMillis())) {
+            if (captureLogs) {
+                logEventThrottled(pkg, eventType, eventClassName, rootNode, matchedSelector, "SKIPPED:snoozed", nowElapsed)
+            }
             return
         }
 
         val lastBlock = lastBlockTimestamps[pkg] ?: 0L
         if (nowElapsed - lastBlock < rule.cooldownMs) {
+            if (captureLogs) {
+                logEventThrottled(pkg, eventType, eventClassName, rootNode, matchedSelector, "SKIPPED:cooldown", nowElapsed)
+            }
             return
         }
         lastBlockTimestamps[pkg] = nowElapsed
+
+        if (captureLogs) {
+            logEventThrottled(
+                pkg,
+                eventType,
+                eventClassName,
+                rootNode,
+                matchedSelector,
+                "TRIGGERED:${rule.interventionMode.name}",
+                nowElapsed,
+                force = true
+            )
+        }
 
         // Update selector health without false-positiving on a single pre-inflation frame
         val lastHealth = lastHealthTimestamps[pkg] ?: 0L
@@ -129,6 +198,31 @@ class FeedSurgeonService : AccessibilityService() {
         }
 
         executeIntervention(rootNode, rule, matchedSelector)
+    }
+
+    private fun logEventThrottled(
+        pkg: String,
+        eventType: Int,
+        eventClassName: String?,
+        rootNode: AccessibilityNodeInfo?,
+        matchedSelector: String?,
+        outcome: String,
+        nowElapsed: Long,
+        force: Boolean = false
+    ) {
+        val lastLogged = lastLogTimestamps[pkg] ?: 0L
+        if (!force && nowElapsed - lastLogged < 400L) return
+        lastLogTimestamps[pkg] = nowElapsed
+        serviceScope.launch {
+            app.eventLogger.logEvent(
+                packageName = pkg,
+                eventType = eventType,
+                eventClassName = eventClassName,
+                rootNode = rootNode,
+                matchedSelector = matchedSelector,
+                outcome = outcome
+            )
+        }
     }
 
     private fun resolveTargetRootNode(pkg: String): AccessibilityNodeInfo? {
@@ -167,7 +261,6 @@ class FeedSurgeonService : AccessibilityService() {
                     appName = rule.displayName,
                     feedLabel = rule.feedLabel,
                     onExitFeed = {
-                        // Refresh cooldown when exiting so the overlay does not flash back during navigation
                         lastBlockTimestamps[rule.packageName] = SystemClock.elapsedRealtime()
                         val freshRoot = resolveTargetRootNode(rule.packageName)
                         val clickedHome = freshRoot?.let {

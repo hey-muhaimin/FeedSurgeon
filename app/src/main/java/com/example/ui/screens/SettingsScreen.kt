@@ -7,6 +7,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -15,10 +16,14 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
@@ -30,6 +35,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -42,6 +48,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.R
+import com.example.service.AccessibilityEventLogger
 import com.example.service.AccessibilityStatusHelper
 import com.example.ui.MainUiState
 import com.example.ui.components.SectionLabel
@@ -50,6 +57,7 @@ import com.example.ui.components.SurgeonCard
 import com.example.ui.components.SurgeonSwitch
 import com.example.ui.components.SurgicalSyncLoadingBar
 import com.example.ui.theme.CardBorder
+import com.example.ui.theme.CardSurface
 import com.example.ui.theme.CardSurfaceElevated
 import com.example.ui.theme.CoralDanger
 import com.example.ui.theme.MintTeal
@@ -66,6 +74,10 @@ fun SettingsScreen(
     onReopenDisclosure: () -> Unit,
     onSetAutoUpdateRules: (Boolean) -> Unit,
     onCheckRulesNow: () -> Unit,
+    onSetEventCaptureEnabled: (Boolean) -> Unit,
+    onRefreshEventLog: () -> Unit,
+    onClearEventLog: () -> Unit,
+    onShareEventLog: () -> Unit,
     onSetReclaimedSeconds: (Int) -> Unit,
     onSetShowBanner: (Boolean) -> Unit,
     onClearHistory: () -> Unit
@@ -74,6 +86,11 @@ fun SettingsScreen(
     val uriHandler = LocalUriHandler.current
     val privacyPolicyUrl = stringResource(R.string.privacy_policy_url)
     val prefs = uiState.preferences
+    var showLogDialog by remember { mutableStateOf(false) }
+
+    val activeInstalledCount = uiState.rules.count {
+        it.enabled && it.packageName in uiState.installedPackages
+    }
 
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -110,7 +127,7 @@ fun SettingsScreen(
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
                             text = if (uiState.isAccessibilityEnabled) {
-                                "Protecting ${uiState.rules.count { it.enabled }} active target apps on-device"
+                                "Protecting $activeInstalledCount installed target apps on-device"
                             } else {
                                 "Enable Feed Surgeon in Android Settings to block feeds"
                             },
@@ -159,7 +176,7 @@ fun SettingsScreen(
             }
         }
 
-        // Automatic Rules card (local cache + background remote sync)
+        // Automatic Rules card (WorkManager + DataStore cache)
         item {
             val lastCheckedSubtitle = if (prefs.lastRulesetCheckMs == 0L) {
                 "Bundled locally \u00B7 ${prefs.rulesetVersion}"
@@ -231,6 +248,79 @@ fun SettingsScreen(
                     )
                 ) {
                     Text(if (uiState.isSyncingRules) "Checking..." else "Check for updates now")
+                }
+            }
+        }
+
+        // Local Event Log Capture utility card
+        item {
+            val kb = (uiState.eventLogSizeBytes / 1024L).coerceAtLeast(
+                if (uiState.eventLogSizeBytes > 0L) 1L else 0L
+            )
+            SurgeonCard {
+                SectionLabel(text = "TROUBLESHOOTING")
+                Spacer(modifier = Modifier.height(12.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "Capture accessibility log",
+                            style = MaterialTheme.typography.titleMedium,
+                            color = TextPrimary
+                        )
+                        Spacer(modifier = Modifier.height(2.dp))
+                        Text(
+                            text = "${AccessibilityEventLogger.LOG_FILE_NAME} \u00B7 $kb KB",
+                            style = MonoTypography.caption,
+                            color = TextSecondary
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(10.dp))
+                    SurgeonSwitch(
+                        checked = prefs.eventCaptureEnabled,
+                        onCheckedChange = onSetEventCaptureEnabled,
+                        testTag = "settings_event_capture_switch"
+                    )
+                }
+                Spacer(modifier = Modifier.height(12.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    OutlinedButton(
+                        onClick = {
+                            onRefreshEventLog()
+                            showLogDialog = true
+                        },
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(48.dp)
+                            .testTag("view_event_log_button"),
+                        shape = RoundedCornerShape(100.dp),
+                        border = BorderStroke(1.dp, CardBorder),
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            containerColor = CardSurfaceElevated,
+                            contentColor = TextPrimary
+                        )
+                    ) {
+                        Text("View log")
+                    }
+                    OutlinedButton(
+                        onClick = onClearEventLog,
+                        enabled = uiState.eventLogSizeBytes > 0L,
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(48.dp)
+                            .testTag("clear_event_log_button"),
+                        shape = RoundedCornerShape(100.dp),
+                        border = BorderStroke(1.dp, CardBorder),
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            containerColor = CardSurfaceElevated,
+                            contentColor = CoralDanger
+                        )
+                    ) {
+                        Text("Clear log")
+                    }
                 }
             }
         }
@@ -329,5 +419,52 @@ fun SettingsScreen(
                 }
             }
         }
+    }
+
+    if (showLogDialog) {
+        AlertDialog(
+            onDismissRequest = { showLogDialog = false },
+            containerColor = CardSurface,
+            title = {
+                Text(
+                    text = "Local event log",
+                    style = MaterialTheme.typography.titleLarge,
+                    color = TextPrimary
+                )
+            },
+            text = {
+                val logContent = uiState.eventLogPreview.ifBlank {
+                    "No events captured yet.\nTurn on \"Capture accessibility log\", then open a target app (e.g. YouTube Shorts) to inspect visible View IDs and selection state."
+                }
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(min = 120.dp, max = 340.dp)
+                        .verticalScroll(rememberScrollState())
+                        .horizontalScroll(rememberScrollState())
+                ) {
+                    Text(
+                        text = logContent,
+                        style = MonoTypography.caption,
+                        color = TextSecondary
+                    )
+                }
+            },
+            confirmButton = {
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    if (uiState.eventLogSizeBytes > 0L) {
+                        TextButton(onClick = onShareEventLog) {
+                            Text("Share file", color = MintTeal)
+                        }
+                    }
+                    TextButton(onClick = onRefreshEventLog) {
+                        Text("Refresh", color = TextPrimary)
+                    }
+                    TextButton(onClick = { showLogDialog = false }) {
+                        Text("Close", color = TextSecondary)
+                    }
+                }
+            }
+        )
     }
 }

@@ -2,6 +2,7 @@ package com.example.ui
 
 import android.app.Application
 import android.content.Context
+import android.content.Intent
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.FeedSurgeonApp
@@ -14,6 +15,8 @@ import com.example.data.repository.DiagnosticsBridge
 import com.example.data.repository.InterventionRepository
 import com.example.data.repository.RulesetSyncResult
 import com.example.service.AccessibilityStatusHelper
+import com.example.service.InstalledAppDetector
+import com.example.worker.RulesetSyncWorker
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -41,6 +44,7 @@ data class MainUiState(
     val isInitialLoading: Boolean = true,
     val preferences: AppPreferences = AppPreferences(),
     val rules: List<TargetAppRuleEntity> = emptyList(),
+    val installedPackages: Set<String> = emptySet(),
     val isAccessibilityEnabled: Boolean = false,
     val todayCutsCount: Int = 0,
     val todayReclaimedMinutes: Int = 0,
@@ -53,7 +57,9 @@ data class MainUiState(
     val byAppBreakdown: List<AppBreakdownStat> = emptyList(),
     val recentToast: InterventionToastState? = null,
     val isSyncingRules: Boolean = false,
-    val syncStatusMessage: String? = null
+    val syncStatusMessage: String? = null,
+    val eventLogPreview: String = "",
+    val eventLogSizeBytes: Long = 0L
 )
 
 class MainViewModel(application: Application) : AndroidViewModel(application) {
@@ -61,31 +67,68 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val interventionRepo = app.interventionRepository
     private val rulesetRepo = app.rulesetRepository
     private val settingsDataStore = app.settingsDataStore
+    private val eventLogger = app.eventLogger
 
     private val _accessibilityEnabled = MutableStateFlow(
         AccessibilityStatusHelper.isServiceEnabled(application)
     )
+    private val _installedPackages = MutableStateFlow<Set<String>>(emptySet())
     private val _isSyncingRules = MutableStateFlow(false)
     private val _syncMessage = MutableStateFlow<String?>(null)
+    private val _eventLogPreview = MutableStateFlow("")
+    private val _eventLogSizeBytes = MutableStateFlow(0L)
+
+    init {
+        refreshEventLog()
+        viewModelScope.launch {
+            eventLogger.logVersion.collect {
+                _eventLogPreview.value = eventLogger.readTail(120)
+                _eventLogSizeBytes.value = eventLogger.getFileSizeBytes()
+            }
+        }
+    }
 
     private data class TransientState(
         val accessibilityEnabled: Boolean,
+        val installedPackages: Set<String>,
         val isSyncing: Boolean,
         val syncMessage: String?,
-        val toast: InterventionToastState?
+        val toast: InterventionToastState?,
+        val logPreview: String,
+        val logSizeBytes: Long
+    )
+
+    private val syncAndLogFlow = combine(
+        _isSyncingRules,
+        _syncMessage,
+        DiagnosticsBridge.recentToast,
+        _eventLogPreview,
+        _eventLogSizeBytes
+    ) { isSyncing, syncMsg, toast, logPreview, logBytes ->
+        Tuple5(isSyncing, syncMsg, toast, logPreview, logBytes)
+    }
+
+    private data class Tuple5<A, B, C, D, E>(
+        val first: A,
+        val second: B,
+        val third: C,
+        val fourth: D,
+        val fifth: E
     )
 
     private val transientFlow = combine(
         _accessibilityEnabled,
-        _isSyncingRules,
-        _syncMessage,
-        DiagnosticsBridge.recentToast
-    ) { accessibilityEnabled, isSyncing, syncMessage, toast ->
+        _installedPackages,
+        syncAndLogFlow
+    ) { accessibilityEnabled, installedPackages, extra ->
         TransientState(
             accessibilityEnabled = accessibilityEnabled,
-            isSyncing = isSyncing,
-            syncMessage = syncMessage,
-            toast = toast
+            installedPackages = installedPackages,
+            isSyncing = extra.first,
+            syncMessage = extra.second,
+            toast = extra.third,
+            logPreview = extra.fourth,
+            logSizeBytes = extra.fifth
         )
     }
 
@@ -95,6 +138,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         interventionRepo.recentEvents,
         transientFlow
     ) { prefs, rules, events, transient ->
+        val installed = transient.installedPackages.ifEmpty {
+            InstalledAppDetector.getInstalledPackages(app, rules.map { it.packageName })
+        }
         val nowMs = System.currentTimeMillis()
         val todayStart = InterventionRepository.startOfTodayMs(nowMs)
         val todayEvents = events.filter { it.timestampMs >= todayStart }
@@ -109,12 +155,13 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         val weekAllowedOnce = weekEvents.count { it.wasAllowedOnce }
 
         val byApp = buildAppBreakdown(rules, weekEvents)
-        val staleCount = rules.count { it.isOutdated }
+        val staleCount = rules.count { it.isOutdated && it.packageName in installed }
 
         MainUiState(
             isInitialLoading = false,
             preferences = prefs,
             rules = rules,
+            installedPackages = installed,
             isAccessibilityEnabled = transient.accessibilityEnabled,
             todayCutsCount = todayEvents.size,
             todayReclaimedMinutes = todaySeconds / 60,
@@ -127,7 +174,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             byAppBreakdown = byApp,
             recentToast = transient.toast,
             isSyncingRules = transient.isSyncing,
-            syncStatusMessage = transient.syncMessage
+            syncStatusMessage = transient.syncMessage,
+            eventLogPreview = transient.logPreview,
+            eventLogSizeBytes = transient.logSizeBytes
         )
     }.stateIn(
         scope = viewModelScope,
@@ -137,6 +186,13 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     fun refreshAccessibilityStatus(context: Context) {
         _accessibilityEnabled.value = AccessibilityStatusHelper.isServiceEnabled(context)
+    }
+
+    fun refreshInstalledApps(context: Context) {
+        val packages = uiState.value.rules.map { it.packageName }.ifEmpty {
+            com.example.data.local.FeedSurgeonDatabase.BUILT_IN_PACKAGE_NAMES.toList()
+        }
+        _installedPackages.value = InstalledAppDetector.getInstalledPackages(context, packages)
     }
 
     fun triggerAutoSyncIfNeeded() {
@@ -157,8 +213,43 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             settingsDataStore.setAutoUpdateRules(enabled)
             if (enabled) {
+                RulesetSyncWorker.schedulePeriodicSync(app)
                 triggerAutoSyncIfNeeded()
+            } else {
+                RulesetSyncWorker.cancelPeriodicSync(app)
             }
+        }
+    }
+
+    fun setEventCaptureEnabled(enabled: Boolean) {
+        viewModelScope.launch {
+            settingsDataStore.setEventCaptureEnabled(enabled)
+            refreshEventLog()
+        }
+    }
+
+    fun refreshEventLog() {
+        viewModelScope.launch {
+            _eventLogPreview.value = eventLogger.readTail(120)
+            _eventLogSizeBytes.value = eventLogger.getFileSizeBytes()
+        }
+    }
+
+    fun clearEventLog() {
+        viewModelScope.launch {
+            eventLogger.clear()
+            _eventLogPreview.value = ""
+            _eventLogSizeBytes.value = 0L
+        }
+    }
+
+    fun createShareLogIntent(): Intent? {
+        val uri = eventLogger.getShareUri() ?: return null
+        return Intent(Intent.ACTION_SEND).apply {
+            type = "text/plain"
+            putExtra(Intent.EXTRA_STREAM, uri)
+            putExtra(Intent.EXTRA_SUBJECT, "Feed Surgeon Accessibility Event Log")
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
         }
     }
 
@@ -240,7 +331,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             when (val result = rulesetRepo.syncFromRemoteOrFallback()) {
                 is RulesetSyncResult.Success -> {
                     _syncMessage.value = if (result.fromLocalCache) {
-                        "Using local ruleset ${result.version} (${result.updatedApps} apps)"
+                        result.networkErrorReason
+                            ?: "Using local ruleset ${result.version} (${result.updatedApps} apps)"
                     } else {
                         "Rules up to date \u00B7 ${result.version} (${result.updatedApps} apps)"
                     }
