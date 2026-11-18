@@ -8,6 +8,7 @@ import android.graphics.drawable.GradientDrawable
 import android.os.Handler
 import android.os.Looper
 import android.view.Gravity
+import android.view.KeyEvent
 import android.view.View
 import android.view.WindowManager
 import android.widget.Button
@@ -20,6 +21,8 @@ class AccessibilityOverlayShield(private val context: Context) {
     private val windowManager = context.getSystemService(Context.WINDOW_SERVICE) as WindowManager
     private val mainHandler = Handler(Looper.getMainLooper())
     private var overlayView: View? = null
+
+    fun isShowing(): Boolean = overlayView != null
 
     fun show(
         appName: String,
@@ -36,6 +39,17 @@ class AccessibilityOverlayShield(private val context: Context) {
             val root = FrameLayout(context).apply {
                 setBackgroundColor(Color.parseColor("#E60A0F0E"))
                 setPadding(dp(24), dp(24), dp(24), dp(24))
+                isFocusable = true
+                isFocusableInTouchMode = true
+                setOnKeyListener { _, keyCode, event ->
+                    if (keyCode == KeyEvent.KEYCODE_BACK && event.action == KeyEvent.ACTION_UP) {
+                        dismiss()
+                        onExitFeed()
+                        true
+                    } else {
+                        false
+                    }
+                }
             }
 
             val card = LinearLayout(context).apply {
@@ -136,6 +150,7 @@ class AccessibilityOverlayShield(private val context: Context) {
             try {
                 windowManager.addView(root, layoutParams)
                 overlayView = root
+                root.requestFocus()
             } catch (_: Exception) {
                 overlayView = null
             }

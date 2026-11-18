@@ -81,8 +81,7 @@ fun RuleHealthScreen(
             Text(
                 text = stringResource(R.string.rule_health_title),
                 style = MaterialTheme.typography.headlineLarge,
-                color = TextPrimary,
-                modifier = Modifier.surgeonSharedBounds("rule_health_title")
+                color = TextPrimary
             )
         }
 
@@ -99,9 +98,7 @@ fun RuleHealthScreen(
                     text = prefs.rulesetVersion,
                     style = MonoTypography.version,
                     color = TextPrimary,
-                    modifier = Modifier
-                        .surgeonSharedBounds("ruleset_version_text")
-                        .testTag("ruleset_version_text")
+                    modifier = Modifier.testTag("ruleset_version_text")
                 )
                 Spacer(modifier = Modifier.height(6.dp))
                 Text(

@@ -307,6 +307,7 @@ fun InterventionBanner(
     toast: InterventionToastState,
     onAllowOnce: () -> Unit,
     onUndo: () -> Unit,
+    onDismiss: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Surface(
@@ -321,6 +322,7 @@ fun InterventionBanner(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
+                .clickable(onClick = onDismiss)
                 .padding(horizontal = 14.dp, vertical = 10.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {

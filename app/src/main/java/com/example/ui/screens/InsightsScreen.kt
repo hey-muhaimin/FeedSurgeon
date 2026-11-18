@@ -210,7 +210,7 @@ fun InsightsScreen(
             item {
                 SurgeonCard {
                     Text(
-                        text = "All metrics stay 100% on-device. Open YouTube or Instagram with the Accessibility Service enabled to see real-time feed blocks appear here.",
+                        text = "All metrics stay 100% on-device. Open YouTube, Instagram, Facebook, Snapchat, or Reddit with the Accessibility Service enabled to see real-time feed blocks appear here.",
                         style = MaterialTheme.typography.bodyMedium,
                         color = TextSecondary
                     )

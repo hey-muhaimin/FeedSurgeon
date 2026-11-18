@@ -6,22 +6,22 @@ import android.content.Context
 import android.content.Intent
 import android.provider.Settings
 import android.view.accessibility.AccessibilityManager
-import com.example.data.repository.DiagnosticsBridge
 
 object AccessibilityStatusHelper {
     fun isServiceEnabled(context: Context): Boolean {
-        if (DiagnosticsBridge.isServiceConnected.value) return true
         val am = context.getSystemService(Context.ACCESSIBILITY_SERVICE) as? AccessibilityManager
-            ?: return false
         val expectedComponent = ComponentName(context, FeedSurgeonService::class.java)
-        val enabledServices = am.getEnabledAccessibilityServiceList(
-            AccessibilityServiceInfo.FEEDBACK_ALL_MASK
-        )
-        val matched = enabledServices.any { info ->
-            val resolve = info.resolveInfo?.serviceInfo ?: return@any false
-            ComponentName(resolve.packageName, resolve.name) == expectedComponent
+
+        if (am != null) {
+            val enabledServices = am.getEnabledAccessibilityServiceList(
+                AccessibilityServiceInfo.FEEDBACK_ALL_MASK
+            )
+            val matched = enabledServices.any { info ->
+                val resolve = info.resolveInfo?.serviceInfo ?: return@any false
+                ComponentName(resolve.packageName, resolve.name) == expectedComponent
+            }
+            if (matched) return true
         }
-        if (matched) return true
 
         val settingValue = Settings.Secure.getString(
             context.contentResolver,

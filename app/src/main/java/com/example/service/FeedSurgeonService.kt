@@ -2,10 +2,12 @@ package com.example.service
 
 import android.accessibilityservice.AccessibilityService
 import android.accessibilityservice.AccessibilityServiceInfo
+import android.content.Intent
 import android.os.SystemClock
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
 import com.example.FeedSurgeonApp
+import com.example.data.local.FeedSurgeonDatabase
 import com.example.data.local.TargetAppRuleEntity
 import com.example.data.model.InterventionMode
 import com.example.data.repository.DiagnosticsBridge
@@ -22,6 +24,7 @@ class FeedSurgeonService : AccessibilityService() {
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private val lastBlockTimestamps = ConcurrentHashMap<String, Long>()
     private val lastHealthTimestamps = ConcurrentHashMap<String, Long>()
+    private val consecutiveTabFallbackCounts = ConcurrentHashMap<String, Int>()
 
     @Volatile
     private var activeRulesByPackage: Map<String, TargetAppRuleEntity> = emptyMap()
@@ -35,6 +38,12 @@ class FeedSurgeonService : AccessibilityService() {
         super.onServiceConnected()
         DiagnosticsBridge.setServiceConnected(true)
         overlayShield = AccessibilityOverlayShield(this)
+
+        // Pre-seed immediately so zero accessibility events are missed before Room emits
+        activeRulesByPackage = FeedSurgeonDatabase.defaultBuiltInRules()
+            .filter { it.enabled }
+            .associateBy { it.packageName }
+        updateServicePackageScope(FeedSurgeonDatabase.BUILT_IN_PACKAGE_NAMES.toList())
 
         serviceScope.launch {
             app.interventionRepository.ensureDefaultRulesSeeded()
@@ -51,13 +60,7 @@ class FeedSurgeonService : AccessibilityService() {
     private fun updateServicePackageScope(packages: List<String>) {
         val currentInfo = serviceInfo ?: AccessibilityServiceInfo()
         val scopedPackages = packages.distinct().ifEmpty {
-            listOf(
-                "com.google.android.youtube",
-                "com.instagram.android",
-                "com.facebook.katana",
-                "com.snapchat.android",
-                "com.reddit.frontpage"
-            )
+            FeedSurgeonDatabase.BUILT_IN_PACKAGE_NAMES.toList()
         }.toTypedArray()
 
         currentInfo.apply {
@@ -80,35 +83,10 @@ class FeedSurgeonService : AccessibilityService() {
         val rule = activeRulesByPackage[pkg] ?: return
         if (!rule.enabled) return
 
-        val rootNode = rootInActiveWindow ?: return
+        val rootNode = resolveTargetRootNode(pkg) ?: return
         val nowElapsed = SystemClock.elapsedRealtime()
 
         val matchedSelector = SelectorMatcher.findMatchingSelector(rootNode, rule)
-
-        // Update selector health automatically: if only tab fallback matched while View IDs missed,
-        // mark outdated so background rule updates know the host app layout shifted.
-        if (matchedSelector != null) {
-            val lastHealth = lastHealthTimestamps[pkg] ?: 0L
-            if (nowElapsed - lastHealth >= 500L) {
-                lastHealthTimestamps[pkg] = nowElapsed
-                val viewIdsMatchedCount = rule.viewIds.count { id ->
-                    rootNode.findAccessibilityNodeInfosByViewId(id).isNotEmpty()
-                }
-                val isTabFallbackOnly = matchedSelector.startsWith("tab:") && viewIdsMatchedCount == 0
-                serviceScope.launch {
-                    app.interventionRepository.updateSelectorHealth(
-                        packageName = rule.packageName,
-                        matchedCount = viewIdsMatchedCount,
-                        totalCount = rule.viewIds.size.coerceAtLeast(1),
-                        outdated = isTabFallbackOnly
-                    )
-                    if (isTabFallbackOnly) {
-                        app.rulesetRepository.autoSyncIfDue(force = false)
-                    }
-                }
-            }
-        }
-
         if (matchedSelector == null) {
             return
         }
@@ -123,7 +101,47 @@ class FeedSurgeonService : AccessibilityService() {
         }
         lastBlockTimestamps[pkg] = nowElapsed
 
+        // Update selector health without false-positiving on a single pre-inflation frame
+        val lastHealth = lastHealthTimestamps[pkg] ?: 0L
+        if (nowElapsed - lastHealth >= 500L) {
+            lastHealthTimestamps[pkg] = nowElapsed
+            val viewIdsMatchedCount = SelectorMatcher.countVisibleViewIdMatches(rootNode, rule)
+            val isTabFallbackOnly = matchedSelector.startsWith("tab:") && viewIdsMatchedCount == 0
+            val missStreak = if (isTabFallbackOnly) {
+                (consecutiveTabFallbackCounts[pkg] ?: 0) + 1
+            } else {
+                0
+            }
+            consecutiveTabFallbackCounts[pkg] = missStreak
+            val shouldMarkOutdated = missStreak >= 5
+
+            serviceScope.launch {
+                app.interventionRepository.updateSelectorHealth(
+                    packageName = rule.packageName,
+                    matchedCount = viewIdsMatchedCount,
+                    totalCount = rule.viewIds.size.coerceAtLeast(1),
+                    outdated = shouldMarkOutdated
+                )
+                if (shouldMarkOutdated) {
+                    app.rulesetRepository.autoSyncIfDue(force = false)
+                }
+            }
+        }
+
         executeIntervention(rootNode, rule, matchedSelector)
+    }
+
+    private fun resolveTargetRootNode(pkg: String): AccessibilityNodeInfo? {
+        val active = rootInActiveWindow
+        if (active?.packageName?.toString() == pkg) {
+            return active
+        }
+        val windowRoot = try {
+            windows?.firstOrNull { it.root?.packageName?.toString() == pkg }?.root
+        } catch (_: Exception) {
+            null
+        }
+        return windowRoot ?: active
     }
 
     private fun executeIntervention(
@@ -149,7 +167,9 @@ class FeedSurgeonService : AccessibilityService() {
                     appName = rule.displayName,
                     feedLabel = rule.feedLabel,
                     onExitFeed = {
-                        val freshRoot = rootInActiveWindow
+                        // Refresh cooldown when exiting so the overlay does not flash back during navigation
+                        lastBlockTimestamps[rule.packageName] = SystemClock.elapsedRealtime()
+                        val freshRoot = resolveTargetRootNode(rule.packageName)
                         val clickedHome = freshRoot?.let {
                             SelectorMatcher.findHomeTabNode(it, rule.homeTabLabel)
                                 ?.performAction(AccessibilityNodeInfo.ACTION_CLICK)
@@ -159,6 +179,7 @@ class FeedSurgeonService : AccessibilityService() {
                         }
                     },
                     onAllowOnce = {
+                        lastBlockTimestamps[rule.packageName] = SystemClock.elapsedRealtime()
                         serviceScope.launch {
                             app.interventionRepository.allowOnceTemporary(rule.packageName)
                         }
@@ -178,6 +199,12 @@ class FeedSurgeonService : AccessibilityService() {
 
     override fun onInterrupt() {
         overlayShield?.dismiss()
+    }
+
+    override fun onUnbind(intent: Intent?): Boolean {
+        overlayShield?.dismiss()
+        DiagnosticsBridge.setServiceConnected(false)
+        return super.onUnbind(intent)
     }
 
     override fun onDestroy() {

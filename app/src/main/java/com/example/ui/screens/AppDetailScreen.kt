@@ -28,6 +28,10 @@ import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -44,7 +48,6 @@ import com.example.ui.components.StatusBadgePill
 import com.example.ui.components.SurgeonCard
 import com.example.ui.components.SurgeonSwitch
 import com.example.ui.components.surgeonSharedBounds
-import com.example.ui.components.surgeonSharedElement
 import com.example.ui.theme.CardBorder
 import com.example.ui.theme.CardSurface
 import com.example.ui.theme.CardSurfaceElevated
@@ -80,6 +83,10 @@ fun AppDetailScreen(
     }
 
     val isSnoozed = rule.isCurrentlySnoozed()
+    var sliderCooldown by remember(rule.packageName, rule.cooldownMs) {
+        mutableFloatStateOf(rule.cooldownMs.toFloat())
+    }
+    val displayedCooldown = ((sliderCooldown / 50f).roundToInt() * 50).coerceIn(500, 1500)
 
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -101,8 +108,7 @@ fun AppDetailScreen(
                 Text(
                     text = rule.displayName,
                     style = MaterialTheme.typography.headlineMedium,
-                    color = TextPrimary,
-                    modifier = Modifier.surgeonSharedBounds("app_title_${rule.packageName}")
+                    color = TextPrimary
                 )
             }
         }
@@ -116,10 +122,7 @@ fun AppDetailScreen(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    AppBadgeIcon(
-                        packageName = rule.packageName,
-                        modifier = Modifier.surgeonSharedElement("app_icon_${rule.packageName}")
-                    )
+                    AppBadgeIcon(packageName = rule.packageName)
                     Spacer(modifier = Modifier.width(14.dp))
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
@@ -207,7 +210,7 @@ fun AppDetailScreen(
                 ) {
                     SectionLabel(text = "COOLDOWN")
                     Text(
-                        text = "${rule.cooldownMs} ms",
+                        text = "$displayedCooldown ms",
                         style = MonoTypography.code,
                         color = TextPrimary,
                         modifier = Modifier.testTag("cooldown_value_text")
@@ -215,9 +218,10 @@ fun AppDetailScreen(
                 }
                 Spacer(modifier = Modifier.height(10.dp))
                 Slider(
-                    value = rule.cooldownMs.toFloat(),
-                    onValueChange = { raw ->
-                        val snapped = ((raw / 50f).roundToInt() * 50).coerceIn(500, 1500)
+                    value = sliderCooldown,
+                    onValueChange = { raw -> sliderCooldown = raw },
+                    onValueChangeFinished = {
+                        val snapped = ((sliderCooldown / 50f).roundToInt() * 50).coerceIn(500, 1500)
                         onChangeCooldown(snapped)
                     },
                     valueRange = 500f..1500f,

@@ -204,8 +204,7 @@ fun HomeScreen(
                     Text(
                         text = stringResource(R.string.rule_health_label),
                         style = MaterialTheme.typography.bodyMedium,
-                        color = TextSecondary,
-                        modifier = Modifier.surgeonSharedBounds("rule_health_title")
+                        color = TextSecondary
                     )
                 }
             }
@@ -251,17 +250,13 @@ private fun TargetAppRowCard(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            AppBadgeIcon(
-                packageName = rule.packageName,
-                modifier = Modifier.surgeonSharedElement("app_icon_${rule.packageName}")
-            )
+            AppBadgeIcon(packageName = rule.packageName)
             Spacer(modifier = Modifier.width(14.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = rule.displayName,
                     style = MaterialTheme.typography.titleMedium,
-                    color = TextPrimary,
-                    modifier = Modifier.surgeonSharedBounds("app_title_${rule.packageName}")
+                    color = TextPrimary
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 if (rule.isOutdated) {

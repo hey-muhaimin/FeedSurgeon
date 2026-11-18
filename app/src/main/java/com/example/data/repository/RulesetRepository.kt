@@ -45,18 +45,23 @@ class RulesetRepository(
 
     suspend fun ensureLocalCacheSeeded() = withContext(Dispatchers.IO) {
         syncMutex.withLock {
-            if (!localCacheFile.exists()) {
-                val assetJson = loadBundledAssetOrFallbackJson()
-                val parsed = parseAndValidate(assetJson)
-                if (parsed != null) {
-                    writeLocalCacheFile(assetJson)
-                    applyPayloadToDatabase(parsed)
-                    settingsDataStore.saveFetchedRuleset(
-                        version = parsed.version,
-                        rawJson = assetJson,
-                        checkedAtMs = 0L
-                    )
-                }
+            val bundledJson = loadBundledAssetOrFallbackJson()
+            val bundledParsed = parseAndValidate(bundledJson) ?: return@withLock
+
+            val existingCacheParsed = if (localCacheFile.exists()) {
+                parseAndValidate(runCatching { localCacheFile.readText() }.getOrDefault(""))
+            } else {
+                null
+            }
+
+            if (existingCacheParsed == null || compareVersions(bundledParsed.version, existingCacheParsed.version) > 0) {
+                writeLocalCacheFile(bundledJson)
+                applyPayloadToDatabase(bundledParsed)
+                settingsDataStore.saveFetchedRuleset(
+                    version = bundledParsed.version,
+                    rawJson = bundledJson,
+                    checkedAtMs = 0L
+                )
             }
         }
     }
@@ -103,22 +108,34 @@ class RulesetRepository(
                         )
                     }
                     val body = response.body?.string().orEmpty()
-                    val parsed = parseAndValidate(body)
+                    val remoteParsed = parseAndValidate(body)
                         ?: return@withLock applyLocalCacheFallback(
                             prefs = prefs,
                             reason = "Remote ruleset format invalid; kept local ${prefs.rulesetVersion}"
                         )
 
+                    val bundledJson = loadBundledAssetOrFallbackJson()
+                    val bundledParsed = parseAndValidate(bundledJson)
+                    val currentLocalVersion = bundledParsed?.version ?: prefs.rulesetVersion
+
+                    // Guard against downgrading newer bundled rules if the remote Gist holds an older revision
+                    if (compareVersions(remoteParsed.version, currentLocalVersion) < 0) {
+                        return@withLock applyLocalCacheFallback(
+                            prefs = prefs,
+                            reason = "Local ruleset $currentLocalVersion is newer than remote ${remoteParsed.version}"
+                        )
+                    }
+
                     writeLocalCacheFile(body)
-                    applyPayloadToDatabase(parsed)
+                    applyPayloadToDatabase(remoteParsed)
                     settingsDataStore.saveFetchedRuleset(
-                        version = parsed.version,
+                        version = remoteParsed.version,
                         rawJson = body,
                         checkedAtMs = System.currentTimeMillis()
                     )
                     RulesetSyncResult.Success(
-                        version = parsed.version,
-                        updatedApps = parsed.apps.size,
+                        version = remoteParsed.version,
+                        updatedApps = remoteParsed.apps.size,
                         fromLocalCache = false
                     )
                 }
@@ -138,9 +155,10 @@ class RulesetRepository(
         reason: String
     ): RulesetSyncResult {
         val cachedJson = when {
-            localCacheFile.exists() -> localCacheFile.readText()
-            else -> loadBundledAssetOrFallbackJson()
-        }
+            localCacheFile.exists() -> runCatching { localCacheFile.readText() }.getOrDefault("")
+            else -> ""
+        }.ifBlank { loadBundledAssetOrFallbackJson() }
+
         val parsed = parseAndValidate(cachedJson)
         return if (parsed != null) {
             writeLocalCacheFile(cachedJson)
@@ -185,6 +203,18 @@ class RulesetRepository(
         } catch (_: Exception) {
             null
         }
+    }
+
+    private fun compareVersions(a: String, b: String): Int {
+        val partsA = a.removePrefix("v").split('.').mapNotNull { it.toIntOrNull() }
+        val partsB = b.removePrefix("v").split('.').mapNotNull { it.toIntOrNull() }
+        val maxLen = maxOf(partsA.size, partsB.size)
+        for (i in 0 until maxLen) {
+            val va = partsA.getOrElse(i) { 0 }
+            val vb = partsB.getOrElse(i) { 0 }
+            if (va != vb) return va.compareTo(vb)
+        }
+        return a.compareTo(b)
     }
 
     private suspend fun applyPayloadToDatabase(payload: RemoteRulesetPayload) {

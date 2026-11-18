@@ -28,6 +28,10 @@ import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -262,7 +266,11 @@ fun SettingsScreen(
                 }
 
                 Spacer(modifier = Modifier.height(14.dp))
-                val minutesFloat = prefs.reclaimedSecondsPerCut / 60f
+                var sliderSeconds by remember(prefs.reclaimedSecondsPerCut) {
+                    mutableFloatStateOf(prefs.reclaimedSecondsPerCut.toFloat())
+                }
+                val snappedSeconds = ((sliderSeconds / 15f).roundToInt() * 15).coerceIn(60, 300)
+                val minutesFloat = snappedSeconds / 60f
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween
@@ -279,9 +287,10 @@ fun SettingsScreen(
                     )
                 }
                 Slider(
-                    value = prefs.reclaimedSecondsPerCut.toFloat(),
-                    onValueChange = { raw ->
-                        val snapped = ((raw / 15f).roundToInt() * 15).coerceIn(60, 300)
+                    value = sliderSeconds,
+                    onValueChange = { raw -> sliderSeconds = raw },
+                    onValueChangeFinished = {
+                        val snapped = ((sliderSeconds / 15f).roundToInt() * 15).coerceIn(60, 300)
                         onSetReclaimedSeconds(snapped)
                     },
                     valueRange = 60f..300f,

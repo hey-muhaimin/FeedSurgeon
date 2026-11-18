@@ -13,7 +13,7 @@ object SelectorMatcher {
     ): String? {
         for (viewId in rule.viewIds) {
             val matches = root.findAccessibilityNodeInfosByViewId(viewId)
-            if (matches.isNotEmpty()) {
+            if (matches.any { it.isVisibleToUser }) {
                 return viewId
             }
         }
@@ -25,10 +25,21 @@ object SelectorMatcher {
         return null
     }
 
+    fun countVisibleViewIdMatches(
+        root: AccessibilityNodeInfo,
+        rule: TargetAppRuleEntity
+    ): Int {
+        return rule.viewIds.count { id ->
+            root.findAccessibilityNodeInfosByViewId(id).any { it.isVisibleToUser }
+        }
+    }
+
     fun isTabSelected(root: AccessibilityNodeInfo, label: String): Boolean {
         val matches = root.findAccessibilityNodeInfosByText(label)
         if (matches.any { node ->
-                node.isSelected && node.contentDescription?.toString().equals(label, ignoreCase = true)
+                node.isVisibleToUser &&
+                    isNodeOrParentSelected(node) &&
+                    matchesTabLabel(node, label)
             }
         ) {
             return true
@@ -37,11 +48,12 @@ object SelectorMatcher {
         val queue = ArrayDeque<AccessibilityNodeInfo>()
         queue.add(root)
         var visited = 0
-        while (queue.isNotEmpty() && visited < 120) {
+        while (queue.isNotEmpty() && visited < 600) {
             val node = queue.removeFirst()
             visited++
-            if (node.isSelected &&
-                node.contentDescription?.toString()?.equals(label, ignoreCase = true) == true
+            if (node.isVisibleToUser &&
+                isNodeOrParentSelected(node) &&
+                matchesTabLabel(node, label)
             ) {
                 return true
             }
@@ -52,13 +64,37 @@ object SelectorMatcher {
         return false
     }
 
+    private fun isNodeOrParentSelected(node: AccessibilityNodeInfo): Boolean {
+        if (node.isSelected) return true
+        var current = node.parent
+        var hops = 0
+        while (current != null && hops < 2) {
+            if (current.isSelected) return true
+            current = current.parent
+            hops++
+        }
+        return false
+    }
+
+    private fun matchesTabLabel(node: AccessibilityNodeInfo, label: String): Boolean {
+        val desc = node.contentDescription?.toString()?.trim()
+        val text = node.text?.toString()?.trim()
+        return matchesLabelString(desc, label) || matchesLabelString(text, label)
+    }
+
+    private fun matchesLabelString(candidate: String?, label: String): Boolean {
+        if (candidate.isNullOrBlank()) return false
+        if (candidate.equals(label, ignoreCase = true)) return true
+        val prefix = candidate.split(',', '.', '\n', '\u00B7').firstOrNull()?.trim()
+        return prefix.equals(label, ignoreCase = true)
+    }
+
     fun findHomeTabNode(root: AccessibilityNodeInfo, homeTabLabel: String): AccessibilityNodeInfo? {
         val label = homeTabLabel.ifBlank { "Home" }
         val candidates = root.findAccessibilityNodeInfosByText(label)
         for (candidate in candidates) {
-            val desc = candidate.contentDescription?.toString()
-            val text = candidate.text?.toString()
-            if (desc.equals(label, ignoreCase = true) || text.equals(label, ignoreCase = true)) {
+            if (!candidate.isVisibleToUser) continue
+            if (matchesTabLabel(candidate, label)) {
                 val clickable = findClickableAncestorOrSelf(candidate)
                 if (clickable != null) return clickable
             }
@@ -67,11 +103,10 @@ object SelectorMatcher {
         val queue = ArrayDeque<AccessibilityNodeInfo>()
         queue.add(root)
         var visited = 0
-        while (queue.isNotEmpty() && visited < 150) {
+        while (queue.isNotEmpty() && visited < 600) {
             val node = queue.removeFirst()
             visited++
-            val desc = node.contentDescription?.toString()
-            if (desc.equals(label, ignoreCase = true)) {
+            if (node.isVisibleToUser && matchesTabLabel(node, label)) {
                 val clickable = findClickableAncestorOrSelf(node)
                 if (clickable != null) return clickable
             }
@@ -145,7 +180,7 @@ object SelectorMatcher {
 
     /**
      * Pure-Kotlin matcher for evaluating selector rules against an abstracted [LiveTreeSnapshot]
-     * in diagnostics and unit tests.
+     * in unit tests.
      */
     fun matchSelectorInSnapshot(
         snapshot: LiveTreeSnapshot,

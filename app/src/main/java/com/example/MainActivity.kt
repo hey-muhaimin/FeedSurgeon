@@ -25,6 +25,7 @@ import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -57,6 +58,7 @@ import com.example.ui.screens.OnboardingScreen
 import com.example.ui.screens.RuleHealthScreen
 import com.example.ui.screens.SettingsScreen
 import com.example.ui.theme.FeedSurgeonTheme
+import kotlinx.coroutines.delay
 
 object Routes {
     const val ONBOARDING = "onboarding"
@@ -91,19 +93,35 @@ fun FeedSurgeonRoot(
 ) {
     val context = LocalContext.current
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val navController = rememberNavController()
-    val backStackEntry by navController.currentBackStackEntryAsState()
-    val currentRoute = backStackEntry?.destination?.route
 
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
         viewModel.refreshAccessibilityStatus(context)
         viewModel.triggerAutoSyncIfNeeded()
     }
 
-    val startDestination = if (uiState.preferences.onboardingCompleted) {
-        Routes.HOME
-    } else {
-        Routes.ONBOARDING
+    // Auto-dismiss transient intervention banner after 8 seconds so it never obscures navigation
+    LaunchedEffect(uiState.recentToast?.eventId) {
+        if (uiState.recentToast != null) {
+            delay(8_000L)
+            viewModel.dismissToast()
+        }
+    }
+
+    // Wait for Room/DataStore initial emission before building NavHost so startDestination
+    // accurately reflects persisted onboardingCompleted instead of resetting to Onboarding on cold launch.
+    if (uiState.isInitialLoading) {
+        AtmosphericBackground {
+            Box(modifier = Modifier.fillMaxSize())
+        }
+        return
+    }
+
+    val navController = rememberNavController()
+    val backStackEntry by navController.currentBackStackEntryAsState()
+    val currentRoute = backStackEntry?.destination?.route
+
+    val startDestination = remember {
+        if (uiState.preferences.onboardingCompleted) Routes.HOME else Routes.ONBOARDING
     }
 
     val selectedBottomTab = when (currentRoute) {
@@ -127,6 +145,13 @@ fun FeedSurgeonRoot(
             }
             launchSingleTop = true
             restoreState = true
+        }
+    }
+
+    fun navigateToHomeClearingOnboarding() {
+        navController.navigate(Routes.HOME) {
+            popUpTo(navController.graph.id) { inclusive = true }
+            launchSingleTop = true
         }
     }
 
@@ -203,15 +228,11 @@ fun FeedSurgeonRoot(
                                     onAcceptDisclosure = { viewModel.acceptDisclosure() },
                                     onDeclineDisclosure = {
                                         viewModel.declineDisclosure()
-                                        navController.navigate(Routes.HOME) {
-                                            popUpTo(Routes.ONBOARDING) { inclusive = true }
-                                        }
+                                        navigateToHomeClearingOnboarding()
                                     },
                                     onCompleteOnboarding = {
                                         viewModel.completeOnboarding()
-                                        navController.navigate(Routes.HOME) {
-                                            popUpTo(Routes.ONBOARDING) { inclusive = true }
-                                        }
+                                        navigateToHomeClearingOnboarding()
                                     }
                                 )
                             }
@@ -309,7 +330,8 @@ fun FeedSurgeonRoot(
                                     InterventionBanner(
                                         toast = toast,
                                         onAllowOnce = { viewModel.allowOnceFromToast(toast) },
-                                        onUndo = { viewModel.undoFromToast(toast) }
+                                        onUndo = { viewModel.undoFromToast(toast) },
+                                        onDismiss = { viewModel.dismissToast() }
                                     )
                                 }
                             }

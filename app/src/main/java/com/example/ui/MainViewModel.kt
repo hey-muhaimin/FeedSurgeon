@@ -229,6 +229,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    fun dismissToast() {
+        DiagnosticsBridge.dismissToast()
+    }
+
     fun updateRemoteRules() {
         viewModelScope.launch {
             _isSyncingRules.value = true
