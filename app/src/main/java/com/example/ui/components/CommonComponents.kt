@@ -1,6 +1,10 @@
 package com.example.ui.components
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.AnimatedVisibilityScope
+import androidx.compose.animation.BoundsTransform
+import androidx.compose.animation.ExperimentalSharedTransitionApi
+import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.FastOutSlowInEasing
@@ -41,7 +45,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.filled.BarChart
+import androidx.compose.material.icons.filled.Bolt
+import androidx.compose.material.icons.filled.Forum
 import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Movie
 import androidx.compose.material.icons.filled.PhotoCamera
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Shield
@@ -65,12 +72,14 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.composed
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.scale
@@ -108,6 +117,49 @@ enum class BottomTab(val label: String) {
     RULES("Rules"),
     INSIGHTS("Insights"),
     SETTINGS("Settings")
+}
+
+@OptIn(ExperimentalSharedTransitionApi::class)
+val LocalSharedTransitionScope = compositionLocalOf<SharedTransitionScope?> { null }
+val LocalAnimatedVisibilityScope = compositionLocalOf<AnimatedVisibilityScope?> { null }
+
+@OptIn(ExperimentalSharedTransitionApi::class)
+private val SurgeonBoundsTransform = BoundsTransform { _, _ ->
+    tween(durationMillis = 320, easing = FastOutSlowInEasing)
+}
+
+@OptIn(ExperimentalSharedTransitionApi::class)
+fun Modifier.surgeonSharedElement(key: String): Modifier = composed {
+    val sharedScope = LocalSharedTransitionScope.current
+    val animScope = LocalAnimatedVisibilityScope.current
+    if (sharedScope != null && animScope != null) {
+        with(sharedScope) {
+            this@composed.sharedElement(
+                sharedScope.rememberSharedContentState(key = key),
+                animatedVisibilityScope = animScope,
+                boundsTransform = SurgeonBoundsTransform
+            )
+        }
+    } else {
+        this
+    }
+}
+
+@OptIn(ExperimentalSharedTransitionApi::class)
+fun Modifier.surgeonSharedBounds(key: String): Modifier = composed {
+    val sharedScope = LocalSharedTransitionScope.current
+    val animScope = LocalAnimatedVisibilityScope.current
+    if (sharedScope != null && animScope != null) {
+        with(sharedScope) {
+            this@composed.sharedBounds(
+                sharedScope.rememberSharedContentState(key = key),
+                animatedVisibilityScope = animScope,
+                boundsTransform = SurgeonBoundsTransform
+            )
+        }
+    } else {
+        this
+    }
 }
 
 @Composable
@@ -194,6 +246,9 @@ fun AppBadgeIcon(
     val icon = when (packageName) {
         "com.google.android.youtube" -> Icons.Filled.PlayArrow
         "com.instagram.android" -> Icons.Filled.PhotoCamera
+        "com.facebook.katana" -> Icons.Filled.Movie
+        "com.snapchat.android" -> Icons.Filled.Bolt
+        "com.reddit.frontpage" -> Icons.Filled.Forum
         else -> Icons.Outlined.Apps
     }
     Box(

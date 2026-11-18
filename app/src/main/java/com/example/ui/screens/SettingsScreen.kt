@@ -36,6 +36,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -48,6 +49,7 @@ import com.example.ui.components.StatusBadgePill
 import com.example.ui.components.SurgeonCard
 import com.example.ui.components.SurgeonSwitch
 import com.example.ui.components.SurgicalSyncLoadingBar
+import com.example.ui.components.surgeonSharedBounds
 import com.example.ui.theme.CardBorder
 import com.example.ui.theme.CardSurfaceElevated
 import com.example.ui.theme.CoralDanger
@@ -72,6 +74,8 @@ fun SettingsScreen(
     onClearHistory: () -> Unit
 ) {
     val context = LocalContext.current
+    val uriHandler = LocalUriHandler.current
+    val privacyPolicyUrl = stringResource(R.string.privacy_policy_url)
     var endpointDraft by remember(uiState.preferences.rulesetEndpointUrl) {
         mutableStateOf(uiState.preferences.rulesetEndpointUrl)
     }
@@ -163,7 +167,9 @@ fun SettingsScreen(
         // Developer panel link card
         item {
             SurgeonCard(
-                modifier = Modifier.testTag("open_developer_panel_card"),
+                modifier = Modifier
+                    .surgeonSharedBounds("dev_panel_card")
+                    .testTag("open_developer_panel_card"),
                 onClick = onOpenDeveloperPanel
             ) {
                 Row(
@@ -180,7 +186,8 @@ fun SettingsScreen(
                         Text(
                             text = stringResource(R.string.developer_panel_title),
                             style = MaterialTheme.typography.titleMedium,
-                            color = TextPrimary
+                            color = TextPrimary,
+                            modifier = Modifier.surgeonSharedBounds("dev_panel_title")
                         )
                         Spacer(modifier = Modifier.height(2.dp))
                         Text(
@@ -359,6 +366,19 @@ fun SettingsScreen(
                 }
 
                 Spacer(modifier = Modifier.height(8.dp))
+                TextButton(
+                    onClick = { uriHandler.openUri(privacyPolicyUrl) },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .testTag("settings_privacy_policy_button")
+                ) {
+                    Text(
+                        text = "Privacy Policy (suprbuild.com/privacy)",
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MintTeal
+                    )
+                }
+
                 TextButton(
                     onClick = onClearHistory,
                     modifier = Modifier

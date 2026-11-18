@@ -2,6 +2,7 @@ package com.example.data.repository
 
 import com.example.data.local.AppPreferences
 import com.example.data.local.FeedSurgeonDao
+import com.example.data.local.FeedSurgeonDatabase
 import com.example.data.local.SettingsDataStore
 import com.example.data.local.TargetAppRuleEntity
 import com.example.data.model.InterventionMode
@@ -131,7 +132,7 @@ class RulesetRepository(
             val prev = existingByPkg[remote.packageName]
             TargetAppRuleEntity(
                 packageName = remote.packageName,
-                displayName = remote.displayName,
+                displayName = remote.displayName.ifBlank { prev?.displayName ?: remote.packageName },
                 feedLabel = remote.feedLabel,
                 enabled = prev?.enabled ?: true,
                 interventionMode = prev?.interventionMode ?: if (remote.packageName == "com.google.android.youtube") {
@@ -145,7 +146,7 @@ class RulesetRepository(
                 tabFallbackLabel = remote.tabContentDescription,
                 snoozeUntilMs = prev?.snoozeUntilMs ?: 0L,
                 allowOnceUntilMs = prev?.allowOnceUntilMs ?: 0L,
-                isBuiltIn = prev?.isBuiltIn ?: (remote.packageName == "com.google.android.youtube" || remote.packageName == "com.instagram.android"),
+                isBuiltIn = prev?.isBuiltIn ?: (remote.packageName in FeedSurgeonDatabase.BUILT_IN_PACKAGE_NAMES),
                 matchedSelectorCount = remote.viewIds.size,
                 totalSelectorCount = remote.viewIds.size,
                 isOutdated = false

@@ -29,7 +29,7 @@ data class AppPreferences(
     companion object {
         const val DEFAULT_RULESET_VERSION = "v2026.11.18"
         const val DEFAULT_GIST_URL =
-            "https://gist.githubusercontent.com/raw/feed-surgeon-rules/ruleset.json"
+            "https://gist.githubusercontent.com/hey-muhaimin/1ebadd94effdba1255d42661ef218fc9/raw/8df1bb113c19da45adc96e7f9d213662522bf58d/ruleset.json"
 
         val BUNDLED_RULESET_JSON = """
             {
@@ -58,6 +58,39 @@ data class AppPreferences(
                     "com.instagram.android:id/clips_video_container"
                   ],
                   "tabContentDescription": "Reels"
+                },
+                {
+                  "packageName": "com.facebook.katana",
+                  "displayName": "Facebook",
+                  "feedLabel": "Reels",
+                  "homeTabLabel": "Home",
+                  "viewIds": [
+                    "com.facebook.katana:id/reels_viewer_root",
+                    "com.facebook.katana:id/fb_reels_container"
+                  ],
+                  "tabContentDescription": "Reels"
+                },
+                {
+                  "packageName": "com.snapchat.android",
+                  "displayName": "Snapchat",
+                  "feedLabel": "Spotlight",
+                  "homeTabLabel": "Chat",
+                  "viewIds": [
+                    "com.snapchat.android:id/spotlight_feed_container",
+                    "com.snapchat.android:id/spotlight_opera_view"
+                  ],
+                  "tabContentDescription": "Spotlight"
+                },
+                {
+                  "packageName": "com.reddit.frontpage",
+                  "displayName": "Reddit",
+                  "feedLabel": "Watch",
+                  "homeTabLabel": "Home",
+                  "viewIds": [
+                    "com.reddit.frontpage:id/video_player_root",
+                    "com.reddit.frontpage:id/watch_feed_recycler"
+                  ],
+                  "tabContentDescription": "Watch"
                 }
               ]
             }

@@ -1,6 +1,8 @@
 <resources>
     <string name="app_name">Feed Surgeon</string>
-    <string name="accessibility_service_desc">Inspects active screen labels and view IDs in configured apps (such as YouTube and Instagram) strictly on-device to exit short-form video feeds like Shorts and Reels. No screen content is ever stored off-device or transmitted.</string>
+    <string name="accessibility_service_desc">Inspects active screen labels and view IDs in configured apps (YouTube, Instagram, Facebook, Snapchat, Reddit) strictly on-device to exit short-form video feeds. No screen content is ever stored off-device or transmitted.</string>
+    <string name="privacy_policy_url">https://suprbuild.com/privacy</string>
+    <string name="privacy_policy_label">Privacy Policy</string>
 
     <!-- Navigation -->
     <string name="nav_home">Home</string>
@@ -10,7 +12,7 @@
 
     <!-- Onboarding & Prominent Disclosure -->
     <string name="onboarding_title">Before you turn this on</string>
-    <string name="onboarding_subtitle">Feed Surgeon uses Android\u2019s Accessibility Service to see which screen is open in YouTube, Instagram, and configured apps, only to close Shorts and Reels.</string>
+    <string name="onboarding_subtitle">Feed Surgeon uses Android\u2019s Accessibility Service to see which screen is open in configured target apps, only to close short-form feeds.</string>
     <string name="onboarding_what_we_read_title">WHAT WE READ</string>
     <string name="onboarding_what_we_read_body">Screen layout labels in configured apps\nWhether a Shorts or Reels tab is open</string>
     <string name="onboarding_what_we_never_send_title">WHAT WE NEVER SEND</string>

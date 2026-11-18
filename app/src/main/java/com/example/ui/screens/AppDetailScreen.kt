@@ -1,5 +1,10 @@
 package com.example.ui.screens
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -39,6 +44,8 @@ import com.example.ui.components.SectionLabel
 import com.example.ui.components.StatusBadgePill
 import com.example.ui.components.SurgeonCard
 import com.example.ui.components.SurgeonSwitch
+import com.example.ui.components.surgeonSharedBounds
+import com.example.ui.components.surgeonSharedElement
 import com.example.ui.theme.CardBorder
 import com.example.ui.theme.CardSurface
 import com.example.ui.theme.CardSurfaceElevated
@@ -97,19 +104,25 @@ fun AppDetailScreen(
                 Text(
                     text = rule.displayName,
                     style = MaterialTheme.typography.headlineMedium,
-                    color = TextPrimary
+                    color = TextPrimary,
+                    modifier = Modifier.surgeonSharedBounds("app_title_${rule.packageName}")
                 )
             }
         }
 
         // Master Toggle Card
         item {
-            SurgeonCard {
+            SurgeonCard(
+                modifier = Modifier.surgeonSharedBounds("app_card_${rule.packageName}")
+            ) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    AppBadgeIcon(packageName = rule.packageName)
+                    AppBadgeIcon(
+                        packageName = rule.packageName,
+                        modifier = Modifier.surgeonSharedElement("app_icon_${rule.packageName}")
+                    )
                     Spacer(modifier = Modifier.width(14.dp))
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
@@ -173,11 +186,17 @@ fun AppDetailScreen(
                     }
                 }
                 Spacer(modifier = Modifier.height(14.dp))
-                Text(
-                    text = rule.interventionMode.explanation,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = TextSecondary
-                )
+                AnimatedContent(
+                    targetState = rule.interventionMode,
+                    transitionSpec = { fadeIn(tween(180)) togetherWith fadeOut(tween(140)) },
+                    label = "mode_explanation"
+                ) { mode ->
+                    Text(
+                        text = mode.explanation,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = TextSecondary
+                    )
+                }
             }
         }
 

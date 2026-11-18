@@ -24,8 +24,12 @@ class InterventionRepository(
         dao.observeRuleByPackage(packageName)
 
     suspend fun ensureDefaultRulesSeeded() {
-        if (dao.getAllRulesSnapshot().isEmpty()) {
-            dao.upsertRules(FeedSurgeonDatabase.defaultBuiltInRules())
+        val existingPackages = dao.getAllRulesSnapshot().map { it.packageName }.toSet()
+        val missingDefaults = FeedSurgeonDatabase.defaultBuiltInRules().filter {
+            it.packageName !in existingPackages
+        }
+        if (missingDefaults.isNotEmpty()) {
+            dao.upsertRules(missingDefaults)
         }
     }
 

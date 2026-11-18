@@ -1,8 +1,12 @@
 package com.example.ui.screens
 
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -44,6 +48,8 @@ import com.example.ui.components.StatusBadgePill
 import com.example.ui.components.SurgeonCard
 import com.example.ui.components.SurgeonSkeletonCard
 import com.example.ui.components.SurgeonSwitch
+import com.example.ui.components.surgeonSharedBounds
+import com.example.ui.components.surgeonSharedElement
 import com.example.ui.theme.AmberWarning
 import com.example.ui.theme.BarInactive
 import com.example.ui.theme.MintTeal
@@ -111,10 +117,15 @@ fun HomeScreen(
 
         // Hero card: Feeds cut today + 5-bar trend
         item {
-            if (uiState.isInitialLoading) {
-                SurgeonSkeletonCard(heightDp = 112)
-            } else {
-                SurgeonCard {
+            AnimatedContent(
+                targetState = uiState.isInitialLoading,
+                transitionSpec = { fadeIn(tween(220)) togetherWith fadeOut(tween(160)) },
+                label = "home_hero_loading"
+            ) { loading ->
+                if (loading) {
+                    SurgeonSkeletonCard(heightDp = 112)
+                } else {
+                    SurgeonCard {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
@@ -159,6 +170,7 @@ fun HomeScreen(
                     }
                 }
             }
+            }
         }
 
         // Reclaimed + Rule health row
@@ -197,7 +209,8 @@ fun HomeScreen(
                     Text(
                         text = stringResource(R.string.rule_health_label),
                         style = MaterialTheme.typography.bodyMedium,
-                        color = TextSecondary
+                        color = TextSecondary,
+                        modifier = Modifier.surgeonSharedBounds("rule_health_title")
                     )
                 }
             }
@@ -257,20 +270,26 @@ private fun TargetAppRowCard(
     modifier: Modifier = Modifier
 ) {
     SurgeonCard(
-        modifier = modifier.testTag("target_app_card_${rule.packageName}"),
+        modifier = modifier
+            .surgeonSharedBounds("app_card_${rule.packageName}")
+            .testTag("target_app_card_${rule.packageName}"),
         onClick = onClick
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            AppBadgeIcon(packageName = rule.packageName)
+            AppBadgeIcon(
+                packageName = rule.packageName,
+                modifier = Modifier.surgeonSharedElement("app_icon_${rule.packageName}")
+            )
             Spacer(modifier = Modifier.width(14.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = rule.displayName,
                     style = MaterialTheme.typography.titleMedium,
-                    color = TextPrimary
+                    color = TextPrimary,
+                    modifier = Modifier.surgeonSharedBounds("app_title_${rule.packageName}")
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 if (rule.isOutdated) {

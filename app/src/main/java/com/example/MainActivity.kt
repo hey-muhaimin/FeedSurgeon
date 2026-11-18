@@ -6,7 +6,9 @@ import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.ExperimentalSharedTransitionApi
+import androidx.compose.animation.SharedTransitionLayout
+import androidx.compose.animation.core.CubicBezierEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -22,6 +24,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -48,6 +51,8 @@ import com.example.ui.components.BottomTab
 import com.example.ui.components.CustomAppRuleDialog
 import com.example.ui.components.FloatingPillNavBar
 import com.example.ui.components.InterventionBanner
+import com.example.ui.components.LocalAnimatedVisibilityScope
+import com.example.ui.components.LocalSharedTransitionScope
 import com.example.ui.screens.AppDetailScreen
 import com.example.ui.screens.DeveloperPanelScreen
 import com.example.ui.screens.HomeScreen
@@ -84,6 +89,7 @@ class MainActivity : ComponentActivity() {
     }
 }
 
+@OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 fun FeedSurgeonRoot(
     viewModel: MainViewModel = viewModel()
@@ -138,191 +144,211 @@ fun FeedSurgeonRoot(
         else -> -1
     }
 
+    val m3StandardEasing = remember { CubicBezierEasing(0.2f, 0f, 0f, 1f) }
+
     AtmosphericBackground {
-        Box(modifier = Modifier.fillMaxSize()) {
-            NavHost(
-                navController = navController,
-                startDestination = startDestination,
-                enterTransition = {
-                    val fromTab = tabOrder(initialState.destination.route)
-                    val toTab = tabOrder(targetState.destination.route)
-                    if (fromTab >= 0 && toTab >= 0) {
-                        val forward = toTab >= fromTab
-                        fadeIn(tween(220)) + slideInHorizontally(
-                            animationSpec = tween(240, easing = FastOutSlowInEasing)
-                        ) { if (forward) it / 8 else -it / 8 }
-                    } else {
-                        fadeIn(tween(220)) + slideInHorizontally(
-                            animationSpec = tween(260, easing = FastOutSlowInEasing)
-                        ) { it / 4 }
-                    }
-                },
-                exitTransition = {
-                    val fromTab = tabOrder(initialState.destination.route)
-                    val toTab = tabOrder(targetState.destination.route)
-                    if (fromTab >= 0 && toTab >= 0) {
-                        val forward = toTab >= fromTab
-                        fadeOut(tween(180)) + slideOutHorizontally(
-                            animationSpec = tween(220, easing = FastOutSlowInEasing)
-                        ) { if (forward) -it / 8 else it / 8 }
-                    } else {
-                        fadeOut(tween(180)) + slideOutHorizontally(
-                            animationSpec = tween(240, easing = FastOutSlowInEasing)
-                        ) { -it / 6 }
-                    }
-                },
-                popEnterTransition = {
-                    fadeIn(tween(220)) + slideInHorizontally(
-                        animationSpec = tween(240, easing = FastOutSlowInEasing)
-                    ) { -it / 6 }
-                },
-                popExitTransition = {
-                    fadeOut(tween(180)) + slideOutHorizontally(
-                        animationSpec = tween(240, easing = FastOutSlowInEasing)
-                    ) { it / 4 }
-                },
-                modifier = Modifier
-                    .fillMaxSize()
-                    .then(
-                        if (currentRoute != Routes.ONBOARDING) {
-                            Modifier.windowInsetsPadding(WindowInsets.statusBars)
-                        } else {
-                            Modifier
-                        }
-                    )
-            ) {
-                composable(Routes.ONBOARDING) {
-                    OnboardingScreen(
-                        rules = uiState.rules,
-                        isAccessibilityEnabled = uiState.isAccessibilityEnabled,
-                        onAcceptDisclosure = { viewModel.acceptDisclosure() },
-                        onDeclineDisclosure = {
-                            viewModel.declineDisclosure()
-                            navController.navigate(Routes.HOME) {
-                                popUpTo(Routes.ONBOARDING) { inclusive = true }
-                            }
-                        },
-                        onCompleteOnboarding = {
-                            viewModel.completeOnboarding()
-                            navController.navigate(Routes.HOME) {
-                                popUpTo(Routes.ONBOARDING) { inclusive = true }
-                            }
-                        }
-                    )
-                }
-
-                composable(Routes.HOME) {
-                    HomeScreen(
-                        uiState = uiState,
-                        onStatusClick = {
-                            if (uiState.isAccessibilityEnabled) {
-                                navigateToTopLevel(BottomTab.SETTINGS)
+        SharedTransitionLayout {
+            CompositionLocalProvider(LocalSharedTransitionScope provides this) {
+                Box(modifier = Modifier.fillMaxSize()) {
+                    NavHost(
+                        navController = navController,
+                        startDestination = startDestination,
+                        enterTransition = {
+                            val fromTab = tabOrder(initialState.destination.route)
+                            val toTab = tabOrder(targetState.destination.route)
+                            if (fromTab >= 0 && toTab >= 0) {
+                                val forward = toTab >= fromTab
+                                fadeIn(tween(220, easing = m3StandardEasing)) + slideInHorizontally(
+                                    animationSpec = tween(280, easing = m3StandardEasing)
+                                ) { if (forward) it / 5 else -it / 5 }
                             } else {
-                                navController.navigate(Routes.ONBOARDING)
+                                fadeIn(tween(240, easing = m3StandardEasing)) + slideInHorizontally(
+                                    animationSpec = tween(300, easing = m3StandardEasing)
+                                ) { it / 3 }
                             }
                         },
-                        onRuleHealthCardClick = { navigateToTopLevel(BottomTab.RULES) },
-                        onAppClick = { pkg ->
-                            navController.navigate(Routes.appDetail(pkg))
+                        exitTransition = {
+                            val fromTab = tabOrder(initialState.destination.route)
+                            val toTab = tabOrder(targetState.destination.route)
+                            if (fromTab >= 0 && toTab >= 0) {
+                                val forward = toTab >= fromTab
+                                fadeOut(tween(180, easing = m3StandardEasing)) + slideOutHorizontally(
+                                    animationSpec = tween(260, easing = m3StandardEasing)
+                                ) { if (forward) -it / 5 else it / 5 }
+                            } else {
+                                fadeOut(tween(180, easing = m3StandardEasing)) + slideOutHorizontally(
+                                    animationSpec = tween(280, easing = m3StandardEasing)
+                                ) { -it / 5 }
+                            }
                         },
-                        onToggleApp = { pkg, enabled ->
-                            viewModel.setRuleEnabled(pkg, enabled)
+                        popEnterTransition = {
+                            fadeIn(tween(240, easing = m3StandardEasing)) + slideInHorizontally(
+                                animationSpec = tween(300, easing = m3StandardEasing)
+                            ) { -it / 5 }
                         },
-                        onAddCustomAppClick = { showCustomAppDialog = true }
-                    )
-                }
-
-                composable(Routes.RULES) {
-                    RuleHealthScreen(
-                        uiState = uiState,
-                        onUpdateRulesClick = { viewModel.updateRemoteRules() },
-                        onTestNowClick = { pkg -> viewModel.runRuleHealthCheck(pkg) },
-                        onOpenDeveloperPanel = {
-                            navController.navigate(Routes.DEVELOPER_PANEL)
-                        }
-                    )
-                }
-
-                composable(Routes.INSIGHTS) {
-                    InsightsScreen(uiState = uiState)
-                }
-
-                composable(Routes.SETTINGS) {
-                    SettingsScreen(
-                        uiState = uiState,
-                        onOpenDeveloperPanel = {
-                            navController.navigate(Routes.DEVELOPER_PANEL)
+                        popExitTransition = {
+                            fadeOut(tween(180, easing = m3StandardEasing)) + slideOutHorizontally(
+                                animationSpec = tween(300, easing = m3StandardEasing)
+                            ) { it / 3 }
                         },
-                        onReopenDisclosure = {
-                            viewModel.reopenOnboarding()
-                            navController.navigate(Routes.ONBOARDING)
-                        },
-                        onAddCustomAppClick = { showCustomAppDialog = true },
-                        onSaveEndpointUrl = { url -> viewModel.saveRulesetEndpointUrl(url) },
-                        onSyncRemoteRules = { url -> viewModel.updateRemoteRules(url) },
-                        onRestoreBundledRules = { viewModel.restoreBundledRules() },
-                        onSetReclaimedSeconds = { sec -> viewModel.setReclaimedSecondsPerCut(sec) },
-                        onSetShowBanner = { show -> viewModel.setShowInterventionBanner(show) },
-                        onClearHistory = { viewModel.clearHistory() }
-                    )
-                }
-
-                composable(
-                    route = Routes.APP_DETAIL,
-                    arguments = listOf(navArgument("packageName") { type = NavType.StringType })
-                ) { entry ->
-                    val pkg = entry.arguments?.getString("packageName").orEmpty()
-                    val rule = uiState.rules.firstOrNull { it.packageName == pkg }
-                    AppDetailScreen(
-                        rule = rule,
-                        onBack = { navController.popBackStack() },
-                        onToggleEnabled = { enabled -> viewModel.setRuleEnabled(pkg, enabled) },
-                        onSelectMode = { mode -> viewModel.setInterventionMode(pkg, mode) },
-                        onChangeCooldown = { ms -> viewModel.setCooldownMs(pkg, ms) },
-                        onSnooze15Minutes = { viewModel.snooze15Minutes(pkg) },
-                        onResumeSnooze = { viewModel.resumeFromSnooze(pkg) },
-                        onDeleteCustomRule = { viewModel.deleteCustomRule(pkg) }
-                    )
-                }
-
-                composable(Routes.DEVELOPER_PANEL) {
-                    DeveloperPanelScreen(
-                        uiState = uiState,
-                        onBack = { navController.popBackStack() },
-                        onQueryChange = { q -> viewModel.updateSelectorTestQuery(q) },
-                        onRunTest = { viewModel.runSelectorTest() },
-                        onTriggerDiagnosticIntervention = { rule ->
-                            viewModel.triggerDiagnosticIntervention(rule)
-                        }
-                    )
-                }
-            }
-
-            if (selectedBottomTab != null) {
-                Column(
-                    modifier = Modifier
-                        .align(Alignment.BottomCenter)
-                        .fillMaxWidth(),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    AnimatedVisibility(
-                        visible = uiState.recentToast != null,
-                        enter = slideInVertically { it } + fadeIn(),
-                        exit = slideOutVertically { it } + fadeOut()
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .then(
+                                if (currentRoute != Routes.ONBOARDING) {
+                                    Modifier.windowInsetsPadding(WindowInsets.statusBars)
+                                } else {
+                                    Modifier
+                                }
+                            )
                     ) {
-                        uiState.recentToast?.let { toast ->
-                            InterventionBanner(
-                                toast = toast,
-                                onAllowOnce = { viewModel.allowOnceFromToast(toast) },
-                                onUndo = { viewModel.undoFromToast(toast) }
+                        composable(Routes.ONBOARDING) {
+                            CompositionLocalProvider(LocalAnimatedVisibilityScope provides this) {
+                                OnboardingScreen(
+                                    rules = uiState.rules,
+                                    isAccessibilityEnabled = uiState.isAccessibilityEnabled,
+                                    onAcceptDisclosure = { viewModel.acceptDisclosure() },
+                                    onDeclineDisclosure = {
+                                        viewModel.declineDisclosure()
+                                        navController.navigate(Routes.HOME) {
+                                            popUpTo(Routes.ONBOARDING) { inclusive = true }
+                                        }
+                                    },
+                                    onCompleteOnboarding = {
+                                        viewModel.completeOnboarding()
+                                        navController.navigate(Routes.HOME) {
+                                            popUpTo(Routes.ONBOARDING) { inclusive = true }
+                                        }
+                                    }
+                                )
+                            }
+                        }
+
+                        composable(Routes.HOME) {
+                            CompositionLocalProvider(LocalAnimatedVisibilityScope provides this) {
+                                HomeScreen(
+                                    uiState = uiState,
+                                    onStatusClick = {
+                                        if (uiState.isAccessibilityEnabled) {
+                                            navigateToTopLevel(BottomTab.SETTINGS)
+                                        } else {
+                                            navController.navigate(Routes.ONBOARDING)
+                                        }
+                                    },
+                                    onRuleHealthCardClick = { navigateToTopLevel(BottomTab.RULES) },
+                                    onAppClick = { pkg ->
+                                        navController.navigate(Routes.appDetail(pkg))
+                                    },
+                                    onToggleApp = { pkg, enabled ->
+                                        viewModel.setRuleEnabled(pkg, enabled)
+                                    },
+                                    onAddCustomAppClick = { showCustomAppDialog = true }
+                                )
+                            }
+                        }
+
+                        composable(Routes.RULES) {
+                            CompositionLocalProvider(LocalAnimatedVisibilityScope provides this) {
+                                RuleHealthScreen(
+                                    uiState = uiState,
+                                    onUpdateRulesClick = { viewModel.updateRemoteRules() },
+                                    onTestNowClick = { pkg -> viewModel.runRuleHealthCheck(pkg) },
+                                    onOpenDeveloperPanel = {
+                                        navController.navigate(Routes.DEVELOPER_PANEL)
+                                    }
+                                )
+                            }
+                        }
+
+                        composable(Routes.INSIGHTS) {
+                            CompositionLocalProvider(LocalAnimatedVisibilityScope provides this) {
+                                InsightsScreen(uiState = uiState)
+                            }
+                        }
+
+                        composable(Routes.SETTINGS) {
+                            CompositionLocalProvider(LocalAnimatedVisibilityScope provides this) {
+                                SettingsScreen(
+                                    uiState = uiState,
+                                    onOpenDeveloperPanel = {
+                                        navController.navigate(Routes.DEVELOPER_PANEL)
+                                    },
+                                    onReopenDisclosure = {
+                                        viewModel.reopenOnboarding()
+                                        navController.navigate(Routes.ONBOARDING)
+                                    },
+                                    onAddCustomAppClick = { showCustomAppDialog = true },
+                                    onSaveEndpointUrl = { url -> viewModel.saveRulesetEndpointUrl(url) },
+                                    onSyncRemoteRules = { url -> viewModel.updateRemoteRules(url) },
+                                    onRestoreBundledRules = { viewModel.restoreBundledRules() },
+                                    onSetReclaimedSeconds = { sec -> viewModel.setReclaimedSecondsPerCut(sec) },
+                                    onSetShowBanner = { show -> viewModel.setShowInterventionBanner(show) },
+                                    onClearHistory = { viewModel.clearHistory() }
+                                )
+                            }
+                        }
+
+                        composable(
+                            route = Routes.APP_DETAIL,
+                            arguments = listOf(navArgument("packageName") { type = NavType.StringType })
+                        ) { entry ->
+                            CompositionLocalProvider(LocalAnimatedVisibilityScope provides this) {
+                                val pkg = entry.arguments?.getString("packageName").orEmpty()
+                                val rule = uiState.rules.firstOrNull { it.packageName == pkg }
+                                AppDetailScreen(
+                                    rule = rule,
+                                    onBack = { navController.popBackStack() },
+                                    onToggleEnabled = { enabled -> viewModel.setRuleEnabled(pkg, enabled) },
+                                    onSelectMode = { mode -> viewModel.setInterventionMode(pkg, mode) },
+                                    onChangeCooldown = { ms -> viewModel.setCooldownMs(pkg, ms) },
+                                    onSnooze15Minutes = { viewModel.snooze15Minutes(pkg) },
+                                    onResumeSnooze = { viewModel.resumeFromSnooze(pkg) },
+                                    onDeleteCustomRule = { viewModel.deleteCustomRule(pkg) }
+                                )
+                            }
+                        }
+
+                        composable(Routes.DEVELOPER_PANEL) {
+                            CompositionLocalProvider(LocalAnimatedVisibilityScope provides this) {
+                                DeveloperPanelScreen(
+                                    uiState = uiState,
+                                    onBack = { navController.popBackStack() },
+                                    onQueryChange = { q -> viewModel.updateSelectorTestQuery(q) },
+                                    onRunTest = { viewModel.runSelectorTest() },
+                                    onTriggerDiagnosticIntervention = { rule ->
+                                        viewModel.triggerDiagnosticIntervention(rule)
+                                    }
+                                )
+                            }
+                        }
+                    }
+
+                    if (selectedBottomTab != null) {
+                        Column(
+                            modifier = Modifier
+                                .align(Alignment.BottomCenter)
+                                .fillMaxWidth(),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            AnimatedVisibility(
+                                visible = uiState.recentToast != null,
+                                enter = slideInVertically { it } + fadeIn(),
+                                exit = slideOutVertically { it } + fadeOut()
+                            ) {
+                                uiState.recentToast?.let { toast ->
+                                    InterventionBanner(
+                                        toast = toast,
+                                        onAllowOnce = { viewModel.allowOnceFromToast(toast) },
+                                        onUndo = { viewModel.undoFromToast(toast) }
+                                    )
+                                }
+                            }
+
+                            FloatingPillNavBar(
+                                selectedTab = selectedBottomTab,
+                                onTabSelected = ::navigateToTopLevel
                             )
                         }
                     }
-
-                    FloatingPillNavBar(
-                        selectedTab = selectedBottomTab,
-                        onTabSelected = ::navigateToTopLevel
-                    )
                 }
             }
         }

@@ -40,6 +40,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -50,6 +51,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -79,6 +81,8 @@ fun OnboardingScreen(
     onCompleteOnboarding: () -> Unit
 ) {
     val context = LocalContext.current
+    val uriHandler = LocalUriHandler.current
+    val privacyPolicyUrl = stringResource(R.string.privacy_policy_url)
     var step by remember { mutableIntStateOf(0) }
 
     Column(
@@ -200,13 +204,25 @@ fun OnboardingScreen(
                     val pkgList = rules.ifEmpty {
                         emptyList()
                     }.joinToString("\n") { it.packageName }.ifEmpty {
-                        "com.google.android.youtube\ncom.instagram.android"
+                        "com.google.android.youtube\ncom.instagram.android\ncom.facebook.katana\ncom.snapchat.android\ncom.reddit.frontpage"
                     }
                     Text(
                         text = pkgList,
                         style = MonoTypography.caption,
                         color = TextMuted
                     )
+
+                    Spacer(modifier = Modifier.height(6.dp))
+                    TextButton(
+                        onClick = { uriHandler.openUri(privacyPolicyUrl) },
+                        modifier = Modifier.testTag("onboarding_privacy_link")
+                    ) {
+                        Text(
+                            text = "Privacy Policy \u00B7 suprbuild.com/privacy",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MintTeal
+                        )
+                    }
                 }
 
                 Spacer(modifier = Modifier.height(16.dp))

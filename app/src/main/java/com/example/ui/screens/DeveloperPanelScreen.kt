@@ -43,6 +43,7 @@ import com.example.ui.components.CircularBackButton
 import com.example.ui.components.SectionLabel
 import com.example.ui.components.StatusBadgePill
 import com.example.ui.components.SurgeonCard
+import com.example.ui.components.surgeonSharedBounds
 import com.example.ui.theme.CardBorder
 import com.example.ui.theme.CardSurfaceElevated
 import com.example.ui.theme.MintTeal
@@ -76,7 +77,9 @@ fun DeveloperPanelScreen(
     ) {
         item {
             Row(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .surgeonSharedBounds("dev_panel_card"),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 CircularBackButton(onClick = onBack)
@@ -84,7 +87,8 @@ fun DeveloperPanelScreen(
                 Text(
                     text = stringResource(R.string.developer_panel_title),
                     style = MaterialTheme.typography.headlineMedium,
-                    color = TextPrimary
+                    color = TextPrimary,
+                    modifier = Modifier.surgeonSharedBounds("dev_panel_title")
                 )
             }
         }
@@ -224,11 +228,19 @@ fun DeveloperPanelScreen(
             SurgeonCard {
                 SectionLabel(text = "RULE SOURCE")
                 Spacer(modifier = Modifier.height(10.dp))
-                Text(
-                    text = "remote JSON \u00B7 cached \u00B7 ${uiState.preferences.rulesetVersion}",
-                    style = MonoTypography.code,
-                    color = TextSecondary
-                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = "remote JSON \u00B7 cached \u00B7 ",
+                        style = MonoTypography.code,
+                        color = TextSecondary
+                    )
+                    Text(
+                        text = uiState.preferences.rulesetVersion,
+                        style = MonoTypography.code,
+                        color = MintTeal,
+                        modifier = Modifier.surgeonSharedBounds("ruleset_version_text")
+                    )
+                }
             }
         }
 

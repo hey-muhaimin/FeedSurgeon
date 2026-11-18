@@ -24,6 +24,14 @@ abstract class FeedSurgeonDatabase : RoomDatabase() {
         @Volatile
         private var INSTANCE: FeedSurgeonDatabase? = null
 
+        val BUILT_IN_PACKAGE_NAMES = setOf(
+            "com.google.android.youtube",
+            "com.instagram.android",
+            "com.facebook.katana",
+            "com.snapchat.android",
+            "com.reddit.frontpage"
+        )
+
         fun defaultBuiltInRules(): List<TargetAppRuleEntity> = listOf(
             TargetAppRuleEntity(
                 packageName = "com.google.android.youtube",
@@ -57,6 +65,60 @@ abstract class FeedSurgeonDatabase : RoomDatabase() {
                     "com.instagram.android:id/clips_video_container"
                 ).joinToString("|"),
                 tabFallbackLabel = "Reels",
+                isBuiltIn = true,
+                matchedSelectorCount = 2,
+                totalSelectorCount = 2,
+                isOutdated = false
+            ),
+            TargetAppRuleEntity(
+                packageName = "com.facebook.katana",
+                displayName = "Facebook",
+                feedLabel = "Reels",
+                enabled = true,
+                interventionMode = InterventionMode.BACK,
+                cooldownMs = 800,
+                homeTabLabel = "Home",
+                viewIdsRaw = listOf(
+                    "com.facebook.katana:id/reels_viewer_root",
+                    "com.facebook.katana:id/fb_reels_container"
+                ).joinToString("|"),
+                tabFallbackLabel = "Reels",
+                isBuiltIn = true,
+                matchedSelectorCount = 2,
+                totalSelectorCount = 2,
+                isOutdated = false
+            ),
+            TargetAppRuleEntity(
+                packageName = "com.snapchat.android",
+                displayName = "Snapchat",
+                feedLabel = "Spotlight",
+                enabled = true,
+                interventionMode = InterventionMode.BACK,
+                cooldownMs = 800,
+                homeTabLabel = "Chat",
+                viewIdsRaw = listOf(
+                    "com.snapchat.android:id/spotlight_feed_container",
+                    "com.snapchat.android:id/spotlight_opera_view"
+                ).joinToString("|"),
+                tabFallbackLabel = "Spotlight",
+                isBuiltIn = true,
+                matchedSelectorCount = 2,
+                totalSelectorCount = 2,
+                isOutdated = false
+            ),
+            TargetAppRuleEntity(
+                packageName = "com.reddit.frontpage",
+                displayName = "Reddit",
+                feedLabel = "Watch",
+                enabled = true,
+                interventionMode = InterventionMode.BACK,
+                cooldownMs = 800,
+                homeTabLabel = "Home",
+                viewIdsRaw = listOf(
+                    "com.reddit.frontpage:id/video_player_root",
+                    "com.reddit.frontpage:id/watch_feed_recycler"
+                ).joinToString("|"),
+                tabFallbackLabel = "Watch",
                 isBuiltIn = true,
                 matchedSelectorCount = 2,
                 totalSelectorCount = 2,

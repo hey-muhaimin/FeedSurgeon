@@ -41,6 +41,7 @@ import com.example.ui.components.SectionLabel
 import com.example.ui.components.StatusBadgePill
 import com.example.ui.components.SurgeonCard
 import com.example.ui.components.SurgicalSyncLoadingBar
+import com.example.ui.components.surgeonSharedBounds
 import com.example.ui.theme.AmberWarningBorder
 import com.example.ui.theme.CardBorder
 import com.example.ui.theme.CardSurfaceElevated
@@ -84,7 +85,8 @@ fun RuleHealthScreen(
             Text(
                 text = stringResource(R.string.rule_health_title),
                 style = MaterialTheme.typography.headlineLarge,
-                color = TextPrimary
+                color = TextPrimary,
+                modifier = Modifier.surgeonSharedBounds("rule_health_title")
             )
         }
 
@@ -101,7 +103,9 @@ fun RuleHealthScreen(
                     text = prefs.rulesetVersion,
                     style = MonoTypography.version,
                     color = TextPrimary,
-                    modifier = Modifier.testTag("ruleset_version_text")
+                    modifier = Modifier
+                        .surgeonSharedBounds("ruleset_version_text")
+                        .testTag("ruleset_version_text")
                 )
                 Spacer(modifier = Modifier.height(6.dp))
                 Text(

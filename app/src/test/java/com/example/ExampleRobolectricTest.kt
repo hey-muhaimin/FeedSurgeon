@@ -23,10 +23,10 @@ import org.robolectric.annotation.Config
 class ExampleRobolectricTest {
 
     @Test
-    fun `read app name from context`() {
+    fun `read app name and privacy url from context`() {
         val context = ApplicationProvider.getApplicationContext<Context>()
-        val appName = context.getString(R.string.app_name)
-        assertEquals("Feed Surgeon", appName)
+        assertEquals("Feed Surgeon", context.getString(R.string.app_name))
+        assertEquals("https://suprbuild.com/privacy", context.getString(R.string.privacy_policy_url))
     }
 
     @Test
@@ -44,7 +44,7 @@ class ExampleRobolectricTest {
     }
 
     @Test
-    fun `ruleset repository parses bundled remote json payload`() = runTest {
+    fun `ruleset repository parses all five bundled apps with moshi codegen`() = runTest {
         val context = ApplicationProvider.getApplicationContext<Context>()
         val db = FeedSurgeonDatabase.getInstance(context)
         val repo = RulesetRepository(db.feedSurgeonDao(), SettingsDataStore(context))
@@ -52,7 +52,8 @@ class ExampleRobolectricTest {
         val parsed = repo.parseAndValidate(AppPreferences.BUNDLED_RULESET_JSON)
         assertNotNull(parsed)
         assertEquals("v2026.11.18", parsed!!.version)
-        assertTrue(parsed.apps.any { it.packageName == "com.google.android.youtube" })
-        assertTrue(parsed.apps.any { it.packageName == "com.instagram.android" })
+        val packages = parsed.apps.map { it.packageName }.toSet()
+        assertTrue(packages.containsAll(FeedSurgeonDatabase.BUILT_IN_PACKAGE_NAMES))
+        assertEquals(5, packages.size)
     }
 }
