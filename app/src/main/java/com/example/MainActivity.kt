@@ -282,26 +282,8 @@ fun FeedSurgeonRoot(
                                 composable(Routes.ONBOARDING) {
                                     CompositionLocalProvider(LocalAnimatedVisibilityScope provides this) {
                                         OnboardingScreen(
-                                            rules = uiState.rules,
-                                            installedPackages = uiState.installedPackages,
-                                            isAccessibilityEnabled = uiState.isAccessibilityEnabled,
-                                            isBatteryOptimizationIgnored = uiState.isBatteryOptimizationIgnored,
-                                            isNotificationPermissionGranted = uiState.isNotificationPermissionGranted,
-                                            onRefreshProtectionHealth = {
-                                                viewModel.refreshProtectionHealth(context)
-                                            },
-                                            onToggleApp = { pkg, enabled ->
-                                                viewModel.setRuleEnabled(pkg, enabled)
-                                            },
-                                            onAcceptDisclosure = { viewModel.acceptDisclosure() },
-                                            onDeclineDisclosure = {
-                                                viewModel.declineDisclosure()
-                                                navigateToHomeClearingOnboarding()
-                                            },
-                                            onCompleteOnboarding = {
-                                                viewModel.completeOnboarding()
-                                                navigateToHomeClearingOnboarding()
-                                            }
+                                            viewModel = viewModel,
+                                            onCompleteNavigation = ::navigateToHomeClearingOnboarding
                                         )
                                     }
                                 }

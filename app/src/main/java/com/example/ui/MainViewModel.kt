@@ -47,9 +47,29 @@ data class AppBreakdownStat(
     val fraction: Float
 )
 
+enum class OnboardingStep(val index: Int) {
+    WELCOME(0),
+    TARGET_APPS(1),
+    ACCESSIBILITY(2),
+    READY(3);
+
+    companion object {
+        fun fromIndex(index: Int): OnboardingStep =
+            entries.firstOrNull { it.index == index } ?: WELCOME
+    }
+}
+
+data class OnboardingFlowState(
+    val currentStep: OnboardingStep = OnboardingStep.WELCOME,
+    val showRestrictedTip: Boolean = false,
+    val openedSystemSettings: Boolean = false,
+    val showPausePreview: Boolean = false
+)
+
 data class MainUiState(
     val isInitialLoading: Boolean = true,
     val preferences: AppPreferences = AppPreferences(),
+    val onboardingState: OnboardingFlowState = OnboardingFlowState(),
     val rules: List<TargetAppRuleEntity> = emptyList(),
     val installedPackages: Set<String> = emptySet(),
     val isAccessibilityEnabled: Boolean = false,
@@ -99,6 +119,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val _syncMessage = MutableStateFlow<String?>(null)
     private val _eventLogPreview = MutableStateFlow("")
     private val _eventLogSizeBytes = MutableStateFlow(0L)
+    private val _onboardingState = MutableStateFlow(OnboardingFlowState())
 
     init {
         refreshEventLog()
@@ -120,7 +141,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         val syncMessage: String?,
         val toast: InterventionToastState?,
         val logPreview: String,
-        val logSizeBytes: Long
+        val logSizeBytes: Long,
+        val onboardingState: OnboardingFlowState
     )
 
     private val syncAndLogFlow = combine(
@@ -153,8 +175,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     private val transientFlow = combine(
         environmentFlow,
-        syncAndLogFlow
-    ) { env, extra ->
+        syncAndLogFlow,
+        _onboardingState
+    ) { env, extra, onboarding ->
         TransientState(
             accessibilityEnabled = env.first,
             serviceConnected = env.second,
@@ -165,7 +188,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             syncMessage = extra.second,
             toast = extra.third,
             logPreview = extra.fourth,
-            logSizeBytes = extra.fifth
+            logSizeBytes = extra.fifth,
+            onboardingState = onboarding
         )
     }
 
@@ -207,6 +231,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         MainUiState(
             isInitialLoading = false,
             preferences = prefs,
+            onboardingState = transient.onboardingState,
             rules = rules,
             installedPackages = installed,
             isAccessibilityEnabled = transient.accessibilityEnabled,
@@ -317,10 +342,41 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    fun goToOnboardingStep(step: OnboardingStep) {
+        _onboardingState.value = _onboardingState.value.copy(currentStep = step)
+    }
+
+    fun nextOnboardingStep() {
+        val currentIndex = _onboardingState.value.currentStep.index
+        val next = OnboardingStep.fromIndex((currentIndex + 1).coerceAtMost(OnboardingStep.READY.index))
+        _onboardingState.value = _onboardingState.value.copy(currentStep = next)
+    }
+
+    fun previousOnboardingStep() {
+        val currentIndex = _onboardingState.value.currentStep.index
+        val prev = OnboardingStep.fromIndex((currentIndex - 1).coerceAtLeast(OnboardingStep.WELCOME.index))
+        _onboardingState.value = _onboardingState.value.copy(currentStep = prev)
+    }
+
+    fun toggleOnboardingRestrictedTip() {
+        _onboardingState.value = _onboardingState.value.copy(
+            showRestrictedTip = !_onboardingState.value.showRestrictedTip
+        )
+    }
+
+    fun markOnboardingSettingsOpened() {
+        _onboardingState.value = _onboardingState.value.copy(openedSystemSettings = true)
+    }
+
+    fun setOnboardingPausePreviewVisible(visible: Boolean) {
+        _onboardingState.value = _onboardingState.value.copy(showPausePreview = visible)
+    }
+
     fun acceptDisclosure() {
         viewModelScope.launch {
             settingsDataStore.setDisclosureAccepted(true)
         }
+        _onboardingState.value = _onboardingState.value.copy(currentStep = OnboardingStep.TARGET_APPS)
     }
 
     fun declineDisclosure() {
@@ -328,15 +384,18 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             settingsDataStore.setDisclosureAccepted(false)
             settingsDataStore.setOnboardingCompleted(true)
         }
+        _onboardingState.value = OnboardingFlowState()
     }
 
     fun completeOnboarding() {
         viewModelScope.launch {
             settingsDataStore.setOnboardingCompleted(true)
         }
+        _onboardingState.value = OnboardingFlowState()
     }
 
     fun reopenOnboarding() {
+        _onboardingState.value = OnboardingFlowState(currentStep = OnboardingStep.WELCOME)
         viewModelScope.launch {
             settingsDataStore.setOnboardingCompleted(false)
         }

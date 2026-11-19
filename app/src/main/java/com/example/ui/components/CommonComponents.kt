@@ -23,6 +23,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -30,7 +31,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.hoverable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsHoveredAsState
-import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -57,12 +57,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.filled.BarChart
-import androidx.compose.material.icons.filled.Bolt
-import androidx.compose.material.icons.filled.Forum
 import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Movie
-import androidx.compose.material.icons.filled.PhotoCamera
-import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material.icons.outlined.Apps
 import androidx.compose.material.icons.outlined.BarChart
@@ -102,13 +97,16 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
+import com.example.R
 import com.example.data.model.InterventionToastState
 import kotlinx.coroutines.delay
 import java.util.Locale
@@ -135,6 +133,7 @@ import com.example.ui.theme.TextPrimary
 import com.example.ui.theme.TextSecondary
 import com.example.ui.theme.rememberReducedMotionEnabled
 import com.example.ui.theme.specularRimBrush
+import com.example.ui.theme.tactilePressPhysics
 
 enum class BottomTab(val label: String) {
     HOME("Home"),
@@ -217,30 +216,25 @@ fun SurgeonCard(
     content: @Composable ColumnScope.() -> Unit
 ) {
     val shape = RoundedCornerShape(20.dp)
-    val reducedMotion = rememberReducedMotionEnabled()
     val interactionSource = remember { MutableInteractionSource() }
-    val isPressed by interactionSource.collectIsPressedAsState()
     val isHovered by interactionSource.collectIsHoveredAsState()
+    var pointerPressed by remember { mutableStateOf(false) }
 
-    val pressScale by animateFloatAsState(
-        targetValue = if (onClick != null && isPressed && !reducedMotion) 0.985f else 1f,
-        animationSpec = if (reducedMotion) snap() else SurgeonMotion.TactilePressSpring,
-        label = "surgeon_card_press_scale"
-    )
-    val rimBrush = remember(borderColor, isPressed, isHovered) {
+    val rimBrush = remember(borderColor, pointerPressed, isHovered) {
         specularRimBrush(
             baseBorder = borderColor,
-            isHighlighted = isPressed || isHovered
+            isHighlighted = pointerPressed || isHovered
         )
     }
 
     Surface(
         modifier = modifier
             .fillMaxWidth()
-            .graphicsLayer {
-                scaleX = pressScale
-                scaleY = pressScale
-            }
+            .tactilePressPhysics(
+                pressedScale = 0.98f,
+                enabled = true,
+                onPressedChange = { pointerPressed = it }
+            )
             .clip(shape)
             .hoverable(interactionSource = interactionSource)
             .then(
@@ -295,34 +289,54 @@ fun StatusBadgePill(
 @Composable
 fun AppBadgeIcon(
     packageName: String,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    badgeSize: Dp = 44.dp
 ) {
-    val (icon, accentColor) = when (packageName) {
-        "com.google.android.youtube" -> Icons.Filled.PlayArrow to Color(0xFFFF5A52)
-        "com.instagram.android" -> Icons.Filled.PhotoCamera to Color(0xFFF45B8C)
-        "com.facebook.katana" -> Icons.Filled.Movie to Color(0xFF60A5FA)
-        "com.snapchat.android" -> Icons.Filled.Bolt to Color(0xFFFDE047)
-        "com.reddit.frontpage" -> Icons.Filled.Forum to Color(0xFFFF784E)
-        else -> Icons.Outlined.Apps to TextPrimary
+    val logoRes = when (packageName) {
+        "com.google.android.youtube" -> R.drawable.ic_logo_youtube
+        "com.instagram.android" -> R.drawable.ic_logo_instagram
+        "com.facebook.katana" -> R.drawable.ic_logo_facebook
+        "com.snapchat.android" -> R.drawable.ic_logo_snapchat
+        "com.reddit.frontpage" -> R.drawable.ic_logo_reddit
+        else -> null
     }
+    val accentColor = when (packageName) {
+        "com.google.android.youtube" -> Color(0xFFFF0000)
+        "com.instagram.android" -> Color(0xFFD62976)
+        "com.facebook.katana" -> Color(0xFF1877F2)
+        "com.snapchat.android" -> Color(0xFFFFFC00)
+        "com.reddit.frontpage" -> Color(0xFFFF4500)
+        else -> TextPrimary
+    }
+    val cornerRadius = (badgeSize * 0.28f)
     val hasBrandTint = accentColor != TextPrimary
-    val bgColor = if (hasBrandTint) accentColor.copy(alpha = 0.14f) else CardSurfaceElevated
-    val borderColor = if (hasBrandTint) accentColor.copy(alpha = 0.35f) else CardBorder
+    val bgColor = if (hasBrandTint) accentColor.copy(alpha = 0.12f) else CardSurfaceElevated
+    val borderColor = if (hasBrandTint) accentColor.copy(alpha = 0.34f) else CardBorder
 
     Box(
         modifier = modifier
-            .size(44.dp)
-            .clip(RoundedCornerShape(12.dp))
+            .size(badgeSize)
+            .clip(RoundedCornerShape(cornerRadius))
             .background(bgColor)
-            .border(1.dp, borderColor, RoundedCornerShape(12.dp)),
+            .border(1.dp, borderColor, RoundedCornerShape(cornerRadius)),
         contentAlignment = Alignment.Center
     ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = null,
-            tint = accentColor,
-            modifier = Modifier.size(20.dp)
-        )
+        if (logoRes != null) {
+            Image(
+                painter = painterResource(id = logoRes),
+                contentDescription = null,
+                modifier = Modifier
+                    .size(badgeSize * 0.58f)
+                    .testTag("app_logo_$packageName")
+            )
+        } else {
+            Icon(
+                imageVector = Icons.Outlined.Apps,
+                contentDescription = null,
+                tint = TextPrimary,
+                modifier = Modifier.size(badgeSize * 0.46f)
+            )
+        }
     }
 }
 
@@ -402,11 +416,18 @@ fun MindfulPausePreviewDialog(
             containerColor = GlassSurfaceElevated,
             modifier = Modifier.testTag("mindful_pause_preview_dialog")
         ) {
-            Box(
-                modifier = Modifier.fillMaxWidth(),
-                contentAlignment = Alignment.Center
+            LiquidShieldOverlay(
+                orbSize = 86.dp,
+                showObsidianBackdrop = false,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(86.dp)
             ) {
-                LiquidBreathingOrb(size = 76.dp)
+                Box(
+                    modifier = Modifier
+                        .size(72.dp)
+                        .testTag("liquid_breathing_orb")
+                )
             }
             Spacer(modifier = Modifier.height(10.dp))
             Text(

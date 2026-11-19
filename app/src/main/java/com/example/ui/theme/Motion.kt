@@ -4,9 +4,12 @@ import android.provider.Settings
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.SpringSpec
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.snap
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.slideInVertically
+import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -14,9 +17,13 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.composed
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import kotlinx.coroutines.delay
 
@@ -55,6 +62,55 @@ fun rememberReducedMotionEnabled(): Boolean {
             scale <= 0f
         }.getOrDefault(false)
     }
+}
+
+fun Modifier.tactilePressPhysics(
+    pressedScale: Float = 0.98f,
+    enabled: Boolean = true,
+    onPressedChange: ((Boolean) -> Unit)? = null
+): Modifier = composed {
+    val reducedMotion = rememberReducedMotionEnabled()
+    var isPressed by remember { mutableStateOf(false) }
+
+    val scale by animateFloatAsState(
+        targetValue = if (enabled && isPressed && !reducedMotion) pressedScale else 1f,
+        animationSpec = if (reducedMotion) snap() else SurgeonMotion.TactilePressSpring,
+        label = "tactile_press_physics_scale"
+    )
+
+    this
+        .graphicsLayer {
+            scaleX = scale
+            scaleY = scale
+        }
+        .then(
+            if (enabled) {
+                Modifier.pointerInput(Unit) {
+                    awaitPointerEventScope {
+                        while (true) {
+                            awaitFirstDown(requireUnconsumed = false)
+                            isPressed = true
+                            onPressedChange?.invoke(true)
+                            try {
+                                while (true) {
+                                    val event = awaitPointerEvent(PointerEventPass.Final)
+                                    if (event.changes.all { !it.pressed } ||
+                                        event.changes.any { it.isConsumed }
+                                    ) {
+                                        break
+                                    }
+                                }
+                            } finally {
+                                isPressed = false
+                                onPressedChange?.invoke(false)
+                            }
+                        }
+                    }
+                }
+            } else {
+                Modifier
+            }
+        )
 }
 
 fun specularRimBrush(

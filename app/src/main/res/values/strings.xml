@@ -10,8 +10,11 @@
     <string name="nav_settings">Settings</string>
 
     <!-- Onboarding & Prominent Disclosure -->
-    <string name="onboarding_title">Take back your focus</string>
-    <string name="onboarding_subtitle">Feed Surgeon gently steps in when short-form videos open in apps you choose, so you can scroll with intention.</string>
+    <string name="onboarding_title_lead">Cut the endless scroll.</string>
+    <string name="onboarding_title_accent">Keep the apps you love.</string>
+    <string name="onboarding_title">Cut the endless scroll.\nKeep the apps you love.</string>
+    <string name="onboarding_subtitle">Auto-blocks Shorts, Reels, and Spotlight feeds the instant they open \u2014 100% on-device.</string>
+    <string name="onboarding_consent_prefix">By tapping Get started, you agree to our </string>
     <string name="onboarding_what_we_read_title">WHAT IT CHECKS</string>
     <string name="onboarding_what_we_read_body">Whether a Shorts, Reels, or Watch feed is currently open in the apps you pick</string>
     <string name="onboarding_what_we_never_send_title">WHAT STAYS PRIVATE</string>
@@ -23,9 +26,10 @@
     <string name="onboarding_step2_title">Turn on protection</string>
     <string name="onboarding_step2_body">Android asks you to turn on Feed Surgeon in Accessibility Settings so it can spot when a short-form feed opens.</string>
     <string name="onboarding_open_settings">Open System Settings</string>
-    <string name="onboarding_continue_without">Skip for now</string>
+    <string name="onboarding_continue_without">Skip</string>
     <string name="onboarding_step3_title">You\u2019re all set</string>
     <string name="onboarding_step3_body">Feed Surgeon runs quietly on your phone, uses minimal battery, and can be paused anytime with one tap.</string>
+    <string name="onboarding_preview_action">Preview</string>
     <string name="onboarding_finish">Go to Home</string>
 
     <!-- Home -->

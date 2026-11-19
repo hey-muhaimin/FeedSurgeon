@@ -1,7 +1,12 @@
 package com.example
 
+import androidx.compose.material3.Text
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertTextContains
+import androidx.compose.ui.test.down
+import androidx.compose.ui.test.getBoundsInRoot
 import androidx.compose.ui.test.hasScrollToNodeAction
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.junit4.createComposeRule
@@ -10,16 +15,23 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performScrollToNode
+import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.test.up
+import androidx.test.core.app.ApplicationProvider
 import com.example.data.local.AppPreferences
 import com.example.data.local.FeedSurgeonDatabase
 import com.example.data.model.InterventionMode
 import com.example.data.model.ProtectionStatus
 import com.example.ui.DayBarStat
 import com.example.ui.MainUiState
+import com.example.ui.MainViewModel
+import com.example.ui.OnboardingStep
 import com.example.ui.components.BottomTab
 import com.example.ui.components.FloatingPillNavBar
+import com.example.ui.components.LiquidShieldOverlay
 import com.example.ui.components.MindfulPausePreviewDialog
 import com.example.ui.components.ObsidianSideRail
+import com.example.ui.components.SurgeonCard
 import com.example.ui.screens.AppDetailScreen
 import com.example.ui.screens.HomeScreen
 import com.example.ui.screens.InsightsScreen
@@ -27,6 +39,9 @@ import com.example.ui.screens.OnboardingScreen
 import com.example.ui.screens.SettingsScreen
 import com.example.ui.theme.FeedSurgeonTheme
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
+import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -36,6 +51,12 @@ import org.robolectric.annotation.Config
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [36])
 class FeedSurgeonUiRobolectricTest {
+
+    @Before
+    fun cancelBackgroundStartupSync() {
+        val app = ApplicationProvider.getApplicationContext<android.content.Context>() as? FeedSurgeonApp
+        app?.initializationJob?.cancel()
+    }
 
     @get:Rule
     val composeRule = createComposeRule()
@@ -478,7 +499,7 @@ class FeedSurgeonUiRobolectricTest {
     }
 
     @Test
-    fun `mindful pause preview dialog displays liquid breathing orb and actions`() {
+    fun `mindful pause preview dialog displays liquid shield overlay orb and actions`() {
         composeRule.setContent {
             FeedSurgeonTheme {
                 MindfulPausePreviewDialog(
@@ -491,8 +512,245 @@ class FeedSurgeonUiRobolectricTest {
         composeRule.waitForIdle()
 
         composeRule.onNodeWithTag("mindful_pause_preview_dialog").assertIsDisplayed()
+        composeRule.onNodeWithTag("liquid_shield_overlay").assertIsDisplayed()
         composeRule.onNodeWithTag("liquid_breathing_orb").assertIsDisplayed()
         composeRule.onNodeWithTag("preview_leave_feed_button").assertIsDisplayed()
         composeRule.onNodeWithTag("preview_allow_5m_button").assertIsDisplayed()
+    }
+
+    @Test
+    fun `liquid shield overlay draws central breathing orb canvas and child content`() {
+        composeRule.setContent {
+            FeedSurgeonTheme {
+                LiquidShieldOverlay {
+                    Text("Shield Active")
+                }
+            }
+        }
+        composeRule.waitForIdle()
+
+        composeRule.onNodeWithTag("liquid_shield_overlay").assertIsDisplayed()
+        composeRule.onNodeWithTag("liquid_shield_orb_canvas").assertIsDisplayed()
+        composeRule.onNodeWithText("Shield Active").assertIsDisplayed()
+    }
+
+    @Test
+    fun `dashboard card pointerInput tactile press physics preserves click handling`() {
+        var clicks = 0
+        composeRule.setContent {
+            FeedSurgeonTheme {
+                SurgeonCard(
+                    modifier = Modifier.testTag("tactile_dashboard_card"),
+                    onClick = { clicks++ }
+                ) {
+                    Text("Dashboard Card")
+                }
+            }
+        }
+        composeRule.waitForIdle()
+
+        composeRule.onNodeWithTag("tactile_dashboard_card").performTouchInput {
+            down(center)
+            advanceEventTime(80L)
+            up()
+        }
+        composeRule.waitForIdle()
+
+        assertEquals(1, clicks)
+    }
+
+    @Test
+    fun `welcome screen displays official app logo strip`() {
+        val rules = FeedSurgeonDatabase.defaultBuiltInRules()
+        composeRule.setContent {
+            FeedSurgeonTheme {
+                OnboardingScreen(
+                    rules = rules,
+                    installedPackages = setOf("com.google.android.youtube"),
+                    isAccessibilityEnabled = false,
+                    onToggleApp = { _, _ -> },
+                    onAcceptDisclosure = {},
+                    onDeclineDisclosure = {},
+                    onCompleteOnboarding = {}
+                )
+            }
+        }
+        composeRule.waitForIdle()
+
+        composeRule.onNodeWithTag("onboarding_supported_logos_row").assertIsDisplayed()
+        composeRule.onNodeWithTag("app_logo_com.google.android.youtube", useUnmergedTree = true)
+            .assertIsDisplayed()
+        composeRule.onNodeWithTag("app_logo_com.instagram.android", useUnmergedTree = true)
+            .assertIsDisplayed()
+        composeRule.onNodeWithTag("app_logo_com.facebook.katana", useUnmergedTree = true)
+            .assertIsDisplayed()
+        composeRule.onNodeWithTag("app_logo_com.snapchat.android", useUnmergedTree = true)
+            .assertIsDisplayed()
+        composeRule.onNodeWithTag("app_logo_com.reddit.frontpage", useUnmergedTree = true)
+            .assertIsDisplayed()
+    }
+
+    @Test
+    @Config(sdk = [36], qualifiers = "w411dp-h915dp")
+    fun `onboarding welcome features, consent line, and step3 and step4 inline buttons align cleanly`() {
+        val rules = FeedSurgeonDatabase.defaultBuiltInRules()
+        composeRule.setContent {
+            FeedSurgeonTheme {
+                OnboardingScreen(
+                    rules = rules,
+                    installedPackages = setOf("com.google.android.youtube"),
+                    isAccessibilityEnabled = false,
+                    onToggleApp = { _, _ -> },
+                    onAcceptDisclosure = {},
+                    onDeclineDisclosure = {},
+                    onCompleteOnboarding = {}
+                )
+            }
+        }
+        composeRule.waitForIdle()
+
+        // Step 0: Hero title, 3 glass feature chips, inline consent line, and split buttons
+        composeRule.onNodeWithTag("onboarding_hero_title").assertIsDisplayed()
+        composeRule.onNodeWithTag("onboarding_feature_chips_row").assertIsDisplayed()
+        composeRule.onNodeWithTag("onboarding_feature_chip_cut").assertIsDisplayed()
+        composeRule.onNodeWithTag("onboarding_feature_chip_privacy").assertIsDisplayed()
+        composeRule.onNodeWithTag("onboarding_feature_chip_pass").assertIsDisplayed()
+        composeRule.onNodeWithTag("onboarding_privacy_consent_line").assertIsDisplayed()
+        composeRule.onNodeWithTag("onboarding_privacy_link").assertIsDisplayed()
+
+        val declineBounds = composeRule.onNodeWithTag("onboarding_decline_button").getBoundsInRoot()
+        val agreeBounds = composeRule.onNodeWithTag("onboarding_agree_button").getBoundsInRoot()
+        assertEquals(declineBounds.top.value, agreeBounds.top.value, 1f)
+        assertTrue(
+            "Expected Get started (${agreeBounds.right - agreeBounds.left}) wider than Not now (${declineBounds.right - declineBounds.left})",
+            (agreeBounds.right - agreeBounds.left) > (declineBounds.right - declineBounds.left)
+        )
+
+        // Advance to Step 1 -> Step 2 (3rd onboarding screen)
+        composeRule.onNodeWithTag("onboarding_agree_button").performClick()
+        composeRule.waitForIdle()
+        composeRule.onNodeWithTag("onboarding_apps_continue_button").performClick()
+        composeRule.waitForIdle()
+
+        val skipBounds = composeRule.onNodeWithTag("onboarding_continue_step2").getBoundsInRoot()
+        val openSettingsBounds = composeRule.onNodeWithTag("open_accessibility_settings_button").getBoundsInRoot()
+        assertEquals(skipBounds.top.value, openSettingsBounds.top.value, 1f)
+        assertTrue(
+            "Expected Open System Settings wider than Skip on 3rd onboarding screen",
+            (openSettingsBounds.right - openSettingsBounds.left) > (skipBounds.right - skipBounds.left)
+        )
+
+        // Advance to Step 3 (4th onboarding screen)
+        composeRule.onNodeWithTag("onboarding_continue_step2").performClick()
+        composeRule.waitForIdle()
+
+        val previewBounds = composeRule.onNodeWithTag("onboarding_try_preview_button").getBoundsInRoot()
+        val finishBounds = composeRule.onNodeWithTag("onboarding_finish_button").getBoundsInRoot()
+        assertEquals(previewBounds.top.value, finishBounds.top.value, 1f)
+        assertTrue(
+            "Expected Go to Home wider than Preview on 4th onboarding screen",
+            (finishBounds.right - finishBounds.left) > (previewBounds.right - previewBounds.left)
+        )
+    }
+
+    @Test
+    @Config(sdk = [36], qualifiers = "w411dp-h915dp")
+    fun `shared viewmodel manages onboarding state across all four steps with slide transitions`() {
+        val app = ApplicationProvider.getApplicationContext<FeedSurgeonApp>()
+        val sharedViewModel = MainViewModel(app)
+        var completedNavigation = false
+
+        composeRule.setContent {
+            FeedSurgeonTheme {
+                OnboardingScreen(
+                    viewModel = sharedViewModel,
+                    onCompleteNavigation = { completedNavigation = true }
+                )
+            }
+        }
+        composeRule.waitForIdle()
+
+        composeRule.onNodeWithTag("onboarding_responsive_scaffold").assertIsDisplayed()
+        assertEquals(OnboardingStep.WELCOME, sharedViewModel.uiState.value.onboardingState.currentStep)
+
+        // Step 0 -> Step 1 via shared ViewModel
+        composeRule.onNodeWithTag("onboarding_agree_button").performClick()
+        composeRule.waitForIdle()
+        assertEquals(OnboardingStep.TARGET_APPS, sharedViewModel.uiState.value.onboardingState.currentStep)
+
+        // Navigate back to Step 0, then forward again to verify bidirectional transitions
+        sharedViewModel.previousOnboardingStep()
+        composeRule.waitForIdle()
+        assertEquals(OnboardingStep.WELCOME, sharedViewModel.uiState.value.onboardingState.currentStep)
+        composeRule.onNodeWithTag("onboarding_agree_button").performClick()
+        composeRule.waitForIdle()
+
+        // Step 1 -> Step 2
+        composeRule.onNodeWithTag("onboarding_apps_continue_button").performClick()
+        composeRule.waitForIdle()
+        assertEquals(OnboardingStep.ACCESSIBILITY, sharedViewModel.uiState.value.onboardingState.currentStep)
+
+        composeRule.onNodeWithTag("open_accessibility_settings_button").performClick()
+        composeRule.waitForIdle()
+        assertTrue(sharedViewModel.uiState.value.onboardingState.openedSystemSettings)
+
+        // Step 2 -> Step 3
+        composeRule.onNodeWithTag("onboarding_continue_step2").performClick()
+        composeRule.waitForIdle()
+        assertEquals(OnboardingStep.READY, sharedViewModel.uiState.value.onboardingState.currentStep)
+
+        // Preview dialog managed in shared ViewModel
+        composeRule.onNodeWithTag("onboarding_try_preview_button").performClick()
+        composeRule.waitForIdle()
+        assertTrue(sharedViewModel.uiState.value.onboardingState.showPausePreview)
+        composeRule.onNodeWithTag("mindful_pause_preview_dialog").assertIsDisplayed()
+
+        composeRule.onNodeWithTag("preview_close_button").performClick()
+        composeRule.waitForIdle()
+        assertFalse(sharedViewModel.uiState.value.onboardingState.showPausePreview)
+
+        // Complete onboarding resets step cleanly and triggers navigation callback
+        composeRule.onNodeWithTag("onboarding_finish_button").performClick()
+        composeRule.waitForIdle()
+        assertTrue(completedNavigation)
+        assertEquals(OnboardingStep.WELCOME, sharedViewModel.uiState.value.onboardingState.currentStep)
+    }
+
+    @Test
+    @Config(sdk = [36], qualifiers = "w900dp-h900dp")
+    fun `onboarding scaffold switches to two-pane responsive layout on wide tablet width`() {
+        val rules = FeedSurgeonDatabase.defaultBuiltInRules()
+        composeRule.setContent {
+            FeedSurgeonTheme {
+                OnboardingScreen(
+                    rules = rules,
+                    installedPackages = setOf("com.google.android.youtube", "com.instagram.android"),
+                    isAccessibilityEnabled = false,
+                    onToggleApp = { _, _ -> },
+                    onAcceptDisclosure = {},
+                    onDeclineDisclosure = {},
+                    onCompleteOnboarding = {}
+                )
+            }
+        }
+        composeRule.waitForIdle()
+
+        composeRule.onNodeWithTag("onboarding_wide_step_badge").assertTextContains("STEP 1 OF 4")
+        composeRule.onNodeWithTag("onboarding_welcome_wide_pane").assertIsDisplayed()
+
+        composeRule.onNodeWithTag("onboarding_agree_button").performClick()
+        composeRule.waitForIdle()
+        composeRule.onNodeWithTag("onboarding_wide_step_badge").assertTextContains("STEP 2 OF 4")
+        composeRule.onNodeWithTag("onboarding_apps_wide_grid").assertIsDisplayed()
+
+        composeRule.onNodeWithTag("onboarding_apps_continue_button").performClick()
+        composeRule.waitForIdle()
+        composeRule.onNodeWithTag("onboarding_wide_step_badge").assertTextContains("STEP 3 OF 4")
+        composeRule.onNodeWithTag("onboarding_accessibility_wide_pane").assertIsDisplayed()
+
+        composeRule.onNodeWithTag("onboarding_continue_step2").performClick()
+        composeRule.waitForIdle()
+        composeRule.onNodeWithTag("onboarding_wide_step_badge").assertTextContains("STEP 4 OF 4")
+        composeRule.onNodeWithTag("onboarding_ready_wide_pane").assertIsDisplayed()
     }
 }
