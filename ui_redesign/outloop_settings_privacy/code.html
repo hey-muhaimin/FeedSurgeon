@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"/>
+<meta content="mobile_tab" name="shell-type"/>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&amp;family=Plus+Jakarta+Sans:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<style>
+    @layer base {
+      html, body {
+        width: 100%;
+        margin: 0;
+        padding: 0;
+        min-height: 100%;
+        background-color: #FAF9F5;
+      }
+      body {
+        overscroll-behavior-y: none;
+      }
+      .pb-safe {
+        padding-bottom: env(safe-area-inset-bottom, 0px);
+      }
+      .pt-safe {
+        padding-top: env(safe-area-inset-top, 0px);
+      }
+    }
+    ::-webkit-scrollbar {
+      display: none;
+    }
+  </style>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            "surface": "#FAF9F5",
+            "on-surface": "#1B1C1A",
+            "on-surface-variant": "#434844",
+            "primary": "#142119",
+            "primary-container": "#29362E",
+            "on-primary": "#FAF9F5",
+            "secondary": "#576151",
+            "secondary-container": "#D8E3CF",
+            "outline": "#737874",
+            "outline-variant": "#E1DED5",
+            "surface-container-low": "#F4F4F0",
+            "surface-container": "#EFEEEA",
+            "surface-container-high": "#E9E8E4",
+            "surface-container-lowest": "#FFFFFF",
+            "error": "#BA1A1A",
+            "error-container": "#FFDAD6"
+          },
+          fontFamily: {
+            "headline": ["Manrope", "sans-serif"],
+            "body": ["Plus Jakarta Sans", "sans-serif"]
+          }
+        }
+      }
+    };
+  </script>
+</head>
+<body class="bg-[#FAF9F5] text-[#1B1C1A] font-body antialiased min-h-screen flex flex-col justify-between selection:bg-[#D8E3CF]">
+<!-- Main Container constrained to Mobile 390px responsive profile -->
+<main class="w-full max-w-[420px] mx-auto min-h-screen flex flex-col px-5 pt-safe pb-32">
+<!-- iOS / System Status Bar Placement -->
+<div class="w-full pt-3 pb-2 flex items-center justify-between text-xs font-semibold text-[#576151] select-none">
+<span class="tracking-tight text-[13px] font-headline text-[#1B1C1A]">9:41</span>
+<div class="flex items-center gap-1.5">
+<svg class="w-3.5 h-3.5 text-[#1B1C1A]" fill="currentColor" viewbox="0 0 24 24">
+<path d="M12 3c-4.97 0-9 4.03-9 9 0 2.12.74 4.07 1.97 5.61L12 22l7.03-4.39C20.26 16.07 21 14.12 21 12c0-4.97-4.03-9-9-9zm0 14c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5z"></path>
+</svg>
+<svg class="w-3.5 h-3.5 text-[#1B1C1A]" fill="currentColor" viewbox="0 0 24 24">
+<path d="M12 4C7.31 4 3.07 5.9 0 8.98L12 21 24 8.98A16.88 16.88 0 0012 4z"></path>
+</svg>
+<div class="w-5 h-2.5 border border-[#1B1C1A] rounded-sm p-0.5 flex items-center">
+<div class="w-full h-full bg-[#1B1C1A] rounded-2xs"></div>
+</div>
+</div>
+</div>
+<!-- Clean Header -->
+<header class="pt-3 pb-5 flex items-start justify-between">
+<div class="flex flex-col space-y-0.5">
+<h1 class="font-headline text-[30px] font-bold text-[#142119] tracking-tight leading-tight">Settings</h1>
+<p class="text-[13px] text-[#576151] font-normal">Local rules &amp; privacy controls</p>
+</div>
+<div class="mt-1">
+<span class="inline-flex items-center px-2.5 py-1 rounded-full bg-[#E9E8E4] text-[#434844] font-headline text-[11px] font-medium border border-[#E1DED5]">
+          v2.4.0 (Private Core)
+        </span>
+</div>
+</header>
+<!-- Content Sections -->
+<div class="flex flex-col space-y-4">
+<!-- 1. Protection Section Card -->
+<section class="w-full bg-[#FFFFFF] rounded-[24px] p-5 shadow-[0_2px_12px_rgba(41,54,46,0.04)] border border-[#E1DED5]/80 flex flex-col space-y-4">
+<!-- Status Row -->
+<div class="flex items-center justify-between">
+<div class="flex items-center space-x-3">
+<div class="w-10 h-10 rounded-full bg-[#D8E3CF] text-[#29362E] flex items-center justify-center flex-shrink-0">
+<svg class="w-5 h-5 text-[#29362E]" fill="none" stroke="currentColor" stroke-width="2" viewbox="0 0 24 24">
+<path d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</div>
+<div class="flex flex-col">
+<span class="font-headline text-[15px] font-semibold text-[#142119]">Protection status</span>
+<span class="text-[12px] text-[#576151]">Guarding 3 installed apps</span>
+</div>
+</div>
+<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#D8E3CF]/70 text-[#142119] text-[12px] font-semibold tracking-wide">
+<span class="w-2 h-2 rounded-full bg-[#29362E] animate-pulse"></span>
+            Guarded
+          </span>
+</div>
+<div class="h-px bg-[#EFEEEA] w-full"></div>
+<!-- Master Pause Toggle -->
+<div class="flex items-center justify-between">
+<div class="flex flex-col pr-3">
+<span class="font-headline text-[14px] font-semibold text-[#142119]">Pause all blocking</span>
+<span class="text-[12px] text-[#576151]">Temporarily suspend boundary enforcement</span>
+</div>
+<label class="relative inline-flex items-center cursor-pointer flex-shrink-0">
+<input class="sr-only peer" id="pause-master-toggle" type="checkbox"/>
+<div class="w-12 h-7 bg-[#E9E8E4] rounded-full peer peer-checked:bg-[#29362E] peer-checked:after:translate-x-5 after:content-[''] after:absolute after:top-[3px] after:left-[4px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all shadow-inner"></div>
+</label>
+</div>
+<!-- Action Pill Buttons -->
+<div class="grid grid-cols-2 gap-2.5 pt-1">
+<button class="h-11 px-3 rounded-full bg-[#29362E] text-[#FAF9F5] font-headline text-[13px] font-medium flex items-center justify-center gap-1.5 hover:bg-[#142119] active:scale-[0.98] transition-all shadow-xs" type="button">
+<svg class="w-4 h-4 text-[#FAF9F5]" fill="none" stroke="currentColor" stroke-width="2" viewbox="0 0 24 24">
+<path d="M10.5 6h9.75M10.5 6a1.5 1.5 0 11-3 0m3 0a1.5 1.5 0 10-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-9.75 0h9.75" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+<span>System Settings</span>
+</button>
+<button class="h-11 px-3 rounded-full bg-[#FAF9F5] text-[#142119] font-headline text-[13px] font-medium flex items-center justify-center gap-1.5 border border-[#E1DED5] hover:bg-[#EFEEEA] active:scale-[0.98] transition-all" type="button">
+<svg class="w-4 h-4 text-[#576151]" fill="none" stroke="currentColor" stroke-width="2" viewbox="0 0 24 24">
+<path d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.325.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 011.37.49l1.296 2.247a1.125 1.125 0 01-.26 1.431l-1.003.827c-.293.241-.438.613-.43.992a7.723 7.723 0 010 .255c-.008.378.137.75.43.991l1.004.827c.424.35.534.955.26 1.43l-1.298 2.247a1.125 1.125 0 01-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.6 6.6 0 01-.22.128c-.331.183-.581.495-.644.869l-.213 1.281c-.09.543-.56.94-1.11.94h-2.594c-.55 0-1.019-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 01-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 01-1.369-.49l-1.297-2.247a1.125 1.125 0 01.26-1.431l1.004-.827c.292-.24.437-.613.43-.991a6.932 6.932 0 010-.255c.007-.38-.138-.751-.43-.992l-1.004-.827a1.125 1.125 0 01-.26-1.43l1.297-2.247a1.125 1.125 0 011.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.086.22-.128.332-.183.582-.495.644-.869l.214-1.28z" stroke-linecap="round" stroke-linejoin="round"></path>
+<path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+<span>Calibration Setup</span>
+</button>
+</div>
+</section>
+<!-- 2. Interventions & Experience Section -->
+<section class="w-full bg-[#FFFFFF] rounded-[24px] p-5 shadow-[0_2px_12px_rgba(41,54,46,0.04)] border border-[#E1DED5]/80 flex flex-col space-y-4">
+<!-- Section Header -->
+<div class="flex flex-col space-y-1">
+<span class="font-headline text-[15px] font-semibold text-[#142119]">Interventions &amp; Experience</span>
+<span class="text-[12px] text-[#576151]">Configure mindful friction thresholds</span>
+</div>
+<!-- Quick Pass Segment Control -->
+<div class="flex flex-col space-y-2 pt-1">
+<div class="flex justify-between items-center text-xs">
+<span class="font-medium text-[#142119]">Quick pass duration</span>
+<span class="text-[#576151] font-mono text-[11px]">Selected: 3 min</span>
+</div>
+<div class="grid grid-cols-4 gap-1.5 p-1 bg-[#F4F4F0] rounded-full border border-[#E1DED5]">
+<button class="py-1.5 rounded-full text-center text-xs text-[#576151] font-medium hover:text-[#142119] transition-colors" type="button">1 min</button>
+<button class="py-1.5 rounded-full text-center text-xs font-semibold bg-[#29362E] text-[#FAF9F5] shadow-xs" type="button">3 min</button>
+<button class="py-1.5 rounded-full text-center text-xs text-[#576151] font-medium hover:text-[#142119] transition-colors" type="button">5 min</button>
+<button class="py-1.5 rounded-full text-center text-xs text-[#576151] font-medium hover:text-[#142119] transition-colors" type="button">10 min</button>
+</div>
+</div>
+<div class="h-px bg-[#EFEEEA] w-full"></div>
+<!-- Intention Check Toggle -->
+<div class="flex items-center justify-between">
+<div class="flex flex-col pr-3">
+<span class="font-headline text-[14px] font-semibold text-[#142119]">Intention check before unpause</span>
+<span class="text-[12px] text-[#576151]">Requires typed reflection or reason</span>
+</div>
+<label class="relative inline-flex items-center cursor-pointer flex-shrink-0">
+<input checked="" class="sr-only peer" type="checkbox"/>
+<div class="w-12 h-7 bg-[#E9E8E4] rounded-full peer peer-checked:bg-[#29362E] peer-checked:after:translate-x-5 after:content-[''] after:absolute after:top-[3px] after:left-[4px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all shadow-inner"></div>
+</label>
+</div>
+<div class="h-px bg-[#EFEEEA] w-full"></div>
+<!-- Breathing Pause Duration Pill -->
+<div class="flex items-center justify-between py-0.5">
+<div class="flex items-center space-x-2.5">
+<div class="w-8 h-8 rounded-full bg-[#EFEEEA] flex items-center justify-center text-[#29362E]">
+<svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewbox="0 0 24 24">
+<path d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</div>
+<div class="flex flex-col">
+<span class="font-headline text-[13px] font-semibold text-[#142119]">Breathing pause duration</span>
+<span class="text-[11px] text-[#576151]">Contemplative delay step</span>
+</div>
+</div>
+<span class="inline-flex items-center px-3 py-1 rounded-full bg-[#D8E3CF] text-[#29362E] font-headline text-[12px] font-semibold tracking-tight">
+            4s mindful pause
+          </span>
+</div>
+</section>
+<!-- 3. Privacy & Data Card -->
+<section class="w-full bg-[#FFFFFF] rounded-[24px] p-5 shadow-[0_2px_12px_rgba(41,54,46,0.04)] border border-[#E1DED5]/80 flex flex-col space-y-4">
+<!-- 100% On-Device Protection Banner -->
+<div class="bg-[#F4F4F0] border border-[#E1DED5] rounded-[18px] p-3.5 flex items-start space-x-3">
+<div class="w-7 h-7 rounded-full bg-[#29362E] text-white flex items-center justify-center flex-shrink-0 mt-0.5">
+<svg class="w-3.5 h-3.5 text-[#FAF9F5]" fill="none" stroke="currentColor" stroke-width="2.2" viewbox="0 0 24 24">
+<path d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</div>
+<div class="flex flex-col space-y-0.5 min-w-0">
+<span class="font-headline text-[13px] font-bold text-[#142119]">100% On-Device Protection</span>
+<p class="text-[12px] text-[#576151] leading-relaxed">
+              Zero network egress. Accessibility rules operate solely in offline local memory.
+            </p>
+</div>
+</div>
+<!-- List Items -->
+<div class="flex flex-col divide-y divide-[#EFEEEA]">
+<!-- Item 1: Preview pause screen -->
+<button class="w-full py-3 flex items-center justify-between group text-left hover:bg-[#FAF9F5] rounded-xl px-1 transition-colors" type="button">
+<div class="flex items-center space-x-3 min-w-0">
+<div class="w-8 h-8 rounded-full bg-[#EFEEEA] flex items-center justify-center text-[#29362E]">
+<svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewbox="0 0 24 24">
+<path d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" stroke-linecap="round" stroke-linejoin="round"></path>
+<path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</div>
+<div class="flex flex-col">
+<span class="font-headline text-[13px] font-semibold text-[#142119]">Preview pause screen</span>
+<span class="text-[11px] text-[#576151]">Inspect the interruption modal</span>
+</div>
+</div>
+<svg class="w-4 h-4 text-[#777C75] group-hover:translate-x-0.5 transition-transform" fill="none" stroke="currentColor" stroke-width="2.5" viewbox="0 0 24 24">
+<path d="M8.25 4.5l7.5 7.5-7.5 7.5" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</button>
+<!-- Item 2: Privacy Policy & Local Vault -->
+<button class="w-full py-3 flex items-center justify-between group text-left hover:bg-[#FAF9F5] rounded-xl px-1 transition-colors" type="button">
+<div class="flex items-center space-x-3 min-w-0">
+<div class="w-8 h-8 rounded-full bg-[#EFEEEA] flex items-center justify-center text-[#29362E]">
+<svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewbox="0 0 24 24">
+<path d="M9 12.75L11.25 15 15 9.75M21 12c0 1.268-.63 2.39-1.593 3.068a3.745 3.745 0 01-1.043 3.296 3.745 3.745 0 01-3.296 1.043A3.745 3.745 0 0112 21c-1.268 0-2.39-.63-3.068-1.593a3.746 3.746 0 01-3.296-1.043 3.745 3.745 0 01-1.043-3.296A3.745 3.745 0 013 12c0-1.268.63-2.39 1.593-3.068a3.745 3.745 0 011.043-3.296 3.746 3.746 0 013.296-1.043A3.746 3.746 0 0112 3c1.268 0 2.39.63 3.068 1.593a3.746 3.746 0 013.296 1.043 3.746 3.746 0 011.043 3.296A3.745 3.745 0 0121 12z" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</div>
+<div class="flex flex-col">
+<span class="font-headline text-[13px] font-semibold text-[#142119]">Privacy Policy &amp; Local Vault</span>
+<span class="text-[11px] text-[#576151]">Zero telemetry and zero trackers</span>
+</div>
+</div>
+<svg class="w-4 h-4 text-[#777C75] group-hover:translate-x-0.5 transition-transform" fill="none" stroke="currentColor" stroke-width="2.5" viewbox="0 0 24 24">
+<path d="M8.25 4.5l7.5 7.5-7.5 7.5" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</button>
+<!-- Item 3: Export local journal -->
+<button class="w-full py-3 flex items-center justify-between group text-left hover:bg-[#FAF9F5] rounded-xl px-1 transition-colors" type="button">
+<div class="flex items-center space-x-3 min-w-0">
+<div class="w-8 h-8 rounded-full bg-[#EFEEEA] flex items-center justify-center text-[#29362E]">
+<svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewbox="0 0 24 24">
+<path d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</div>
+<div class="flex flex-col">
+<span class="font-headline text-[13px] font-semibold text-[#142119]">Export local journal</span>
+<span class="text-[11px] text-[#576151]">Encrypted JSON / CSV export</span>
+</div>
+</div>
+<svg class="w-4 h-4 text-[#777C75] group-hover:translate-x-0.5 transition-transform" fill="none" stroke="currentColor" stroke-width="2.5" viewbox="0 0 24 24">
+<path d="M8.25 4.5l7.5 7.5-7.5 7.5" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</button>
+<!-- Item 4: Reset statistics (Danger red tint) -->
+<button class="w-full py-3 flex items-center justify-between group text-left hover:bg-[#FFDAD6]/30 rounded-xl px-1 transition-colors" type="button">
+<div class="flex items-center space-x-3 min-w-0">
+<div class="w-8 h-8 rounded-full bg-[#FFDAD6] flex items-center justify-center text-[#BA1A1A]">
+<svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewbox="0 0 24 24">
+<path d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</div>
+<div class="flex flex-col">
+<span class="font-headline text-[13px] font-semibold text-[#BA1A1A]">Reset statistics</span>
+<span class="text-[11px] text-[#BA1A1A]/80">Purge local interruption tallies</span>
+</div>
+</div>
+<svg class="w-4 h-4 text-[#BA1A1A]" fill="none" stroke="currentColor" stroke-width="2.5" viewbox="0 0 24 24">
+<path d="M8.25 4.5l7.5 7.5-7.5 7.5" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</button>
+</div>
+</section>
+<!-- Subtitle badge footer -->
+<div class="py-2 text-center">
+<p class="text-[11px] text-[#777C75]">Outloop Sentinel • Private, Offline, Quiet</p>
+</div>
+</div>
+</main>
+<!-- Floating Navigation Dock -->
+<nav class="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center bg-[#FAF9F5]/90 backdrop-blur-xl border border-[#E1DED5] rounded-full p-1.5 shadow-[0_12px_32px_rgba(41,54,46,0.12)]">
+<!-- Home Tab -->
+<a class="px-3.5 py-2 text-[#777C75] hover:text-[#202720] text-xs flex items-center gap-1.5 rounded-full transition-transform active:scale-95 duration-200" href="#" title="Home">
+<svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewbox="0 0 24 24">
+<path d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+<span class="font-headline font-medium">Home</span>
+</a>
+<!-- Insights Tab -->
+<a class="px-3.5 py-2 text-[#777C75] hover:text-[#202720] text-xs flex items-center gap-1.5 rounded-full transition-transform active:scale-95 duration-200" href="#" title="Insights">
+<svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewbox="0 0 24 24">
+<path d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+<span class="font-headline font-medium">Insights</span>
+</a>
+<!-- Settings Tab (Active) -->
+<a aria-current="page" class="bg-[#29362E] text-[#FAF9F5] px-4 py-2 rounded-full font-medium text-xs flex items-center gap-1.5 shadow-sm transition-transform active:scale-95 duration-200" href="#" title="Settings">
+<svg class="w-4 h-4 text-[#FAF9F5]" fill="none" stroke="currentColor" stroke-width="2" viewbox="0 0 24 24">
+<path d="M6 13.5V3.75m0 9.75a1.5 1.5 0 010 3m0-3a1.5 1.5 0 000 3m0 0v3.75m6-13.5V3.75m0 9.75a1.5 1.5 0 010 3m0-3a1.5 1.5 0 000 3m0 0v3.75m6-9.75V3.75m0 5.25a1.5 1.5 0 010 3m0-3a1.5 1.5 0 000 3m0 0v7.5" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+<span class="font-headline font-semibold">Settings</span>
+</a>
+</nav>
+</body></html>

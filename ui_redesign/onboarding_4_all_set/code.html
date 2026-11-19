@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"/>
+<title>You're all set - Outloop</title>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&amp;family=Plus+Jakarta+Sans:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            forest: {
+              DEFAULT: '#29362E',
+              900: '#29362E',
+              800: '#34453b',
+              950: '#142119'
+            },
+            ivory: {
+              DEFAULT: '#FAF9F5',
+              card: '#FFFFFF',
+              surface: '#F4F4F0',
+              border: '#E8E7E2'
+            },
+            sage: {
+              50: '#F2F6F3',
+              100: '#E2ECE4',
+              200: '#C5D8C9',
+              500: '#5A8265',
+              600: '#46684F'
+            },
+            stone: {
+              title: '#202720',
+              body: '#576151',
+              border: '#E2E1DC'
+            }
+          },
+          fontFamily: {
+            sans: ['Manrope', 'Plus Jakarta Sans', '-apple-system', 'sans-serif'],
+            body: ['Plus Jakarta Sans', 'Manrope', 'sans-serif']
+          },
+          boxShadow: {
+            'soft': '0 8px 24px -4px rgba(41, 54, 46, 0.06), 0 2px 6px -1px rgba(41, 54, 46, 0.03)',
+            'btn': '0 10px 20px -5px rgba(41, 54, 46, 0.28)'
+          }
+        }
+      }
+    };
+  </script>
+<style>
+    body {
+      -webkit-font-smoothing: antialiased;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+    @keyframes subtle-pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.03); }
+    }
+    .celebrate-glow {
+      animation: subtle-pulse 4s ease-in-out infinite;
+    }
+  </style>
+</head>
+<body class="bg-[#ECEBE5] min-h-screen flex items-center justify-center p-0 sm:p-4 font-sans antialiased selection:bg-forest/10">
+<!-- Mobile Viewport Container (390px wide on mobile frame) -->
+<div class="w-full max-w-[390px] min-h-screen sm:min-h-[844px] bg-[#FAF9F5] sm:rounded-[44px] shadow-2xl overflow-hidden flex flex-col justify-between relative border border-stone-border/80 px-6 pt-5 pb-8">
+<!-- Top Step Indicator & Navigation -->
+<header class="w-full pt-1 pb-2 flex flex-col gap-4" data-purpose="onboarding-header">
+<div class="flex items-center gap-3.5">
+<!-- Back Navigation Button -->
+<button aria-label="Go back" class="w-10 h-10 flex items-center justify-center rounded-full bg-white border border-[#E6E5E0] shadow-sm text-forest active:scale-95 transition-transform hover:bg-stone-50 focus:outline-none" type="button">
+<svg aria-hidden="true" class="w-4 h-4 stroke-[2.5]" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M15.75 19.5L8.25 12l7.5-7.5" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</button>
+<!-- 4-Step Progress Indicator (All 4 Active in Forest 900) -->
+<div aria-label="Step 4 of 4 completed" aria-valuemax="4" aria-valuemin="1" aria-valuenow="4" class="flex-1 grid grid-cols-4 gap-2 items-center" role="progressbar">
+<div class="h-1.5 rounded-full bg-[#29362E]"></div>
+<div class="h-1.5 rounded-full bg-[#29362E]"></div>
+<div class="h-1.5 rounded-full bg-[#29362E]"></div>
+<div class="h-1.5 rounded-full bg-[#29362E]"></div>
+</div>
+</div>
+</header>
+<!-- Main Content Area -->
+<main class="flex-1 flex flex-col justify-center items-center py-2" data-purpose="main-content">
+<!-- Hero Celebration Graphic -->
+<section aria-hidden="true" class="relative mb-5 flex items-center justify-center w-36 h-36">
+<!-- Playful subtle sage and ivory accent dots -->
+<div class="absolute -top-1 right-3 w-3 h-3 rounded-full bg-sage-200/90"></div>
+<div class="absolute top-7 -left-1 w-2.5 h-2.5 rounded-full bg-sage-500/30"></div>
+<div class="absolute bottom-3 -right-0.5 w-2 h-2 rounded-full bg-forest-900/30"></div>
+<div class="absolute -bottom-1 left-6 w-3.5 h-3.5 rounded-full bg-sage-100 border border-sage-200"></div>
+<div class="absolute top-2 left-6 w-1.5 h-1.5 rounded-full bg-sage-600/40"></div>
+<div class="absolute bottom-7 left-1 w-1.5 h-1.5 rounded-full bg-[#E5E3D8]"></div>
+<!-- Serene celebration concentric rings -->
+<div class="absolute inset-0 rounded-full bg-sage-100/60 scale-100 celebrate-glow"></div>
+<div class="absolute inset-2.5 rounded-full border border-sage-200/90 bg-[#F4F8F4]"></div>
+<!-- Central badge with checkmark -->
+<div class="relative w-[76px] h-[76px] rounded-full bg-[#29362E] flex items-center justify-center shadow-lg">
+<svg class="w-8 h-8 text-[#A8D3B0] stroke-[3.2]" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M4.5 12.75l6 6 9-13.5" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</div>
+</section>
+<!-- Headline & Copy -->
+<section class="text-center px-1 mb-6" data-purpose="status-summary">
+<h1 class="text-[30px] leading-tight font-bold tracking-tight text-[#202720] mb-2 font-sans">
+          You’re all set
+        </h1>
+<p class="text-[14px] leading-relaxed text-[#576151] font-normal max-w-[310px] mx-auto font-body">
+          Outloop runs quietly in the background on your phone, uses minimal battery, and can be paused anytime with one tap.
+        </p>
+</section>
+<!-- What happens next Card -->
+<section class="w-full bg-white rounded-2xl p-4 sm:p-5 border border-ivory-border shadow-soft" data-purpose="features-card">
+<h2 class="text-[15px] font-bold text-[#202720] mb-4">
+          What happens next
+        </h2>
+<!-- Feature Rows -->
+<div class="space-y-3.5">
+<!-- Row 1: Shield icon -->
+<div class="flex items-center gap-3.5">
+<div class="w-10 h-10 rounded-xl bg-sage-50 text-[#3C6445] flex items-center justify-center shrink-0 border border-sage-100">
+<svg aria-hidden="true" class="w-5 h-5 stroke-[2]" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</div>
+<span class="text-[14px] font-semibold text-[#202720]">
+              Guarding 3 installed apps
+            </span>
+</div>
+<!-- Divider -->
+<div class="h-px bg-[#F0EFEB] ml-[52px]"></div>
+<!-- Row 2: Clock icon -->
+<div class="flex items-center gap-3.5">
+<div class="w-10 h-10 rounded-xl bg-sage-50 text-[#3C6445] flex items-center justify-center shrink-0 border border-sage-100">
+<svg aria-hidden="true" class="w-5 h-5 stroke-[2]" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</div>
+<span class="text-[14px] font-semibold text-[#202720] leading-snug">
+              Take a 5, 15 or 60-minute break anytime
+            </span>
+</div>
+<!-- Divider -->
+<div class="h-px bg-[#F0EFEB] ml-[52px]"></div>
+<!-- Row 3: Lock icon -->
+<div class="flex items-center gap-3.5">
+<div class="w-10 h-10 rounded-xl bg-sage-50 text-[#3C6445] flex items-center justify-center shrink-0 border border-sage-100">
+<svg aria-hidden="true" class="w-5 h-5 stroke-[2]" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</div>
+<span class="text-[14px] font-semibold text-[#202720]">
+              All stats stay private on your device
+            </span>
+</div>
+</div>
+</section>
+</main>
+<!-- Bottom Action Buttons -->
+<footer class="w-full flex flex-col gap-3 pt-2" data-purpose="actions-footer">
+<!-- Secondary Action: Preview -->
+<button class="w-full py-3.5 px-6 rounded-full bg-white border border-[#D5D3CA] text-[#202720] text-[15px] font-semibold tracking-normal hover:bg-[#FAF9F5] active:scale-[0.985] transition-all shadow-sm text-center" type="button">
+        Preview how it works
+      </button>
+<!-- Primary Action: Go to Home -->
+<button class="w-full py-3.5 px-6 rounded-full bg-[#29362E] hover:bg-[#34453B] active:scale-[0.985] active:bg-[#1E2922] transition-all text-white text-[15px] font-semibold tracking-wide shadow-btn text-center" type="button">
+        Go to Home
+      </button>
+</footer>
+</div>
+</body></html>

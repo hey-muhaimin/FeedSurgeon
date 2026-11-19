@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"/>
+<title>Turn on protection - Outloop</title>
+<!-- Google Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&amp;family=Plus+Jakarta+Sans:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS CDN -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            surface: '#FAF9F5',
+            forest: {
+              900: '#29362E',
+              950: '#142119'
+            },
+            charcoal: '#202720',
+          },
+          fontFamily: {
+            sans: ['Manrope', 'Plus Jakarta Sans', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
+          },
+          boxShadow: {
+            'card-subtle': '0 8px 24px -4px rgba(20, 33, 25, 0.04), 0 2px 6px -1px rgba(20, 33, 25, 0.02)',
+          }
+        }
+      }
+    }
+  </script>
+<style data-purpose="custom-styling">
+    body {
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+    .pb-safe {
+      padding-bottom: max(1.5rem, env(safe-area-inset-bottom));
+    }
+    .pt-safe {
+      padding-top: max(1rem, env(safe-area-inset-top));
+    }
+  </style>
+</head>
+<body class="bg-[#FAF9F5] min-h-screen text-[#202720] font-sans antialiased flex flex-col justify-between">
+<!-- BEGIN: MainContent -->
+<main class="w-full max-w-[390px] mx-auto px-5 pt-safe flex-1 flex flex-col justify-between pb-6">
+<div>
+<!-- BEGIN: Navigation & Progress Header -->
+<header class="flex items-center gap-3 pt-2 pb-5" data-purpose="top-navigation-bar">
+<!-- Back Button -->
+<button aria-label="Go back" class="w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-sm border border-[#E3E2DF] text-[#29362E] active:scale-95 transition-transform shrink-0" type="button">
+<svg class="w-5 h-5 -translate-x-0.5" fill="none" stroke="currentColor" stroke-width="2.2" viewbox="0 0 24 24">
+<path d="M15 19l-7-7 7-7" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</button>
+<!-- 4-Step Progress Segmented Bar -->
+<div aria-valuemax="4" aria-valuemin="1" aria-valuenow="3" class="flex-1 flex items-center gap-1.5 pl-1" role="progressbar">
+<span class="h-1.5 flex-1 rounded-full bg-[#29362E] transition-all"></span>
+<span class="h-1.5 flex-1 rounded-full bg-[#29362E] transition-all"></span>
+<span class="h-1.5 flex-1 rounded-full bg-[#29362E] transition-all"></span>
+<span class="h-1.5 flex-1 rounded-full bg-[#E3E2DF] transition-all"></span>
+</div>
+</header>
+<!-- END: Navigation & Progress Header -->
+<!-- BEGIN: Title & Context -->
+<section class="mt-1 mb-5" data-purpose="title-section">
+<!-- Security Shield Badge -->
+<div class="w-11 h-11 rounded-2xl flex items-center justify-center mb-4 bg-[#EBF3ED] border border-[#C5DDD0] text-[#29362E] shadow-sm">
+<svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" viewbox="0 0 24 24">
+<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+<path d="M9 12l2 2 4-4" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</div>
+<h1 class="text-[26px] font-bold text-[#202720] tracking-tight leading-tight">
+      Turn on protection
+    </h1>
+<p class="mt-2 text-[14px] leading-relaxed text-[#576151] font-normal">
+      Android accessibility settings allow Outloop to spot when a short-form video feed opens, with zero network tracking.
+    </p>
+</section>
+<!-- END: Title & Context -->
+<!-- BEGIN: Ready Status Banner -->
+<section class="mb-5 p-3.5 rounded-2xl flex items-center gap-3.5 bg-[#EBF3ED] border border-[#C5DDD0] text-[#1E3E2B] transition-all shadow-sm" data-purpose="status-banner">
+<div class="w-9 h-9 rounded-full flex items-center justify-center bg-[#29362E] text-white shrink-0 shadow-sm">
+<svg class="w-5 h-5 stroke-[2.8]" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M5 13l4 4L19 7" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</div>
+<div class="flex-1">
+<h2 class="font-bold text-[14px] leading-tight text-[#1E3E2B]">Protection is turned on</h2>
+<p class="text-[12px] mt-0.5 leading-snug text-[#2C4A38]">You're ready to proceed to the final step.</p>
+</div>
+</section>
+<!-- END: Ready Status Banner -->
+<!-- BEGIN: Instructional Card Steps -->
+<section class="bg-white rounded-3xl p-5 shadow-card-subtle border border-[#EBEAE5]" data-purpose="instructions-card">
+<h3 class="text-[15px] font-bold text-[#202720] mb-4">How to turn it on</h3>
+<ol class="space-y-3.5">
+<!-- Step 1 -->
+<li class="flex items-start gap-3.5">
+<span class="w-7 h-7 rounded-full font-bold text-[13px] flex items-center justify-center shrink-0 mt-0.5 bg-[#E8EEF5] text-[#2C3E50] border border-[#D0DDEB]">
+          1
+        </span>
+<div class="flex-1 pb-3 border-b border-[#F0EFEB]">
+<h4 class="text-[14px] font-semibold text-[#202720] leading-snug">Tap Open System Settings</h4>
+<p class="text-[12px] text-[#737874] mt-0.5 leading-relaxed">Takes you straight to Android's Accessibility page.</p>
+</div>
+</li>
+<!-- Step 2 -->
+<li class="flex items-start gap-3.5">
+<span class="w-7 h-7 rounded-full font-bold text-[13px] flex items-center justify-center shrink-0 mt-0.5 bg-[#E8EEF5] text-[#2C3E50] border border-[#D0DDEB]">
+          2
+        </span>
+<div class="flex-1 pb-3 border-b border-[#F0EFEB]">
+<h4 class="text-[14px] font-semibold text-[#202720] leading-snug">Tap Downloaded apps</h4>
+<p class="text-[12px] text-[#737874] mt-0.5 leading-relaxed">Usually located near the center of the list.</p>
+</div>
+</li>
+<!-- Step 3 -->
+<li class="flex items-start gap-3.5">
+<span class="w-7 h-7 rounded-full font-bold text-[13px] flex items-center justify-center shrink-0 mt-0.5 bg-[#E8EEF5] text-[#2C3E50] border border-[#D0DDEB]">
+          3
+        </span>
+<div class="flex-1 pt-0.5">
+<h4 class="text-[14px] font-semibold text-[#202720] leading-snug">Select Outloop</h4>
+<p class="text-[12px] text-[#737874] mt-0.5 leading-relaxed">Switch it ON and tap Allow.</p>
+</div>
+</li>
+</ol>
+</section>
+<!-- END: Instructional Card Steps -->
+</div>
+<!-- BEGIN: Dual Action Footer -->
+<footer class="pt-6 pb-safe flex items-center gap-3 w-full" data-purpose="footer-actions">
+<!-- Secondary Action Button: Soft Outlined Pill -->
+<button class="flex-1 h-13 py-3.5 rounded-full bg-white hover:bg-[#F4F4F0] active:scale-[0.98] font-semibold text-[14px] text-[#29362E] border border-[#C3C8C2] shadow-sm transition-all flex items-center justify-center text-center px-2" type="button">
+    Open System Settings
+  </button>
+<!-- Primary Action Button: Solid Forest 900 Pill -->
+<button class="flex-1 h-13 py-3.5 rounded-full bg-[#29362E] hover:bg-[#1f2b24] active:scale-[0.98] font-semibold text-[14px] text-[#FAF9F5] shadow-sm transition-all flex items-center justify-center text-center px-2" type="button">
+    Continue
+  </button>
+</footer>
+<!-- END: Dual Action Footer -->
+</main>
+<!-- END: MainContent -->
+</body></html>

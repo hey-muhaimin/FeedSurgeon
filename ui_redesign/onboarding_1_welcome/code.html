@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"/>
+<title>Outloop - Take back your focus</title>
+<!-- Tailwind CSS CDN -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Google Fonts: Manrope & Plus Jakarta Sans -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&amp;family=Plus+Jakarta+Sans:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        fontFamily: {
+          sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+          display: ['"Manrope"', 'sans-serif'],
+          heading: ['"Manrope"', 'sans-serif'],
+        },
+        colors: {
+          surface: '#FAF9F5',
+          forest: {
+            800: '#1e2922',
+            900: '#29362E',
+            950: '#142119',
+          },
+          ink: {
+            primary: '#202720',
+            secondary: '#505952',
+            muted: '#7E8880',
+          },
+          sage: {
+            50: '#F3F6F2',
+            100: '#E4ECE2',
+            200: '#CBD9C8',
+            300: '#ADC4AA',
+            500: '#759074',
+          },
+          border: {
+            subtle: '#EAE6DD',
+            inactive: '#E1DED5',
+          }
+        },
+        boxShadow: {
+          'card': '0 8px 30px -4px rgba(41, 54, 46, 0.05), 0 2px 10px -2px rgba(41, 54, 46, 0.03)',
+          'badge': '0 4px 16px -2px rgba(20, 33, 25, 0.08), 0 2px 6px -1px rgba(20, 33, 25, 0.04)',
+          'cta': '0 8px 20px -4px rgba(41, 54, 46, 0.28)',
+        }
+      }
+    }
+  }
+</script>
+<style data-purpose="base-styling">
+  body {
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+    -webkit-font-smoothing: antialiased;
+    background-color: #FAF9F5;
+  }
+  .material-symbols-outlined {
+    font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 20;
+  }
+</style>
+</head>
+<body class="bg-[#FAF9F5] text-ink-primary font-sans min-h-screen flex flex-col justify-between antialiased selection:bg-sage-100">
+<!-- BEGIN: MainContainer -->
+<main class="w-full max-w-[390px] mx-auto min-h-screen flex flex-col justify-between px-5 pt-3 pb-7 sm:px-6">
+<!-- BEGIN: TopSection -->
+<div class="w-full flex-1 flex flex-col justify-start" data-purpose="header-and-hero">
+<!-- BEGIN: StepIndicator -->
+<nav aria-label="Onboarding Progress" class="pt-2 pb-5">
+<div class="grid grid-cols-4 gap-2">
+<div class="h-1.5 rounded-full bg-[#29362E] transition-all duration-300"></div>
+<div class="h-1.5 rounded-full bg-[#E1DED5]"></div>
+<div class="h-1.5 rounded-full bg-[#E1DED5]"></div>
+<div class="h-1.5 rounded-full bg-[#E1DED5]"></div>
+</div>
+</nav>
+<!-- END: StepIndicator -->
+<!-- BEGIN: HeroGraphic -->
+<section class="relative w-full aspect-[16/10.5] rounded-3xl bg-gradient-to-b from-[#F2EFE8] to-[#E9E5DC]/80 border border-[#E6E2D8] p-4 flex items-center justify-center overflow-hidden shadow-card" data-purpose="hero-illustration">
+<!-- Background subtle atmospheric glows -->
+<div class="absolute -top-10 -right-10 w-44 h-44 rounded-full bg-sage-200/40 blur-3xl pointer-events-none"></div>
+<div class="absolute -bottom-8 -left-8 w-40 h-40 rounded-full bg-[#E1DED5]/60 blur-2xl pointer-events-none"></div>
+<!-- Outloop 'Open Loop' Brand Centerpiece -->
+<div class="relative z-10 flex items-center justify-center">
+<!-- Forest 900 rounded container squircle -->
+<div class="w-28 h-28 sm:w-32 sm:h-32 rounded-[28px] bg-[#29362E] shadow-[0_12px_28px_-6px_rgba(20,33,25,0.35)] flex items-center justify-center relative border border-[#3d4f43]">
+<!-- Geometric Open Loop SVG with 28° break and sage contemplation dot -->
+<svg class="w-20 h-20 sm:w-22 sm:h-22" fill="none" viewbox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+<!-- Calibrated Open Loop: Starts at 18° and arcs to 350° creating deliberate ~28° gap in upper right quadrant -->
+<path d="M 72 26 A 34 34 0 1 0 50 84 A 34 34 0 0 0 84 50" stroke="#FAF9F5" stroke-linecap="round" stroke-linejoin="round" stroke-width="5"></path>
+<!-- Sage contemplation dot in center -->
+<circle cx="50" cy="50" fill="#ADC4AA" r="4.5"></circle>
+</svg>
+</div>
+</div>
+<!-- Floating Interactive Badge Left: Reels paused -->
+<div class="absolute left-3.5 top-4 bg-[#FAF9F5]/95 backdrop-blur-md px-3 py-1.5 rounded-full border border-border-subtle flex items-center gap-1.5 shadow-badge">
+<span class="w-1.5 h-1.5 rounded-full bg-sage-500 animate-pulse"></span>
+<span class="font-display text-[11px] font-semibold tracking-tight text-ink-primary">Reels paused</span>
+</div>
+<!-- Floating Interactive Badge Right: Shorts paused -->
+<div class="absolute right-3.5 bottom-4 bg-[#FAF9F5]/95 backdrop-blur-md px-3 py-1.5 rounded-full border border-border-subtle flex items-center gap-1.5 shadow-badge">
+<span class="w-1.5 h-1.5 rounded-full bg-sage-500 animate-pulse"></span>
+<span class="font-display text-[11px] font-semibold tracking-tight text-ink-primary">Shorts paused</span>
+</div>
+</section>
+<!-- END: HeroGraphic -->
+<!-- BEGIN: ValuePropositionCopy -->
+<section class="mt-5 text-left" data-purpose="title-and-lead">
+<h1 class="font-display text-[28px] leading-[34px] font-bold tracking-tight text-[#202720]">
+        Take back your focus
+      </h1>
+<p class="mt-2 text-[14px] leading-[21px] text-ink-secondary font-normal">
+        Outloop gently steps in when short-form video feeds open, giving you the space to scroll with intention.
+      </p>
+</section>
+<!-- END: ValuePropositionCopy -->
+<!-- BEGIN: ValueCalloutCards -->
+<section class="mt-4 space-y-2.5" data-purpose="feature-highlights">
+<!-- Card 1: What it checks -->
+<div class="bg-white rounded-2xl p-3.5 border border-border-subtle shadow-card flex items-start gap-3">
+<div class="w-9 h-9 rounded-xl bg-sage-50 border border-sage-100 flex-shrink-0 flex items-center justify-center text-[#29362E] mt-0.5">
+<span class="material-symbols-outlined text-[19px]">visibility</span>
+</div>
+<div>
+<h2 class="font-display text-[13px] font-bold text-[#202720] leading-snug">What it checks</h2>
+<p class="text-[12px] text-ink-secondary leading-[17px] mt-0.5 font-normal">
+            Whether a Shorts, Reels, or Watch feed is active in apps you choose.
+          </p>
+</div>
+</div>
+<!-- Card 2: What stays private -->
+<div class="bg-white rounded-2xl p-3.5 border border-border-subtle shadow-card flex items-start gap-3">
+<div class="w-9 h-9 rounded-xl bg-sage-50 border border-sage-100 flex-shrink-0 flex items-center justify-center text-[#29362E] mt-0.5">
+<span class="material-symbols-outlined text-[19px]">shield</span>
+</div>
+<div>
+<h2 class="font-display text-[13px] font-bold text-[#202720] leading-snug">What stays private</h2>
+<p class="text-[12px] text-ink-secondary leading-[17px] mt-0.5 font-normal">
+            100% on-device. Your messages, passwords, and habits are never logged or transmitted.
+          </p>
+</div>
+</div>
+</section>
+<!-- END: ValueCalloutCards -->
+</div>
+<!-- END: TopSection -->
+<!-- BEGIN: BottomActionFooter -->
+<footer class="w-full pt-4 mt-auto" data-purpose="actions-and-disclaimer">
+<p class="text-center text-[12px] leading-relaxed text-ink-muted font-normal px-2 mb-3.5">
+      Choosing Not now leaves protection paused until enabled.
+    </p>
+<div class="flex items-center gap-3">
+<button aria-label="Skip setup for now" class="flex-1 py-3 px-4 rounded-full font-display text-[14px] font-semibold text-[#202720] bg-transparent border border-[#D5D0C6] hover:bg-[#F2EFE8] active:scale-[0.98] transition duration-150 text-center flex items-center justify-center" type="button">
+        Not now
+      </button>
+<button aria-label="Get started with setup" class="flex-1 py-3 px-4 rounded-full font-display text-[14px] font-semibold text-white bg-[#29362E] hover:bg-[#1e2922] active:scale-[0.98] shadow-cta transition duration-150 text-center flex items-center justify-center" type="button">
+        Get started
+      </button>
+</div>
+</footer>
+<!-- END: BottomActionFooter -->
+</main>
+<!-- END: MainContainer -->
+</body></html>

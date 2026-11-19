@@ -1,0 +1,266 @@
+<!DOCTYPE html><html lang="en"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport">
+<meta content="mobile_stack" name="shell-type">
+<title>Outloop - Active Pause</title>
+<link href="https://fonts.googleapis.com" rel="preconnect">
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700&amp;family=Plus+Jakarta+Sans:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            "forest-950": "#131a16",
+            "forest-900": "#1a251e",
+            "forest-850": "#1f2c24",
+            "forest-800": "#29362e",
+            "sage-300": "#c3cdbe",
+            "sage-400": "#a8b3a0",
+            "sage-500": "#8d9985",
+            "ivory": "#faf9f5",
+            "ivory-muted": "#e6e5e0",
+            "amber-warm": "#e9c089",
+          },
+          fontFamily: {
+            manrope: ["Manrope", "sans-serif"],
+            jakarta: ["Plus Jakarta Sans", "sans-serif"],
+          },
+          animation: {
+            'breathe-glow': 'breatheGlow 8s cubic-bezier(0.4, 0, 0.2, 1) infinite',
+            'ring-pulse-inner': 'ringPulseInner 8s cubic-bezier(0.4, 0, 0.2, 1) infinite',
+            'ring-pulse-outer': 'ringPulseOuter 8s cubic-bezier(0.4, 0, 0.2, 1) infinite',
+            'loop-rotate': 'gentleSpin 60s linear infinite',
+          },
+          keyframes: {
+            breatheGlow: {
+              '0%, 100%': { transform: 'scale(0.92)', opacity: '0.35' },
+              '50%': { transform: 'scale(1.22)', opacity: '0.75' },
+            },
+            ringPulseInner: {
+              '0%, 100%': { transform: 'scale(0.94)', opacity: '0.2' },
+              '50%': { transform: 'scale(1.08)', opacity: '0.5' },
+            },
+            ringPulseOuter: {
+              '0%, 100%': { transform: 'scale(0.88)', opacity: '0.1' },
+              '50%': { transform: 'scale(1.18)', opacity: '0.3' },
+            },
+            gentleSpin: {
+              '0%': { transform: 'rotate(0deg)' },
+              '100%': { transform: 'rotate(360deg)' },
+            }
+          }
+        }
+      }
+    }
+  </script>
+<style>
+    @layer base {
+      html, body {
+        width: 100%;
+        height: 100%;
+        margin: 0;
+        padding: 0;
+        overflow-x: hidden;
+      }
+      body {
+        overscroll-behavior-y: none;
+      }
+      .pb-safe {
+        padding-bottom: max(env(safe-area-inset-bottom, 20px), 20px);
+      }
+      .pt-safe {
+        padding-top: max(env(safe-area-inset-top, 14px), 14px);
+      }
+    }
+    ::-webkit-scrollbar { display: none; }
+
+    /* Radial ambience */
+    .bg-sanctuary {
+      background: radial-gradient(circle at 50% 30%, #25332a 0%, #1a251e 55%, #131b15 100%);
+    }
+
+    /* Dynamic breathing arc transition */
+    #loopProgressArc {
+      transition: stroke-dashoffset 4s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+  </style>
+</head>
+<body class="bg-forest-950 text-ivory font-manrope antialiased selection:bg-sage-400/30 flex flex-col justify-between min-h-screen relative overflow-hidden">
+<!-- Ambient Backdrop Light Glows -->
+<div class="fixed inset-0 pointer-events-none z-0">
+<div class="absolute top-[18%] left-1/2 -translate-x-1/2 -translate-y-1/2 w-[340px] h-[340px] rounded-full bg-sage-400/10 blur-[100px] animate-breathe-glow"></div>
+<div class="absolute bottom-[20%] right-[-10%] w-[280px] h-[280px] rounded-full bg-forest-800/25 blur-[90px]"></div>
+<div class="absolute top-[-5%] left-[-10%] w-[240px] h-[240px] rounded-full bg-sage-500/5 blur-[80px]"></div>
+</div>
+<!-- iOS Status Bar & App Bar Header -->
+<header class="relative z-20 w-full pt-safe px-6">
+<!-- Mock Phone Status Bar (Time, Dynamic Island feel, Battery/Signal) -->
+<div class="flex items-center justify-between text-sage-300/80 text-[13px] font-medium tracking-tight py-1 select-none">
+<span class="font-semibold text-ivory text-sm tracking-normal">9:41</span>
+<div class="flex items-center gap-1.5 text-sage-300/90">
+<span class="material-symbols-outlined text-[16px] leading-none">signal_cellular_alt</span>
+<span class="material-symbols-outlined text-[16px] leading-none">wifi</span>
+<span class="material-symbols-outlined text-[18px] leading-none">battery_full</span>
+</div>
+</div>
+<!-- Navigation / Overlay Identity & Close -->
+<div class="mt-3 flex items-center justify-between">
+<!-- Outloop Brand Pill -->
+<div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/[0.04] border border-white/[0.08] backdrop-blur-md">
+<!-- Open Loop Iconic Mark -->
+<svg class="w-4 h-4 text-sage-300" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="2.5" viewBox="0 0 24 24">
+<path d="M12 3a9 9 0 1 0 9 9" opacity="0.3"></path>
+<path d="M21 12a9 9 0 0 0-9-9" stroke="currentColor"></path>
+</svg>
+<span class="text-[12px] font-semibold tracking-wider text-sage-300 uppercase">Outloop</span>
+<span class="w-1 h-1 rounded-full bg-sage-400/50"></span>
+<span class="text-[11px] font-medium text-sage-400/80">Active Pause</span>
+</div>
+<!-- Tactile Dismiss Icon -->
+<button aria-label="Dismiss pause" class="w-9 h-9 rounded-full bg-white/[0.05] hover:bg-white/[0.12] active:scale-95 border border-white/[0.08] flex items-center justify-center text-sage-300 hover:text-ivory transition-all backdrop-blur-md cursor-pointer" id="dismissBtn">
+<span class="material-symbols-outlined text-[18px]">close</span>
+</button>
+</div>
+</header>
+<!-- Main Sanctuary Experience -->
+<main class="relative z-10 flex-1 flex flex-col items-center justify-center px-6 py-2 max-w-md mx-auto w-full text-center">
+<!-- Breathing Pacer & Open Loop Brand Motif -->
+<div aria-label="Tap to synchronize breathing" class="relative w-52 h-52 my-3 flex items-center justify-center cursor-pointer select-none group" id="breathPacer" role="button"><div class="absolute inset-0 rounded-full border border-sage-400/15 animate-ring-pulse-outer pointer-events-none" id="outerPulseRing"></div><div class="absolute inset-3 rounded-full border border-sage-300/20 bg-sage-400/[0.02] animate-ring-pulse-inner pointer-events-none" id="innerPulseRing"></div><div class="absolute inset-6 rounded-full bg-sage-400/15 blur-xl transition-all duration-1000" id="breatheHalo"></div><svg class="relative w-44 h-44 -rotate-90 drop-shadow-[0_0_24px_rgba(168,179,160,0.18)]" viewBox="0 0 120 120"><circle cx="60" cy="60" fill="none" r="48" stroke="rgba(250, 249, 245, 0.08)" stroke-dasharray="270" stroke-dashoffset="35" stroke-linecap="round" stroke-width="2.5"></circle><circle cx="60" cy="60" fill="none" id="loopProgressArc" r="48" stroke="#C3CDBE" stroke-dasharray="270" stroke-dashoffset="190" stroke-linecap="round" stroke-width="3.5"></circle></svg><div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none"><div class="flex items-center justify-center w-3 h-3 mb-1.5"><span class="w-1.5 h-1.5 rounded-full bg-amber-warm transition-transform duration-700 shadow-[0_0_8px_rgba(233,192,137,0.7)]" id="amberDot"></span></div><span class="font-manrope text-[18px] font-bold tracking-[0.22em] uppercase text-ivory drop-shadow-sm transition-all duration-700" id="breathPhaseText">Inhale</span><div class="flex items-center gap-1.5 mt-1 text-sage-400 text-[11px] font-medium tracking-wider"><span class="text-sage-300/80" id="breathSubtext">Expand gently</span><span class="text-white/20">•</span><span class="font-semibold text-amber-warm/90 tabular-nums" id="breathCountdown">4s</span></div></div></div>
+<!-- Editorial Narrative & Context Note -->
+<div class="mt-4 mb-2 flex flex-col items-center"><h1 class="text-[21px] sm:text-[26px] font-semibold text-ivory tracking-tight leading-[1.2] max-w-[280px]">Take a breath.</h1><p class="mt-2 text-[13px] leading-relaxed text-sage-400 font-jakarta max-w-[280px] mx-auto text-balance">Instagram Reels was opened. Stay mindful of your intent, or step away.</p></div>
+</main>
+<!-- Interactive Intentional Actions & Dignified Footer -->
+<footer class="relative z-20 w-full max-w-md mx-auto px-6 pb-safe flex flex-col gap-3"><button class="group relative w-full h-12 rounded-xl bg-ivory text-forest-950 font-manrope font-semibold text-[14px] tracking-tight flex items-center justify-center gap-2 shadow-[0_8px_24px_rgba(0,0,0,0.35)] hover:bg-white active:scale-[0.98] transition-all cursor-pointer" id="closeAppBtn"><span class="material-symbols-outlined text-[18px] text-forest-900 group-hover:-translate-x-0.5 transition-transform">spa</span><span>Close Instagram</span></button><button class="w-full h-11 py-2.5 rounded-xl bg-white/[0.05] hover:bg-white/[0.09] active:scale-[0.98] border border-white/[0.12] text-white/90 font-manrope font-medium text-[13px] flex items-center justify-center gap-2 transition-all backdrop-blur-md cursor-pointer" id="mindfulPassBtn"><span class="material-symbols-outlined text-[16px] text-sage-400">schedule</span><span>Continue with intent</span><span class="text-sage-400 font-jakarta text-[11px] font-normal tracking-tight">(10m pass)</span></button><div class="hidden flex-col gap-2 pt-1 pb-1 transition-all" id="intentionTray"><span class="text-[11px] font-semibold tracking-wider text-sage-400 uppercase text-center">Quick intention</span><div class="grid grid-cols-2 gap-2"><button class="intention-choice px-3 py-2 rounded-xl bg-white/[0.06] hover:bg-white/[0.12] border border-white/[0.08] text-left text-[12px] text-ivory flex items-center gap-2 active:scale-95 transition-all"><span class="material-symbols-outlined text-[15px] text-amber-warm">send</span><span class="truncate">Direct message</span></button><button class="intention-choice px-3 py-2 rounded-xl bg-white/[0.06] hover:bg-white/[0.12] border border-white/[0.08] text-left text-[12px] text-ivory flex items-center gap-2 active:scale-95 transition-all"><span class="material-symbols-outlined text-[15px] text-amber-warm">bookmark</span><span class="truncate">Saved post</span></button></div></div><p class="text-center text-[11px] text-sage-400/70 font-jakarta leading-relaxed pt-1 pb-1 px-4 text-balance">Pause protection anytime in Settings.</p></footer>
+<!-- Breath Pacing & Interactive Logic -->
+<script>
+    (function initOutloopPause() {
+      const breathPhaseText = document.getElementById('breathPhaseText');
+      const breathSubtext = document.getElementById('breathSubtext');
+      const breathCountdown = document.getElementById('breathCountdown');
+      const loopProgressArc = document.getElementById('loopProgressArc');
+      const amberDot = document.getElementById('amberDot');
+      const breatheHalo = document.getElementById('breatheHalo');
+      const elapsedCounter = document.getElementById('elapsedCounter');
+      const mindfulPassBtn = document.getElementById('mindfulPassBtn');
+      const closeAppBtn = document.getElementById('closeAppBtn');
+      const dismissBtn = document.getElementById('dismissBtn');
+      const intentionTray = document.getElementById('intentionTray');
+
+      // State
+      let phase = 'inhale'; // alternating 'inhale' <-> 'exhale'
+      let phaseSecondsLeft = 4;
+      let totalElapsed = 0;
+
+      // Update breathing visuals
+      function applyBreathState(isInit = false) {
+        if (phase === 'inhale') {
+          breathPhaseText.textContent = 'Inhale';
+          breathSubtext.textContent = 'Expand gently';
+          amberDot.classList.add('scale-150');
+          amberDot.classList.remove('scale-90');
+          breatheHalo.classList.remove('opacity-25', 'scale-90');
+          breatheHalo.classList.add('opacity-70', 'scale-125');
+          // Arc full loop coverage
+          loopProgressArc.style.strokeDashoffset = '35';
+        } else {
+          breathPhaseText.textContent = 'Exhale';
+          breathSubtext.textContent = 'Settle softly';
+          amberDot.classList.remove('scale-150');
+          amberDot.classList.add('scale-90');
+          breatheHalo.classList.remove('opacity-70', 'scale-125');
+          breatheHalo.classList.add('opacity-25', 'scale-90');
+          // Arc retracted loop
+          loopProgressArc.style.strokeDashoffset = '195';
+        }
+      }
+
+      // Initial state
+      applyBreathState(true);
+
+      // 1-second cadence timer for smooth countdown and elapsed tally
+      setInterval(() => {
+        totalElapsed++;
+        elapsedCounter.textContent = `${totalElapsed}s`;
+
+        phaseSecondsLeft--;
+        if (phaseSecondsLeft <= 0) {
+          phase = phase === 'inhale' ? 'exhale' : 'inhale';
+          phaseSecondsLeft = 4;
+          applyBreathState();
+        }
+        breathCountdown.textContent = `${phaseSecondsLeft}s`;
+      }, 1000);
+
+      // Tap pacer to reset rhythm or sync breathing
+      const breathPacer = document.getElementById('breathPacer');
+      breathPacer.addEventListener('click', () => {
+        phase = phase === 'inhale' ? 'exhale' : 'inhale';
+        phaseSecondsLeft = 4;
+        breathCountdown.textContent = '4s';
+        applyBreathState();
+      });
+
+      // Pass Granted Interaction
+      mindfulPassBtn.addEventListener('click', (e) => {
+        if (intentionTray.classList.contains('hidden')) {
+          intentionTray.classList.remove('hidden');
+          mindfulPassBtn.innerHTML = `
+            <span class="material-symbols-outlined text-[18px] text-amber-warm">done_all</span>
+            <span>Grant 10m Pass</span>
+          `;
+        } else {
+          mindfulPassBtn.innerHTML = `
+            <span class="material-symbols-outlined text-[18px] text-sage-300">check_circle</span>
+            <span class="text-sage-300 font-semibold">10m Pass Granted</span>
+          `;
+          mindfulPassBtn.classList.add('bg-sage-400/20', 'border-sage-400/30');
+          intentionTray.classList.add('hidden');
+          setTimeout(() => {
+            if (window.history.length > 1) {
+              window.history.back();
+            }
+          }, 800);
+        }
+      });
+
+      // Quick-intention pill selection
+      document.querySelectorAll('.intention-choice').forEach(btn => {
+        btn.addEventListener('click', () => {
+          mindfulPassBtn.innerHTML = `
+            <span class="material-symbols-outlined text-[18px] text-sage-300">check_circle</span>
+            <span class="text-sage-300 font-semibold">10m Pass • ${btn.querySelector('span:last-child').textContent}</span>
+          `;
+          mindfulPassBtn.classList.add('bg-sage-400/20', 'border-sage-400/30');
+          intentionTray.classList.add('hidden');
+        });
+      });
+
+      // Primary Close App
+      closeAppBtn.addEventListener('click', () => {
+        closeAppBtn.innerHTML = `
+          <span class="material-symbols-outlined text-[20px] text-forest-900 animate-spin">refresh</span>
+          <span>Closing Instagram...</span>
+        `;
+        setTimeout(() => {
+          closeAppBtn.innerHTML = `
+            <span class="material-symbols-outlined text-[20px] text-forest-900">check</span>
+            <span>Space Protected</span>
+          `;
+        }, 600);
+      });
+
+      // Dismiss / Close
+      dismissBtn.addEventListener('click', () => {
+        if (window.history.length > 1) {
+          window.history.back();
+        }
+      });
+    })();
+  </script>
+
+
+</body></html>

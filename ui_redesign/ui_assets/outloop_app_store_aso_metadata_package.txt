@@ -1,0 +1,72 @@
+# Outloop — App Store & Google Play ASO Listing Package
+
+---
+
+## 1. App Store Metadata
+
+### App Name (30 chars max)
+**Outloop: Break Reel Addiction** (30 / 30 chars)
+
+### Subtitle (30 chars max)
+**Mindful Short Video Blocker** (29 / 30 chars)
+
+### Short Description (Google Play — 80 chars max)
+**Pause mindless scrolling. Intercept Reels & Shorts with calm, mindful friction.** (79 / 80 chars)
+
+---
+
+## 2. Keywords (100 chars max)
+`screen time,blocker,doomscrolling,focus,reels,shorts blocker,digital detox,habit,mindfulness,scroll` (99 / 100 chars)
+
+---
+
+## 3. Category Recommendations
+- **Primary Category:** Productivity
+- **Secondary Category:** Health & Fitness (Mental Wellbeing / Digital Wellness)
+
+---
+
+## 4. Full Description (App Store & Google Play)
+
+**Break the doomscroll cycle without deleting your favorite apps.**
+
+Ever opened Instagram or YouTube to message a friend, only to lose 45 minutes to an endless feed of Reels or Shorts? You're not alone. Short-form algorithmic video is engineered to capture your attention and keep you hooked.
+
+**Outloop** gives you back your choice. Rather than abruptly locking you out of entire apps, Outloop acts as an intelligent, serene gatekeeper. The moment a short-form video feed begins playing, Outloop steps in with a calming, breathing intervention—breaking the subconscious loop before autopilot takes over.
+
+### ✨ How Outloop Works
+
+1. **Targeted Feed Interception**: Outloop specifically identifies when Reels, YouTube Shorts, or Facebook Reels open, while leaving DMs, feeds, and essential features uninterrupted.
+2. **The Mindful Pause**: A tranquil 2-to-4-second breathing pause allows your prefrontal cortex to re-engage. Reflect on your intent before continuing.
+3. **Intentional Choices**: Exit directly with a single tap, or proceed with a timed 5-minute mindful pass if you genuinely intended to watch.
+4. **Actionable Insights**: Track your daily reclaimed time, avoided loops, and weekly streaks as you rebuild intentional phone habits.
+
+---
+
+### 🔒 100% Private & On-Device
+
+Your privacy is our foundational commitment:
+- **Zero Data Collection**: No browsing history, keystrokes, personal messages, or credentials are ever monitored, recorded, or transmitted.
+- **Offline Processing**: All detection rules run exclusively on your device hardware using local accessibility APIs.
+- **Zero Cloud Accounts**: No logins or remote servers required. Your habit statistics remain locked on your device.
+
+---
+
+### 🌿 Key Features
+
+- **Custom Guarded Apps**: Toggle protection independently for Instagram, YouTube, Facebook, and more.
+- **Adjustable Breathing Friction**: Tailor the reset duration (2s quick reset vs. 4s deep breath) to match your workflow.
+- **Temporary Breathers**: Take a scheduled 5-minute, 15-minute, or 1-hour mindful pass whenever you need uninterrupted access.
+- **Dark & Light Mode**: Serene, eye-friendly aesthetics crafted around the principles of calm, intentional technology.
+- **Battery-Efficient**: Engineered with minimal background resource usage so your battery stays full all day.
+
+Reclaim your focus. Take a breath. Step out of the loop with **Outloop**.
+
+---
+
+## 5. What’s New (Version 2.4.0 — Release Notes) (500 chars max)
+• Brand-new Outloop design experience with elevated dark and light mode aesthetics.
+• Enhanced breathing pause overlay with adjustable 2s and 4s pacing.
+• Configurable 5-minute mindful pass durations for intentional viewing.
+• Advanced on-device analytics: view reclaimed minutes, streaks, and per-app distraction breakdown.
+• Performance optimizations ensuring ultra-low battery footprint and instant feed interception. (449 / 500 chars)

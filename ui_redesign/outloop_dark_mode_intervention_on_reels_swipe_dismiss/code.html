@@ -1,0 +1,526 @@
+<!DOCTYPE html><html class="dark" lang="en" style="--breath-cycle: 8s; --transition-duration: 4s;"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport">
+<meta content="mobile_stack" name="shell-type">
+<title>Outloop - Active Pause</title>
+<link href="https://fonts.googleapis.com" rel="preconnect">
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&amp;family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            "surface-dim": "#0a0e14",
+            "glass-dark": "rgba(12, 16, 23, 0.78)",
+            "glass-card": "rgba(22, 27, 38, 0.65)",
+            "emerald-accent": "#4edea3",
+            "amber-warm": "#ffb95f",
+            "ivory-pure": "#faf9f6",
+            "forest-deep": "#0f1713",
+            "sage-glow": "#7b9e87"
+          },
+          fontFamily: {
+            manrope: ["Manrope", "sans-serif"],
+            jakarta: ["Plus Jakarta Sans", "sans-serif"],
+          },
+          animation: {
+            'breathe-glow': 'breatheGlow var(--breath-cycle, 8s) cubic-bezier(0.4, 0, 0.2, 1) infinite',
+            'ring-pulse-inner': 'ringPulseInner var(--breath-cycle, 8s) cubic-bezier(0.4, 0, 0.2, 1) infinite',
+            'ring-pulse-outer': 'ringPulseOuter var(--breath-cycle, 8s) cubic-bezier(0.4, 0, 0.2, 1) infinite',
+            'float-subtle': 'floatPill 2.5s ease-in-out infinite alternate',
+          },
+          keyframes: {
+            breatheGlow: {
+              '0%, 100%': { transform: 'scale(0.92)', opacity: '0.2' },
+              '50%': { transform: 'scale(1.22)', opacity: '0.5' },
+            },
+            ringPulseInner: {
+              '0%, 100%': { transform: 'scale(0.96)', opacity: '0.25' },
+              '50%': { transform: 'scale(1.07)', opacity: '0.6' },
+            },
+            ringPulseOuter: {
+              '0%, 100%': { transform: 'scale(0.92)', opacity: '0.12' },
+              '50%': { transform: 'scale(1.14)', opacity: '0.35' },
+            },
+            floatPill: {
+              '0%': { transform: 'translateY(0px)' },
+              '100%': { transform: 'translateY(3px)' },
+            }
+          }
+        }
+      }
+    }
+  </script>
+<style>
+    :root {
+      --breath-cycle: 8s;
+      --transition-duration: 4s;
+    }
+    @layer base {
+      html, body {
+        width: 100%;
+        height: 100%;
+        margin: 0;
+        padding: 0;
+        overflow: hidden;
+        background-color: #06090e;
+      }
+      body {
+        overscroll-behavior-y: none;
+        user-select: none;
+        -webkit-user-select: none;
+      }
+      .pb-safe {
+        padding-bottom: max(env(safe-area-inset-bottom, 24px), 24px);
+      }
+      .pt-safe {
+        padding-top: max(env(safe-area-inset-top, 14px), 14px);
+      }
+    }
+    ::-webkit-scrollbar { display: none; }
+
+    /* Dynamic breathing arc stroke transition */
+    #loopProgressArc {
+      transition: stroke-dashoffset var(--transition-duration, 4s) cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    /* Modal physics transition class */
+    .modal-sheet-motion {
+      transition: transform 0.42s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.35s ease;
+      will-change: transform, opacity;
+    }
+  </style>
+</head>
+<body class="bg-black text-white font-manrope antialiased h-screen w-screen relative overflow-hidden">
+<!-- ========================================================================= -->
+<!-- 1. REALISTIC INSTAGRAM REELS VIDEO PAUSE BACKGROUND LAYER                -->
+<!-- ========================================================================= -->
+<div class="absolute inset-0 w-full h-full z-0 overflow-hidden bg-black select-none pointer-events-auto" id="instagramReelsUnderlay">
+<!-- Vivid Paused Video Frame: Warm sunset golden hour skate aesthetic -->
+<img alt="Paused Instagram Reel Frame" class="w-full h-full object-cover brightness-[0.72] contrast-[1.05] filter scale-100" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBzh43YSh5BFIhyop42jyj6RyZ7KxAFX6dPz_JMkIJcxdGO3TzllTqJ7va_tiRJ_UyBN-_TDDpGqdWANsscPwNOdx-Ysdfh6IBLkbcn5_COPk_4xPQuS0o9pEuKS2yUzq_xjh3VtAAUHGdCeWWcQMJ51W8_QbavHnWaGSApuKUZRFPKB30zWSKZZbd50wcKfMvJmi_KWDhr06AQ_MXQm8_rz9YYcm9HkMD44zkn34A">
+<!-- Subtle gradient overlays matching native Reels -->
+<div class="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-black/60 pointer-events-none"></div>
+<div class="absolute inset-0 bg-radial at-center from-transparent via-transparent to-black/40 pointer-events-none"></div>
+<!-- Prominent Paused Video Indicator (Center of paused reel) -->
+<div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center gap-2 pointer-events-none opacity-85">
+<div class="w-16 h-16 rounded-full bg-black/45 backdrop-blur-md border border-white/20 flex items-center justify-center shadow-2xl">
+<span class="material-symbols-outlined text-white text-[32px] translate-x-0.5">pause</span>
+</div>
+<span class="px-2.5 py-0.5 rounded-full bg-black/60 backdrop-blur-sm border border-white/10 text-[10px] tracking-widest uppercase font-mono font-bold text-white/80">Reel Paused</span>
+</div>
+<!-- Instagram Top Bar Interface -->
+<div class="absolute top-0 inset-x-0 pt-safe px-5 flex items-center justify-between text-white drop-shadow-md z-10">
+<div class="flex items-center gap-2">
+<span class="font-bold font-manrope text-[19px] tracking-tight">Reels</span>
+<span class="material-symbols-outlined text-[18px]">expand_more</span>
+</div>
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-[22px]">volume_up</span>
+<span class="material-symbols-outlined text-[24px]">photo_camera</span>
+</div>
+</div>
+<!-- Instagram Right Side Interaction Stack -->
+<div class="absolute right-3.5 bottom-28 flex flex-col items-center gap-4 text-white drop-shadow-lg z-10">
+<!-- Creator Avatar -->
+<div class="relative mb-1">
+<div class="w-10 h-10 rounded-full ring-2 ring-emerald-accent/80 p-0.5 overflow-hidden bg-neutral-800">
+<img alt="@alexander.lens" class="w-full h-full object-cover rounded-full" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCPuHxnTID3rfMk-Pn0nHBNTsVPdFirQw962Iom5Le-en58HiU6JYSZn9cdzYv202tX-f9S1D2TbBfJV0-pKnzKa-bc8b2A2lDrt3OTeIICp49NIdRLRlkS-hFWL_46n090DwGYtF9uWL1deD9-sObnqCoWowjAXIY2HRuWtlxxG-COI2R3qnA8XO-8Oi6TbvixMtiu56Vn5Fiqcn0aKyQeju0KbwKwUlhxYwC-Kvo">
+</div>
+<div class="absolute -bottom-1 -right-0.5 w-4 h-4 bg-emerald-accent rounded-full border-2 border-black flex items-center justify-center text-forest-deep text-[10px] font-bold">+</div>
+</div>
+<!-- Like button -->
+<div class="flex flex-col items-center gap-0.5">
+<button class="w-10 h-10 flex items-center justify-center active:scale-90 transition-transform">
+<span class="material-symbols-outlined text-[30px] fill-1 text-white">favorite</span>
+</button>
+<span class="text-[11px] font-semibold font-jakarta tracking-tight">42.8k</span>
+</div>
+<!-- Comment button -->
+<div class="flex flex-col items-center gap-0.5">
+<button class="w-10 h-10 flex items-center justify-center active:scale-90 transition-transform">
+<span class="material-symbols-outlined text-[27px]">chat_bubble</span>
+</button>
+<span class="text-[11px] font-semibold font-jakarta tracking-tight">1,249</span>
+</div>
+<!-- Share button -->
+<div class="flex flex-col items-center gap-0.5">
+<button class="w-10 h-10 flex items-center justify-center active:scale-90 transition-transform">
+<span class="material-symbols-outlined text-[27px] -rotate-12">send</span>
+</button>
+<span class="text-[11px] font-semibold font-jakarta tracking-tight">Share</span>
+</div>
+<!-- More options -->
+<button class="w-10 h-10 flex items-center justify-center">
+<span class="material-symbols-outlined text-[24px]">more_vert</span>
+</button>
+<!-- Audio thumbnail -->
+<div class="w-8 h-8 rounded-lg border border-white/40 overflow-hidden mt-1 p-0.5">
+<img alt="Audio track art" class="w-full h-full object-cover rounded" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCVp4Jrth5YGhuJ9bi2PL2E30sFrL-YGL209VoXUYr8HMmX1Q5qjc10LqpdwFNkiBUL36i9uG5vV0XRL6PEN-XeHVC722zW69ELMs0M60QHQ6QXsvmcJb8_w87qPZyp_h4hvye73_nZ0bmwfqVMJ594l_TquGMdrCTF3dkoQAfFoES1b_GlV2xTlyWeMS-BnzV7p_-WhejW7noKrixkOwl8ynTRoZvrcUPCEfRBFc8">
+</div>
+</div>
+<!-- Instagram Reel Caption & Audio Left Stack -->
+<div class="absolute left-4 bottom-14 max-w-[270px] text-white text-left drop-shadow-md z-10">
+<div class="flex items-center gap-2 mb-2">
+<span class="text-[14px] font-bold tracking-tight">@alexander.lens</span>
+<button class="px-2.5 py-0.5 rounded-full bg-white/20 backdrop-blur-md text-[10px] font-semibold border border-white/30 text-white">Follow</button>
+</div>
+<p class="text-[12px] line-clamp-2 text-white/90 font-jakarta leading-snug">
+        Chasing golden hour shadows along the riverfront avenue. Keep that tempo slow.
+      </p>
+<div class="flex items-center gap-1.5 mt-2 text-[11px] text-white/80">
+<span class="material-symbols-outlined text-[13px]">music_note</span>
+<span class="font-jakarta truncate">Original Audio · Chill lofi beats</span>
+</div>
+</div>
+<!-- Reel Progress Bar (Paused at 0:04) -->
+<div class="absolute bottom-2 inset-x-3 h-1 bg-white/20 rounded-full overflow-hidden z-10">
+<div class="w-[28%] h-full bg-white rounded-full"></div>
+</div>
+<!-- Reopen Outloop Pause Button (Displayed when modal is dismissed/slid down) -->
+<button class="transition-all duration-300 absolute top-20 left-1/2 -translate-x-1/2 z-40 px-4 py-2 rounded-full bg-forest-deep/90 text-white border border-emerald-accent/50 shadow-2xl backdrop-blur-md flex items-center gap-2 text-[12px] font-semibold tracking-tight active:scale-95 cursor-pointer hover:border-emerald-accent opacity-0 pointer-events-none scale-95" id="reopenPauseBtn">
+<span class="material-symbols-outlined text-[17px] text-emerald-accent animate-spin-slow">restart_alt</span>
+<span>Reopen Outloop Pause</span>
+</button>
+</div>
+<!-- ========================================================================= -->
+<!-- 2. DARK MODE FROSTED GLASS SCRIM & OUTLOOP MODAL SHEET CONTAINER         -->
+<!-- ========================================================================= -->
+<div class="modal-sheet-motion fixed inset-0 z-30 flex flex-col justify-between w-full h-full bg-[#0c1017]/82 backdrop-blur-2xl text-white select-none overflow-hidden border-t border-white/10 shadow-[0_-10px_40px_rgba(0,0,0,0.8)]" id="outloopModalSheet" style="transition: transform 0.42s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.35s; transform: translateY(0%); opacity: 1;">
+<!-- Ambient Breathing Halo Light Glow behind pacer -->
+<div class="absolute top-[34%] left-1/2 -translate-x-1/2 -translate-y-1/2 w-[360px] h-[360px] rounded-full bg-emerald-accent/[0.08] blur-[110px] pointer-events-none animate-breathe-glow" id="ambientHalo"></div>
+<div class="absolute bottom-[20%] right-[-10%] w-[260px] h-[260px] rounded-full bg-amber-warm/[0.04] blur-[90px] pointer-events-none"></div>
+<!-- HEADER: Status Bar, Swipe Handle & Brand Badge -->
+<header class="relative z-20 w-full pt-safe px-6 flex flex-col shrink-0"><div class="flex items-center justify-between text-white/80 text-[13px] font-semibold tracking-tight py-1"><span class="font-semibold text-white text-sm tracking-normal">9:41</span><div class="flex items-center gap-1.5 text-white/90"><span class="material-symbols-outlined text-[16px] leading-none">signal_cellular_alt</span><span class="material-symbols-outlined text-[16px] leading-none">wifi</span><span class="material-symbols-outlined text-[18px] leading-none">battery_full</span></div></div><div class="flex justify-center pt-2 pb-2 group cursor-grab active:cursor-grabbing hover:opacity-100 transition-opacity" id="swipeHandleArea" title="Swipe to dismiss"><div class="w-10 h-1 rounded-full bg-white/20 group-hover:bg-white/40 group-active:scale-95 transition-all"></div></div><div class="mt-1 flex items-center justify-between"><div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/[0.06] border border-white/10 shadow-xs backdrop-blur-md"><svg class="w-3.5 h-3.5 text-emerald-accent" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="2.5" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 9 9" opacity="0.3"></path><path d="M21 12a9 9 0 0 0-9-9" stroke="currentColor"></path></svg><span class="text-[11px] font-bold tracking-wider text-white uppercase">Outloop</span></div><button aria-label="Dismiss pause" class="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 active:scale-95 border border-white/10 flex items-center justify-center text-white/70 hover:text-white transition-all backdrop-blur-md cursor-pointer" id="dismissBtn"><span class="material-symbols-outlined text-[17px]">close</span></button></div></header>
+<!-- ========================================================================= -->
+<!-- MAIN SANCTUARY CONTENT: Dark UI Pacer & Reflection                     -->
+<!-- ========================================================================= -->
+<main class="relative z-10 flex-1 flex flex-col items-center justify-center px-6 py-2 max-w-md mx-auto w-full text-center">
+<!-- Interactive Breathing Pacing Controls: Sleek Dark Translucent Glass -->
+<div class="mb-3 inline-flex p-0.5 rounded-full bg-white/[0.04] border border-white/10 backdrop-blur-md"><button class="pace-toggle-btn px-2.5 py-1 rounded-full text-[11px] font-medium tracking-tight text-white/50 hover:text-white transition-all flex items-center gap-1.5 cursor-pointer" id="pace2sBtn"><span class="w-1.5 h-1.5 rounded-full bg-transparent border border-white/40 pace-indicator"></span><span>2s reset</span></button><button class="pace-toggle-btn px-3 py-1 rounded-full text-[11px] font-medium tracking-tight text-white bg-white/15 shadow-xs border border-white/20 transition-all flex items-center gap-1.5 cursor-pointer" id="pace4sBtn"><span class="w-1.5 h-1.5 rounded-full bg-emerald-accent pace-indicator shadow-[0_0_6px_rgba(78,222,163,0.8)]"></span><span>4s calm</span></button></div>
+<!-- Breathing Pacer Visual: Dark Open Loop Ring with Radiant Amber Node -->
+<div aria-label="Tap to synchronize breathing" class="relative w-56 h-56 my-1 flex items-center justify-center cursor-pointer select-none group" id="breathPacer" role="button">
+<!-- Aura Concentric Rings in Soft Glow -->
+<div class="absolute inset-0 rounded-full border border-emerald-accent/20 bg-emerald-accent/[0.03] animate-ring-pulse-outer pointer-events-none" id="outerPulseRing"></div>
+<div class="absolute inset-3 rounded-full border border-white/10 bg-white/[0.02] shadow-2xl animate-ring-pulse-inner pointer-events-none" id="innerPulseRing"></div>
+<div class="absolute inset-7 rounded-full bg-emerald-accent/15 blur-xl transition-all duration-700 pointer-events-none opacity-20 scale-90" id="breatheHalo"></div>
+<!-- Radial Open Loop Arc SVG -->
+<svg class="relative w-48 h-48 -rotate-90 drop-shadow-[0_0_24px_rgba(78,222,163,0.2)]" viewBox="0 0 120 120">
+<!-- Background Subtle Dark Guide Track -->
+<circle cx="60" cy="60" fill="none" r="48" stroke="rgba(255, 255, 255, 0.12)" stroke-dasharray="270" stroke-dashoffset="35" stroke-linecap="round" stroke-width="2.5"></circle>
+<!-- Active Animated Arc: Crisp Glowing Ivory-Emerald Stroke -->
+<circle class="filter drop-shadow-[0_0_6px_rgba(255,255,255,0.7)]" cx="60" cy="60" fill="none" id="loopProgressArc" r="48" stroke="#ffffff" stroke-dasharray="270" stroke-dashoffset="195" stroke-linecap="round" stroke-width="3.5" style="stroke-dashoffset: 195;"></circle>
+</svg>
+<!-- Center Typography & Rhythmic Guidance -->
+<div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+<!-- Warm Amber Intention Node -->
+<div class="flex items-center justify-center w-3 h-3 mb-1.5">
+<span class="w-2.5 h-2.5 rounded-full bg-amber-warm transition-transform duration-700 shadow-[0_0_12px_rgba(255,185,95,0.9)] scale-90" id="amberDot"></span>
+</div>
+<span class="font-manrope text-[20px] font-extrabold tracking-[0.22em] uppercase text-white drop-shadow-sm transition-all duration-500" id="breathPhaseText">Exhale</span>
+<div class="flex items-center gap-1.5 mt-1 text-white/70 text-[11px] font-medium tracking-wider">
+<span id="breathSubtext">Settle softly</span>
+<span class="text-white/30">•</span>
+<span class="font-bold text-amber-warm tabular-nums" id="breathCountdown">2s</span>
+</div>
+</div>
+</div>
+<!-- Editorial Narrative & Intention Context -->
+<div class="mt-4 mb-2 flex flex-col items-center">
+<h1 class="text-[24px] sm:text-[26px] font-bold text-white tracking-tight leading-[1.2]">Take a breath.</h1>
+<p class="mt-1.5 text-[13px] leading-relaxed text-white/75 font-jakarta max-w-[280px] mx-auto text-balance">
+          Instagram Reels paused · Reflect on your intent before continuing.
+        </p>
+</div>
+</main>
+<!-- ========================================================================= -->
+<!-- 3. ACTIONS & INTENTIONAL FOOTER (DARK MODE OPTIMIZED)                     -->
+<!-- ========================================================================= -->
+<footer class="relative z-20 w-full max-w-md mx-auto px-6 pb-safe flex flex-col gap-2.5 shrink-0">
+<!-- Primary High Contrast Exit Button: Solid Crisp White Pill with Forest/Dark Text -->
+<button class="group relative w-full h-12 rounded-xl bg-ivory-pure hover:bg-white text-neutral-900 font-manrope font-bold text-[14px] tracking-tight flex items-center justify-center gap-2 shadow-[0_4px_20px_rgba(255,255,255,0.15)] active:scale-[0.98] transition-all cursor-pointer" id="closeAppBtn">
+<span class="material-symbols-outlined text-[19px] text-emerald-600 group-hover:-translate-x-0.5 transition-transform">spa</span>
+<span>Close Instagram</span>
+</button>
+<!-- Secondary Dignified Button: Translucent Frosted Glass Pill -->
+<button class="w-full h-11 py-2.5 rounded-xl bg-white/[0.08] hover:bg-white/[0.14] active:scale-[0.98] border border-white/20 text-white/95 font-manrope font-medium text-[13px] flex items-center justify-center gap-2 transition-all backdrop-blur-md shadow-xs cursor-pointer" id="mindfulPassBtn"><span class="material-symbols-outlined text-[17px] text-emerald-accent">hourglass_top</span>
+            <span class="text-emerald-accent font-semibold">Continue with intent (5m pass)</span></button>
+<!-- Optional Intention Tray (Toggled when selecting intent pass) -->
+<div class="flex-col gap-2 pt-1 pb-1 transition-all hidden" id="intentionTray">
+<span class="text-[11px] font-semibold tracking-wider text-white/60 uppercase text-center">Quick intention</span>
+<div class="grid grid-cols-2 gap-2">
+<button class="intention-choice px-3 py-2 rounded-xl bg-white/10 hover:bg-white/15 border border-white/15 text-left text-[12px] text-white flex items-center gap-2 active:scale-95 transition-all shadow-xs cursor-pointer">
+<span class="material-symbols-outlined text-[15px] text-amber-warm">send</span>
+<span class="truncate font-medium">Direct message</span>
+</button>
+<button class="intention-choice px-3 py-2 rounded-xl bg-white/10 hover:bg-white/15 border border-white/15 text-left text-[12px] text-white flex items-center gap-2 active:scale-95 transition-all shadow-xs cursor-pointer">
+<span class="material-symbols-outlined text-[15px] text-amber-warm">bookmark</span>
+<span class="truncate font-medium">Saved post</span>
+</button>
+</div>
+</div>
+<!-- Micro Footnote -->
+<p class="text-center text-[11px] text-white/45 font-jakarta leading-relaxed pt-0.5 px-4 text-balance">Swipe down to dismiss</p>
+</footer>
+</div>
+<!-- ========================================================================= -->
+<!-- 4. BREATHING LOGIC & REALISTIC INTERACTIVE SWIPE-DOWN DISMISSAL SYSTEM     -->
+<!-- ========================================================================= -->
+<script>
+    (function initOutloopDarkPause() {
+      // Elements
+      const modalSheet = document.getElementById('outloopModalSheet');
+      const swipeHandleArea = document.getElementById('swipeHandleArea');
+      const testDismissBtn = document.getElementById('testDismissBtn');
+      const reopenPauseBtn = document.getElementById('reopenPauseBtn');
+      const dismissBtn = document.getElementById('dismissBtn');
+
+      const breathPhaseText = document.getElementById('breathPhaseText');
+      const breathSubtext = document.getElementById('breathSubtext');
+      const breathCountdown = document.getElementById('breathCountdown');
+      const loopProgressArc = document.getElementById('loopProgressArc');
+      const amberDot = document.getElementById('amberDot');
+      const breatheHalo = document.getElementById('breatheHalo');
+      const mindfulPassBtn = document.getElementById('mindfulPassBtn');
+      const closeAppBtn = document.getElementById('closeAppBtn');
+      const intentionTray = document.getElementById('intentionTray');
+      const pace2sBtn = document.getElementById('pace2sBtn');
+      const pace4sBtn = document.getElementById('pace4sBtn');
+      const breathPacer = document.getElementById('breathPacer');
+
+      // Breathing Cycle State
+      let targetHalfCycle = 4; // 2s or 4s
+      let phase = 'inhale';
+      let phaseSecondsLeft = targetHalfCycle;
+      let timerInterval = null;
+
+      function setCyclePace(seconds) {
+        targetHalfCycle = seconds;
+        phaseSecondsLeft = seconds;
+        
+        const totalCycle = seconds * 2;
+        document.documentElement.style.setProperty('--breath-cycle', `${totalCycle}s`);
+        document.documentElement.style.setProperty('--transition-duration', `${seconds}s`);
+
+        if (seconds === 2) {
+          pace2sBtn.className = "pace-toggle-btn px-3 py-1 rounded-full text-[11px] font-semibold tracking-tight text-white bg-white/20 shadow-xs border border-white/25 transition-all flex items-center gap-1.5 cursor-pointer";
+          pace2sBtn.querySelector('.pace-indicator').className = "w-1.5 h-1.5 rounded-full bg-emerald-accent pace-indicator shadow-[0_0_6px_rgba(78,222,163,0.8)]";
+
+          pace4sBtn.className = "pace-toggle-btn px-3.5 py-1 rounded-full text-[11px] font-semibold tracking-tight text-white/60 hover:text-white transition-all flex items-center gap-1.5 cursor-pointer";
+          pace4sBtn.querySelector('.pace-indicator').className = "w-1.5 h-1.5 rounded-full bg-transparent border border-white/40 pace-indicator";
+        } else {
+          pace4sBtn.className = "pace-toggle-btn px-3.5 py-1 rounded-full text-[11px] font-semibold tracking-tight text-white bg-white/20 shadow-xs border border-white/25 transition-all flex items-center gap-1.5 cursor-pointer";
+          pace4sBtn.querySelector('.pace-indicator').className = "w-1.5 h-1.5 rounded-full bg-emerald-accent pace-indicator shadow-[0_0_6px_rgba(78,222,163,0.8)]";
+
+          pace2sBtn.className = "pace-toggle-btn px-3 py-1 rounded-full text-[11px] font-semibold tracking-tight text-white/60 hover:text-white transition-all flex items-center gap-1.5 cursor-pointer";
+          pace2sBtn.querySelector('.pace-indicator').className = "w-1.5 h-1.5 rounded-full bg-transparent border border-white/40 pace-indicator";
+        }
+
+        applyBreathState();
+        breathCountdown.textContent = `${phaseSecondsLeft}s`;
+      }
+
+      pace2sBtn.addEventListener('click', () => setCyclePace(2));
+      pace4sBtn.addEventListener('click', () => setCyclePace(4));
+
+      function applyBreathState() {
+        if (phase === 'inhale') {
+          breathPhaseText.textContent = 'Inhale';
+          breathSubtext.textContent = 'Expand gently';
+          amberDot.classList.add('scale-125');
+          amberDot.classList.remove('scale-90');
+          breatheHalo.classList.remove('opacity-20', 'scale-90');
+          breatheHalo.classList.add('opacity-60', 'scale-125');
+          loopProgressArc.style.strokeDashoffset = '35';
+        } else {
+          breathPhaseText.textContent = 'Exhale';
+          breathSubtext.textContent = 'Settle softly';
+          amberDot.classList.remove('scale-125');
+          amberDot.classList.add('scale-90');
+          breatheHalo.classList.remove('opacity-60', 'scale-125');
+          breatheHalo.classList.add('opacity-20', 'scale-90');
+          loopProgressArc.style.strokeDashoffset = '195';
+        }
+      }
+
+      applyBreathState();
+
+      timerInterval = setInterval(() => {
+        phaseSecondsLeft--;
+        if (phaseSecondsLeft <= 0) {
+          phase = phase === 'inhale' ? 'exhale' : 'inhale';
+          phaseSecondsLeft = targetHalfCycle;
+          applyBreathState();
+        }
+        breathCountdown.textContent = `${phaseSecondsLeft}s`;
+      }, 1000);
+
+      breathPacer.addEventListener('click', () => {
+        phase = phase === 'inhale' ? 'exhale' : 'inhale';
+        phaseSecondsLeft = targetHalfCycle;
+        breathCountdown.textContent = `${phaseSecondsLeft}s`;
+        applyBreathState();
+      });
+
+      // Actions
+      closeAppBtn.addEventListener('click', () => {
+        closeAppBtn.innerHTML = `
+          <span class="material-symbols-outlined text-[19px] text-emerald-600 animate-spin">sync</span>
+          <span>Closing Instagram...</span>
+        `;
+        setTimeout(() => {
+          closeAppBtn.innerHTML = `
+            <span class="material-symbols-outlined text-[19px] text-emerald-600">check_circle</span>
+            <span>Focus Protected</span>
+          `;
+        }, 500);
+      });
+
+      mindfulPassBtn.addEventListener('click', () => {
+        if (intentionTray.classList.contains('hidden')) {
+          intentionTray.classList.remove('hidden');
+          mindfulPassBtn.innerHTML = `
+            <span class="material-symbols-outlined text-[17px] text-amber-warm">done_all</span>
+            <span>Grant 10m Pass</span>
+          `;
+        } else {
+          dismissModalAnimation();
+        }
+      });
+
+      document.querySelectorAll('.intention-choice').forEach(btn => {
+        btn.addEventListener('click', () => {
+          mindfulPassBtn.innerHTML = `
+            <span class="material-symbols-outlined text-[17px] text-emerald-accent">check_circle</span>
+            <span class="text-emerald-accent font-semibold">10m Pass Granted</span>
+          `;
+          intentionTray.classList.add('hidden');
+          setTimeout(dismissModalAnimation, 600);
+        });
+      });
+
+      // =========================================================================
+      // SWIPE DOWN PHYSICS & DISMISSAL ANIMATIONS
+      // =========================================================================
+      let isDismissed = false;
+
+      function dismissModalAnimation() {
+        if (isDismissed) return;
+        isDismissed = true;
+        // Slide sheet down offscreen
+        modalSheet.style.transform = 'translateY(105%)';
+        modalSheet.style.opacity = '0.9';
+
+        // Reveal the Reopen pill on the Instagram background
+        setTimeout(() => {
+          reopenPauseBtn.classList.remove('opacity-0', 'pointer-events-none', 'scale-95');
+          reopenPauseBtn.classList.add('opacity-100', 'pointer-events-auto', 'scale-100');
+        }, 250);
+      }
+
+      function restoreModalAnimation() {
+        isDismissed = false;
+        // Hide Reopen pill
+        reopenPauseBtn.classList.remove('opacity-100', 'pointer-events-auto', 'scale-100');
+        reopenPauseBtn.classList.add('opacity-0', 'pointer-events-none', 'scale-95');
+
+        // Slide sheet back up smoothly
+        modalSheet.style.transform = 'translateY(0%)';
+        modalSheet.style.opacity = '1';
+      }
+
+      // Triggers
+      testDismissBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        dismissModalAnimation();
+      });
+
+      dismissBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        dismissModalAnimation();
+      });
+
+      reopenPauseBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        restoreModalAnimation();
+      });
+
+      // Touch & Mouse Drag Handlers for Pull Handle Area
+      let startY = 0;
+      let currentY = 0;
+      let isDragging = false;
+
+      function handleDragStart(clientY) {
+        if (isDismissed) return;
+        isDragging = true;
+        startY = clientY;
+        modalSheet.style.transition = 'none'; // Instant follow during drag
+      }
+
+      function handleDragMove(clientY) {
+        if (!isDragging) return;
+        const delta = clientY - startY;
+        if (delta > 0) {
+          // Downward pull with realistic dampening
+          const translateY = delta * 0.95;
+          modalSheet.style.transform = `translateY(${translateY}px)`;
+        }
+      }
+
+      function handleDragEnd() {
+        if (!isDragging) return;
+        isDragging = false;
+        modalSheet.style.transition = 'transform 0.42s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.35s ease';
+        
+        // Threshold check: if dragged down > 90px or fast flick, dismiss
+        const currentTransform = modalSheet.style.transform;
+        const match = currentTransform.match(/translateY\(([\d.]+)px\)/);
+        const currentOffset = match ? parseFloat(match[1]) : 0;
+
+        if (currentOffset > 80) {
+          dismissModalAnimation();
+        } else {
+          // Snap back
+          modalSheet.style.transform = 'translateY(0%)';
+        }
+      }
+
+      // Touch Events
+      swipeHandleArea.addEventListener('touchstart', (e) => {
+        handleDragStart(e.touches[0].clientY);
+      }, { passive: true });
+
+      window.addEventListener('touchmove', (e) => {
+        if (isDragging) {
+          handleDragMove(e.touches[0].clientY);
+        }
+      }, { passive: true });
+
+      window.addEventListener('touchend', handleDragEnd);
+
+      // Mouse Events for desktop preview / testing
+      swipeHandleArea.addEventListener('mousedown', (e) => {
+        handleDragStart(e.clientY);
+      });
+
+      window.addEventListener('mousemove', (e) => {
+        if (isDragging) {
+          handleDragMove(e.clientY);
+        }
+      });
+
+      window.addEventListener('mouseup', handleDragEnd);
+
+      // Also tap handle to dismiss directly
+      swipeHandleArea.addEventListener('click', () => {
+        dismissModalAnimation();
+      });
+
+    })();
+  </script>
+
+
+</body></html>
