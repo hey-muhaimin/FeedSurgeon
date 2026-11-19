@@ -16,8 +16,8 @@ enum class InterventionMode(
         explanation = "Returns you to the app's main Home tab. Best when opening links from friends."
     ),
     OVERLAY(
-        shortLabel = "Reminder",
-        subtitleLabel = "Calm reminder",
-        explanation = "Shows a calm full-screen pause card so you can step away intentionally."
+        shortLabel = "Calm pause",
+        subtitleLabel = "Calm focus pause",
+        explanation = "Shows a calm full-screen breathing pause so you can step away intentionally."
     )
 }

@@ -94,10 +94,10 @@ import com.example.ui.theme.CardBorder
 import com.example.ui.theme.CardSurface
 import com.example.ui.theme.CardSurfaceElevated
 import com.example.ui.theme.CoralDanger
-import com.example.ui.theme.MintTeal
+import com.example.ui.theme.ElectricAmber
 import com.example.ui.theme.MonoTypography
 import com.example.ui.theme.ObsidianBg
-import com.example.ui.theme.OnMintTeal
+import com.example.ui.theme.OnElectricAmber
 import com.example.ui.theme.StaggeredReveal
 import com.example.ui.theme.TextMuted
 import com.example.ui.theme.TextPrimary
@@ -162,7 +162,7 @@ fun SettingsScreen(
             item {
                 SurgeonScreenHeader(
                     title = stringResource(R.string.settings_title),
-                    subtitle = "Local rules & privacy controls",
+                    subtitle = "Focus rules & on-device privacy",
                     trailingContent = {
                         StatusBadgePill(
                             text = if (hasReliabilityAttention) "Attention" else prefs.rulesetVersion,
@@ -255,9 +255,9 @@ fun SettingsScreen(
                                 )
                                 Spacer(modifier = Modifier.height(2.dp))
                                 val staleNote = if (uiState.staleRulesCount > 0) {
-                                    "${uiState.staleRulesCount} app blocker needs refresh"
+                                    "${uiState.staleRulesCount} app focus rule needs refresh"
                                 } else {
-                                    "Blocker updates, battery reliability, and logs"
+                                    "Rule sync updates, battery reliability, and logs"
                                 }
                                 Text(
                                     text = staleNote,
@@ -433,7 +433,7 @@ fun SettingsScreen(
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     if (uiState.eventLogSizeBytes > 0L) {
                         TextButton(onClick = onShareEventLog) {
-                            Text("Share file", color = MintTeal)
+                            Text("Share file", color = ElectricAmber)
                         }
                     }
                     TextButton(onClick = onRefreshEventLog) {
@@ -483,23 +483,23 @@ private fun ProtectionCard(
     }
     val statusSubtitle = when (effectiveStatus) {
         ProtectionStatus.PERMISSION_NEEDED ->
-            "Turn on Feed Surgeon in Android Settings so it can spot short feeds"
+            "Turn on Stillspace in Android Settings so it can spot short-form video loops"
         ProtectionStatus.SERVICE_DISCONNECTED ->
-            "Permission is on, but Android stopped the service. Toggle Feed Surgeon off and on in Android Settings to reconnect."
+            "Permission is on, but Android stopped the service. Toggle Stillspace off and on in Android Settings to reconnect."
         ProtectionStatus.NO_APPS_ACTIVE ->
             "Service is connected, but no installed apps are switched on on Home"
         ProtectionStatus.PAUSED ->
             if (uiState.globalPauseUntilMs == Long.MAX_VALUE) {
-                "All blocking paused until you turn it back on"
+                "Focus Guard paused until you turn it back on"
             } else {
-                "All blocking paused \u00B7 $globalCountdown remaining"
+                "Focus Guard paused \u00B7 $globalCountdown remaining"
             }
         ProtectionStatus.OPERATIONAL ->
-            "Guarding $activeInstalledCount installed app${if (activeInstalledCount == 1) "" else "s"} on your phone"
+            "Protecting focus across $activeInstalledCount installed app${if (activeInstalledCount == 1) "" else "s"} on your phone"
     }
 
     SurgeonCard(modifier = modifier) {
-        SectionLabel(text = "PROTECTION")
+        SectionLabel(text = "FOCUS GUARD")
         Spacer(modifier = Modifier.height(12.dp))
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -508,7 +508,7 @@ private fun ProtectionCard(
         ) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = "Protection status",
+                    text = "Focus status",
                     style = MaterialTheme.typography.titleMedium,
                     color = TextPrimary
                 )
@@ -537,7 +537,7 @@ private fun ProtectionCard(
             ) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = "Pause all blocking",
+                        text = "Take a global break",
                         style = MaterialTheme.typography.titleMedium,
                         color = TextPrimary
                     )
@@ -545,7 +545,7 @@ private fun ProtectionCard(
                         text = if (isGloballyPausedNow && uiState.globalPauseUntilMs != Long.MAX_VALUE) {
                             "Resumes automatically in $globalCountdown"
                         } else {
-                            "Temporarily allow Shorts & Reels across every app"
+                            "Temporarily pause Focus Guard across every app"
                         },
                         style = MaterialTheme.typography.bodyMedium,
                         color = TextSecondary
@@ -570,8 +570,8 @@ private fun ProtectionCard(
                     .testTag("settings_accessibility_button"),
                 shape = RoundedCornerShape(100.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = MintTeal,
-                    contentColor = OnMintTeal
+                    containerColor = ElectricAmber,
+                    contentColor = OnElectricAmber
                 )
             ) {
                 Text("Android Settings", fontWeight = FontWeight.SemiBold)
@@ -641,7 +641,7 @@ private fun ExperiencePrivacyCard(
             kotlin.math.abs(sec - prefs.reclaimedSecondsPerCut)
         }?.first ?: 180
         Text(
-            text = "Time saved per avoided feed",
+            text = "Time saved per Focus Win",
             style = MaterialTheme.typography.bodyMedium,
             color = TextSecondary
         )
@@ -661,7 +661,7 @@ private fun ExperiencePrivacyCard(
                         .weight(1f)
                         .minimumInteractiveComponentSize()
                         .clip(RoundedCornerShape(100.dp))
-                        .background(if (isSelected) MintTeal else Color.Transparent)
+                        .background(if (isSelected) ElectricAmber else Color.Transparent)
                         .clickable {
                             haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                             onSetReclaimedSeconds(seconds)
@@ -674,7 +674,7 @@ private fun ExperiencePrivacyCard(
                         text = label,
                         style = MaterialTheme.typography.labelLarge,
                         fontWeight = if (isSelected) FontWeight.Bold else FontWeight.SemiBold,
-                        color = if (isSelected) OnMintTeal else TextSecondary,
+                        color = if (isSelected) OnElectricAmber else TextSecondary,
                         maxLines = 1
                     )
                 }
@@ -708,7 +708,7 @@ private fun ExperiencePrivacyCard(
             Text(
                 text = "Privacy Policy (suprbuild.com/privacy)",
                 style = MaterialTheme.typography.labelLarge,
-                color = MintTeal
+                color = ElectricAmber
             )
         }
 
@@ -747,7 +747,7 @@ private fun BlockerUpdatesCard(
         "Checked $rel \u00B7 ${prefs.rulesetVersion}"
     }
     SurgeonCard(modifier = modifier) {
-        SectionLabel(text = "BLOCKER UPDATES & HEALTH")
+        SectionLabel(text = "FOCUS RULE UPDATES & SYNC")
         Spacer(modifier = Modifier.height(12.dp))
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -756,7 +756,7 @@ private fun BlockerUpdatesCard(
         ) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = "Auto-update blockers",
+                    text = "Auto-update focus rules",
                     style = MaterialTheme.typography.titleMedium,
                     color = TextPrimary
                 )
@@ -786,7 +786,7 @@ private fun BlockerUpdatesCard(
                 Text(
                     text = msg,
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MintTeal,
+                    color = ElectricAmber,
                     modifier = Modifier.padding(top = 6.dp)
                 )
             }
@@ -815,7 +815,7 @@ private fun BlockerUpdatesCard(
                 )
                 Spacer(modifier = Modifier.width(8.dp))
             }
-            Text(if (uiState.isSyncingRules) "Checking..." else "Check for blocker updates")
+            Text(if (uiState.isSyncingRules) "Checking..." else "Check for rule updates")
         }
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -850,7 +850,7 @@ private fun BlockerUpdatesCard(
                         )
                     } else {
                         StatusBadgePill(
-                            text = if (rule.isOutdated) "Needs update" else "Healthy",
+                            text = if (rule.isOutdated) "Needs update" else "Synced",
                             isWarning = rule.isOutdated
                         )
                     }
@@ -886,7 +886,7 @@ private fun BackgroundReliabilityCard(
                     text = if (uiState.isBatteryOptimizationIgnored) {
                         "Unrestricted — stays running reliably in the background"
                     } else {
-                        "Phone battery saver may pause Feed Surgeon in the background"
+                        "Phone battery saver may pause Stillspace in the background"
                     },
                     style = MaterialTheme.typography.bodyMedium,
                     color = TextSecondary
@@ -911,7 +911,7 @@ private fun BackgroundReliabilityCard(
                 border = BorderStroke(1.dp, CardBorder),
                 colors = ButtonDefaults.outlinedButtonColors(
                     containerColor = CardSurfaceElevated,
-                    contentColor = MintTeal
+                    contentColor = ElectricAmber
                 )
             ) {
                 Text("Allow unrestricted battery", fontWeight = FontWeight.SemiBold)

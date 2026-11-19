@@ -55,9 +55,9 @@ import com.example.ui.components.surgeonSharedBounds
 import com.example.ui.theme.AmberWarning
 import com.example.ui.theme.CardBorder
 import com.example.ui.theme.CardSurfaceElevated
-import com.example.ui.theme.MintTeal
+import com.example.ui.theme.ElectricAmber
 import com.example.ui.theme.ObsidianBg
-import com.example.ui.theme.OnMintTeal
+import com.example.ui.theme.OnElectricAmber
 import com.example.ui.theme.StaggeredReveal
 import com.example.ui.theme.TextPrimary
 import com.example.ui.theme.TextSecondary
@@ -272,14 +272,14 @@ private fun MasterToggleCard(
             Spacer(modifier = Modifier.width(14.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = "Block ${rule.feedLabel}",
+                    text = "Guard ${rule.feedLabel}",
                     style = MaterialTheme.typography.titleMedium,
                     color = TextPrimary
                 )
                 Spacer(modifier = Modifier.height(6.dp))
                 val pillText = when {
                     snoozeCountdown != null -> "Break \u00B7 $snoozeCountdown"
-                    rule.enabled -> "Protected"
+                    rule.enabled -> "Focus Active"
                     else -> "Off"
                 }
                 StatusBadgePill(
@@ -302,12 +302,12 @@ private fun MasterToggleCard(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = "Blocker health",
+                text = "Rule Sync Status",
                 style = MaterialTheme.typography.bodyMedium,
                 color = TextSecondary
             )
             StatusBadgePill(
-                text = if (rule.isOutdated) "Update recommended" else "Healthy",
+                text = if (rule.isOutdated) "Update recommended" else "Synced",
                 isWarning = rule.isOutdated
             )
         }
@@ -321,7 +321,7 @@ private fun HowToStepInCard(
 ) {
     val haptics = LocalHapticFeedback.current
     SurgeonCard {
-        SectionLabel(text = "HOW TO STEP IN")
+        SectionLabel(text = "HOW STILLSPACE STEPS IN")
         Spacer(modifier = Modifier.height(14.dp))
         Row(
             modifier = Modifier
@@ -338,7 +338,7 @@ private fun HowToStepInCard(
                         .weight(1f)
                         .minimumInteractiveComponentSize()
                         .clip(RoundedCornerShape(100.dp))
-                        .background(if (selected) MintTeal else Color.Transparent)
+                        .background(if (selected) ElectricAmber else Color.Transparent)
                         .clickable {
                             haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                             onSelectMode(mode)
@@ -351,7 +351,7 @@ private fun HowToStepInCard(
                         text = mode.shortLabel,
                         style = MaterialTheme.typography.labelLarge,
                         fontWeight = if (selected) FontWeight.Bold else FontWeight.SemiBold,
-                        color = if (selected) OnMintTeal else TextSecondary,
+                        color = if (selected) OnElectricAmber else TextSecondary,
                         maxLines = 1
                     )
                 }
@@ -396,7 +396,7 @@ private fun ResponseSpeedCard(
                         .weight(1f)
                         .minimumInteractiveComponentSize()
                         .clip(RoundedCornerShape(100.dp))
-                        .background(if (selected) MintTeal else Color.Transparent)
+                        .background(if (selected) ElectricAmber else Color.Transparent)
                         .clickable {
                             haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                             onChangeCooldown(preset.cooldownMs)
@@ -409,7 +409,7 @@ private fun ResponseSpeedCard(
                         text = preset.label,
                         style = MaterialTheme.typography.labelLarge,
                         fontWeight = if (selected) FontWeight.Bold else FontWeight.SemiBold,
-                        color = if (selected) OnMintTeal else TextSecondary,
+                        color = if (selected) OnElectricAmber else TextSecondary,
                         maxLines = 1
                     )
                 }
@@ -439,7 +439,7 @@ private fun TakeABreakCard(
 ) {
     val haptics = LocalHapticFeedback.current
     SurgeonCard {
-        SectionLabel(text = "TAKE A BREAK")
+        SectionLabel(text = "TAKE AN INTENTIONAL BREAK")
         Spacer(modifier = Modifier.height(8.dp))
         if (snoozeCountdown != null) {
             Text(
@@ -452,7 +452,7 @@ private fun TakeABreakCard(
             )
             Spacer(modifier = Modifier.height(4.dp))
             Text(
-                text = "${rule.displayName} ${rule.feedLabel} will automatically start blocking again when the timer ends.",
+                text = "${rule.displayName} ${rule.feedLabel} will automatically start guarding focus again when the timer ends.",
                 style = MaterialTheme.typography.bodyMedium,
                 color = TextSecondary
             )
@@ -468,19 +468,19 @@ private fun TakeABreakCard(
                     .testTag("snooze_button"),
                 shape = RoundedCornerShape(100.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = MintTeal,
-                    contentColor = OnMintTeal
+                    containerColor = ElectricAmber,
+                    contentColor = OnElectricAmber
                 )
             ) {
                 Text(
-                    text = "Resume blocking ${rule.feedLabel}",
+                    text = "Resume guarding ${rule.feedLabel}",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold
                 )
             }
         } else {
             Text(
-                text = "Pause blocking for ${rule.displayName} ${rule.feedLabel} across all visits until the timer ends (separate from 5m single-visit passes).",
+                text = "Pause Focus Guard for ${rule.displayName} ${rule.feedLabel} across all visits until the timer ends (separate from 5m single-visit passes).",
                 style = MaterialTheme.typography.bodyMedium,
                 color = TextSecondary
             )

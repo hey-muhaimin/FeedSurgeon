@@ -64,7 +64,7 @@ class ExampleRobolectricTest {
     @Test
     fun `read app name and privacy url from context`() {
         val context = ApplicationProvider.getApplicationContext<Context>()
-        assertEquals("Feed Surgeon", context.getString(R.string.app_name))
+        assertEquals("Stillspace", context.getString(R.string.app_name))
         assertEquals("https://suprbuild.com/privacy", context.getString(R.string.privacy_policy_url))
     }
 
@@ -210,11 +210,11 @@ class ExampleRobolectricTest {
         val notification = ForegroundProtectionNotifier.buildNotification(context, 3)
         assertTrue((notification.flags and Notification.FLAG_ONGOING_EVENT) != 0)
         assertEquals(
-            "Feed Surgeon active",
+            "Stillspace active",
             notification.extras.getCharSequence(Notification.EXTRA_TITLE)?.toString()
         )
         assertEquals(
-            "Protecting 3 installed apps on-device",
+            "Protecting focus across 3 installed apps on-device",
             notification.extras.getCharSequence(Notification.EXTRA_TEXT)?.toString()
         )
     }

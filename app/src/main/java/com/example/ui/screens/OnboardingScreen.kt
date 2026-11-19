@@ -43,8 +43,8 @@ import com.example.ui.OnboardingStep
 import com.example.ui.components.MindfulPausePreviewDialog
 import com.example.ui.theme.CardBorder
 import com.example.ui.theme.CardSurface
-import com.example.ui.theme.MintTeal
-import com.example.ui.theme.OnMintTeal
+import com.example.ui.theme.ElectricAmber
+import com.example.ui.theme.OnElectricAmber
 import com.example.ui.theme.TextPrimary
 import com.example.ui.theme.TextSecondary
 
@@ -261,7 +261,7 @@ private fun OnboardingBottomActionBar(
                         fontWeight = FontWeight.SemiBold,
                         textDecoration = TextDecoration.Underline
                     ),
-                    color = MintTeal,
+                    color = ElectricAmber,
                     modifier = Modifier
                         .clip(RoundedCornerShape(4.dp))
                         .clickable { uriHandler.openUri(privacyPolicyUrl) }
@@ -311,8 +311,8 @@ private fun OnboardingBottomActionBar(
                     shape = RoundedCornerShape(100.dp),
                     contentPadding = PaddingValues(horizontal = 16.dp),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = MintTeal,
-                        contentColor = OnMintTeal
+                        containerColor = ElectricAmber,
+                        contentColor = OnElectricAmber
                     )
                 ) {
                     Text(
@@ -336,8 +336,8 @@ private fun OnboardingBottomActionBar(
                     .testTag("onboarding_apps_continue_button"),
                 shape = RoundedCornerShape(100.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = MintTeal,
-                    contentColor = OnMintTeal
+                    containerColor = ElectricAmber,
+                    contentColor = OnElectricAmber
                 )
             ) {
                 Text(
@@ -392,8 +392,8 @@ private fun OnboardingBottomActionBar(
                     shape = RoundedCornerShape(100.dp),
                     contentPadding = PaddingValues(horizontal = 14.dp),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = MintTeal,
-                        contentColor = OnMintTeal
+                        containerColor = ElectricAmber,
+                        contentColor = OnElectricAmber
                     )
                 ) {
                     Text(
@@ -448,8 +448,8 @@ private fun OnboardingBottomActionBar(
                     shape = RoundedCornerShape(100.dp),
                     contentPadding = PaddingValues(horizontal = 16.dp),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = MintTeal,
-                        contentColor = OnMintTeal
+                        containerColor = ElectricAmber,
+                        contentColor = OnElectricAmber
                     )
                 ) {
                     Text(

@@ -30,7 +30,7 @@ object ForegroundProtectionNotifier {
             "On-Device Protection",
             NotificationManager.IMPORTANCE_LOW
         ).apply {
-            description = "Keeps Feed Surgeon active in the background to block short-form feeds even when cleared from recents."
+            description = "Keeps Stillspace active in the background to protect your focus on-device even when cleared from recents."
             setShowBadge(false)
             enableLights(false)
             enableVibration(false)
@@ -52,14 +52,14 @@ object ForegroundProtectionNotifier {
 
         val contentText = if (activeInstalledCount > 0) {
             val noun = if (activeInstalledCount == 1) "app" else "apps"
-            "Protecting $activeInstalledCount installed $noun on-device"
+            "Protecting focus across $activeInstalledCount installed $noun on-device"
         } else {
-            "On-device protection ready \u00B7 tap to configure"
+            "On-device focus guard ready \u00B7 tap to configure"
         }
 
         return NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_shield_notification)
-            .setContentTitle("Feed Surgeon active")
+            .setContentTitle("Stillspace active")
             .setContentText(contentText)
             .setContentIntent(contentIntent)
             .setOngoing(true)

@@ -118,14 +118,15 @@ fun specularRimBrush(
     isHighlighted: Boolean = false
 ): Brush {
     val topLeft = when {
-        isHighlighted -> MintTeal.copy(alpha = 0.68f)
-        baseBorder == MintTealBorder -> MintTeal.copy(alpha = 0.50f)
+        isHighlighted -> ElectricAmber.copy(alpha = 0.68f)
+        baseBorder == ElectricAmberBorder -> ElectricAmber.copy(alpha = 0.52f)
+        baseBorder == CalmSageBorder -> CalmSage.copy(alpha = 0.52f)
         baseBorder == AmberWarningBorder -> AmberWarning.copy(alpha = 0.55f)
         else -> SpecularHighlightTop
     }
-    val mid = if (isHighlighted) MintTealBorder else baseBorder
+    val mid = if (isHighlighted) ElectricAmberBorder else baseBorder
     val bottomRight = when {
-        isHighlighted -> MintTeal.copy(alpha = 0.28f)
+        isHighlighted -> ElectricAmber.copy(alpha = 0.28f)
         baseBorder == CardBorder -> SpecularHighlightEdge
         else -> baseBorder.copy(alpha = 0.55f)
     }

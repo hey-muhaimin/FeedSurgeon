@@ -11,21 +11,26 @@ import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.snap
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.testTag
@@ -34,11 +39,15 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.ui.theme.AmberWarning
 import com.example.ui.theme.BarInactive
-import com.example.ui.theme.MintTeal
-import com.example.ui.theme.MintTealDark
-import com.example.ui.theme.MintTealGlow
+import com.example.ui.theme.CalmSage
+import com.example.ui.theme.CalmSageDark
+import com.example.ui.theme.CardBorder
+import com.example.ui.theme.ElectricAmber
+import com.example.ui.theme.ElectricAmberGlow
+import com.example.ui.theme.ObsidianBg
+import com.example.ui.theme.ObsidianGlow
+import com.example.ui.theme.SoftGold
 import com.example.ui.theme.SurgeonMotion
 import com.example.ui.theme.TextPrimary
 import com.example.ui.theme.TextSecondary
@@ -51,7 +60,7 @@ import kotlin.math.sin
 fun LiquidBreathingOrb(
     modifier: Modifier = Modifier,
     size: Dp = 72.dp,
-    accentColor: Color = MintTeal,
+    accentColor: Color = CalmSage,
     testTag: String = "liquid_breathing_orb"
 ) {
     val reducedMotion = rememberReducedMotionEnabled()
@@ -96,12 +105,12 @@ fun LiquidBreathingOrb(
             val maxRadius = this.size.minDimension / 2f
             val baseCoreRadius = maxRadius * (0.34f + 0.04f * pulse)
 
-            // Ambient radial halo behind the orb
+            // Ambient warm sage & amber halo behind the orb
             drawCircle(
                 brush = Brush.radialGradient(
                     colors = listOf(
-                        accentColor.copy(alpha = 0.28f + 0.08f * pulse),
-                        accentColor.copy(alpha = 0.08f),
+                        accentColor.copy(alpha = 0.26f + 0.08f * pulse),
+                        ElectricAmber.copy(alpha = 0.09f),
                         Color.Transparent
                     ),
                     center = center,
@@ -117,8 +126,9 @@ fun LiquidBreathingOrb(
                 val rippleRadius = baseCoreRadius + (maxRadius * 0.92f - baseCoreRadius) * progress
                 val alpha = (1f - progress) * (1f - progress) * 0.45f
                 if (alpha > 0.01f) {
+                    val rippleColor = if (i == 1) ElectricAmber else accentColor
                     drawCircle(
-                        color = accentColor.copy(alpha = alpha),
+                        color = rippleColor.copy(alpha = alpha),
                         radius = rippleRadius,
                         center = center,
                         style = Stroke(width = (1.5.dp.toPx()) * (1f - 0.35f * progress))
@@ -126,13 +136,13 @@ fun LiquidBreathingOrb(
                 }
             }
 
-            // Breathing Mint Teal liquid core
+            // Breathing Calm Sage liquid core
             drawCircle(
                 brush = Brush.radialGradient(
                     colors = listOf(
-                        Color(0xFFB5F7E5),
+                        Color(0xFFC9EAD6),
                         accentColor,
-                        MintTealDark
+                        CalmSageDark
                     ),
                     center = Offset(
                         center.x - baseCoreRadius * 0.28f,
@@ -148,7 +158,7 @@ fun LiquidBreathingOrb(
             drawCircle(
                 brush = Brush.linearGradient(
                     colors = listOf(
-                        Color.White.copy(alpha = 0.65f),
+                        Color(0xFFFFF8EE).copy(alpha = 0.65f),
                         accentColor.copy(alpha = 0.45f),
                         Color.Transparent
                     ),
@@ -185,8 +195,8 @@ fun ProtectionRingGauge(
         label = "protection_ring_count"
     )
 
-    val activeColor = if (isOperational) MintTeal else AmberWarning
-    val activeGlow = if (isOperational) MintTealGlow else AmberWarning.copy(alpha = 0.28f)
+    val activeColor = if (isOperational) ElectricAmber else SoftGold
+    val activeGlow = if (isOperational) ElectricAmberGlow else SoftGold.copy(alpha = 0.24f)
 
     Box(
         modifier = modifier
@@ -203,9 +213,9 @@ fun ProtectionRingGauge(
             val startAngle = 140f
             val totalSweep = 260f
 
-            // Background obsidian track
+            // Background Warm Obsidian track
             drawArc(
-                color = BarInactive.copy(alpha = 0.85f),
+                color = BarInactive.copy(alpha = 0.9f),
                 startAngle = startAngle,
                 sweepAngle = totalSweep,
                 useCenter = false,
@@ -218,7 +228,7 @@ fun ProtectionRingGauge(
             val activeSweep = totalSweep * visualFraction
 
             if (activeSweep > 0.5f) {
-                // Soft ambient glow arc
+                // Soft ambient amber glow arc
                 drawArc(
                     color = activeGlow,
                     startAngle = startAngle,
@@ -233,7 +243,7 @@ fun ProtectionRingGauge(
                 drawArc(
                     brush = Brush.linearGradient(
                         colors = listOf(
-                            activeColor.copy(alpha = 0.72f),
+                            CalmSage.copy(alpha = 0.82f),
                             activeColor
                         ),
                         start = Offset(0f, this.size.height),
@@ -256,12 +266,12 @@ fun ProtectionRingGauge(
                     y = center.y + (arcRadius * sin(endAngleRad)).toFloat()
                 )
                 drawCircle(
-                    color = activeColor.copy(alpha = 0.40f),
+                    color = activeColor.copy(alpha = 0.42f),
                     radius = strokePx * 0.9f,
                     center = tipOffset
                 )
                 drawCircle(
-                    color = Color.White,
+                    color = Color(0xFFFFF8EE),
                     radius = strokePx * 0.36f,
                     center = tipOffset
                 )
@@ -287,6 +297,85 @@ fun ProtectionRingGauge(
                 style = MaterialTheme.typography.labelSmall,
                 color = if (count > 0) activeColor else TextSecondary
             )
+        }
+    }
+}
+
+@Composable
+fun StillspaceEmptyFocusArtwork(
+    modifier: Modifier = Modifier
+) {
+    Box(
+        modifier = modifier
+            .clip(RoundedCornerShape(14.dp))
+            .background(ObsidianBg)
+            .border(1.dp, CardBorder, RoundedCornerShape(14.dp))
+            .testTag("insights_empty_artwork")
+    ) {
+        Canvas(modifier = Modifier.fillMaxSize()) {
+            val w = size.width
+            val h = size.height
+            val center = Offset(w * 0.5f, h * 0.52f)
+            val minDim = minOf(w, h)
+
+            // Warm obsidian depth glow
+            drawRect(
+                brush = Brush.radialGradient(
+                    colors = listOf(
+                        ObsidianGlow,
+                        ObsidianBg
+                    ),
+                    center = center,
+                    radius = maxOf(w, h) * 0.72f
+                )
+            )
+
+            // Concentric Calm Sage stillness horizon rings
+            drawCircle(
+                color = CalmSage.copy(alpha = 0.14f),
+                radius = minDim * 0.44f,
+                center = center,
+                style = Stroke(width = 1.dp.toPx())
+            )
+            drawCircle(
+                color = CalmSage.copy(alpha = 0.24f),
+                radius = minDim * 0.31f,
+                center = center,
+                style = Stroke(width = 1.25.dp.toPx())
+            )
+
+            // Minimal broken ring motif in Electric Amber around a Calm Sage play triangle
+            val ringRadius = minDim * 0.19f
+            drawArc(
+                color = ElectricAmber,
+                startAngle = 32f,
+                sweepAngle = 296f,
+                useCenter = false,
+                topLeft = Offset(center.x - ringRadius, center.y - ringRadius),
+                size = Size(ringRadius * 2f, ringRadius * 2f),
+                style = Stroke(width = 3.2.dp.toPx(), cap = StrokeCap.Round)
+            )
+
+            // Vertical pause-break bar on the right opening of the ring
+            val barX = center.x + ringRadius * 0.96f
+            val barHalfH = ringRadius * 0.34f
+            drawLine(
+                color = ElectricAmber,
+                start = Offset(barX, center.y - barHalfH),
+                end = Offset(barX, center.y + barHalfH),
+                strokeWidth = 3.dp.toPx(),
+                cap = StrokeCap.Round
+            )
+
+            // Calm Sage play glyph inside the broken ring
+            val triSize = ringRadius * 0.42f
+            val triangle = Path().apply {
+                moveTo(center.x - triSize * 0.55f, center.y - triSize * 0.65f)
+                lineTo(center.x + triSize * 0.72f, center.y)
+                lineTo(center.x - triSize * 0.55f, center.y + triSize * 0.65f)
+                close()
+            }
+            drawPath(path = triangle, color = CalmSage)
         }
     }
 }

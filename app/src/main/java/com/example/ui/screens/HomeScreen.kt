@@ -82,11 +82,12 @@ import com.example.ui.components.surgeonSharedBounds
 import com.example.ui.theme.AmberWarning
 import com.example.ui.theme.AmberWarningBorder
 import com.example.ui.theme.BarInactive
+import com.example.ui.theme.CalmSage
+import com.example.ui.theme.CalmSageBorder
 import com.example.ui.theme.CardBorder
 import com.example.ui.theme.CardSurfaceElevated
-import com.example.ui.theme.MintTeal
-import com.example.ui.theme.MintTealBorder
-import com.example.ui.theme.OnMintTeal
+import com.example.ui.theme.ElectricAmber
+import com.example.ui.theme.OnElectricAmber
 import com.example.ui.theme.StaggeredReveal
 import com.example.ui.theme.TextMuted
 import com.example.ui.theme.TextPrimary
@@ -138,16 +139,16 @@ fun HomeScreen(
         ProtectionStatus.OPERATIONAL -> stringResource(R.string.status_running)
     }
     val headerSubtitle = when (effectiveStatus) {
-        ProtectionStatus.PERMISSION_NEEDED -> "Finish setup to guard short feeds"
+        ProtectionStatus.PERMISSION_NEEDED -> "Finish setup to guard your focus"
         ProtectionStatus.SERVICE_DISCONNECTED -> "Accessibility service needs reconnect"
-        ProtectionStatus.NO_APPS_ACTIVE -> "Enable an installed app below"
-        ProtectionStatus.PAUSED -> "Protection paused temporarily"
+        ProtectionStatus.NO_APPS_ACTIVE -> "Turn on an installed app below"
+        ProtectionStatus.PAUSED -> "Taking a mindful break"
         ProtectionStatus.OPERATIONAL -> {
             val count = uiState.activeInstalledCount
-            "Guarding $count installed app${if (count == 1) "" else "s"}"
+            "Protecting focus across $count installed app${if (count == 1) "" else "s"}"
         }
     }
-    val statusColor = if (effectiveStatus == ProtectionStatus.OPERATIONAL) MintTeal else AmberWarning
+    val statusColor = if (effectiveStatus == ProtectionStatus.OPERATIONAL) CalmSage else AmberWarning
 
     BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
         val isMosaic = maxWidth >= 600.dp
@@ -295,7 +296,7 @@ fun HomeScreen(
                             )
                             Spacer(modifier = Modifier.height(4.dp))
                             Text(
-                                text = "Refresh blockers so Feed Surgeon stays accurate after recent app updates.",
+                                text = "Refresh focus rules so Stillspace stays accurate after recent app updates.",
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = TextSecondary
                             )
@@ -314,7 +315,7 @@ fun HomeScreen(
                                     contentColor = AmberWarning
                                 )
                             ) {
-                                Text(if (uiState.isSyncingRules) "Refreshing..." else "Refresh blockers")
+                                Text(if (uiState.isSyncingRules) "Refreshing..." else "Refresh focus rules")
                             }
                         }
                     }
@@ -512,13 +513,13 @@ private fun ProtectionStatusCard(
                 modifier = modifier.testTag("home_setup_needed_card")
             ) {
                 Text(
-                    text = "Protection isn\u2019t active yet",
+                    text = "Focus Guard isn\u2019t active yet",
                     style = MaterialTheme.typography.titleLarge,
                     color = TextPrimary
                 )
                 Spacer(modifier = Modifier.height(6.dp))
                 Text(
-                    text = "Turn on Feed Surgeon in Android Settings so it can gently close Shorts and Reels for you.",
+                    text = "Turn on Stillspace in Android Settings so it can gently pause Shorts and Reels loops for you.",
                     style = MaterialTheme.typography.bodyMedium,
                     color = TextSecondary
                 )
@@ -531,12 +532,12 @@ private fun ProtectionStatusCard(
                         .testTag("home_turn_on_protection_button"),
                     shape = RoundedCornerShape(100.dp),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = MintTeal,
-                        contentColor = OnMintTeal
+                        containerColor = ElectricAmber,
+                        contentColor = OnElectricAmber
                     )
                 ) {
                     Text(
-                        text = "Turn on protection",
+                        text = "Turn on Focus Guard",
                         style = MaterialTheme.typography.labelLarge,
                         fontWeight = FontWeight.Bold
                     )
@@ -551,7 +552,7 @@ private fun ProtectionStatusCard(
                     Text(
                         text = "Preview how Mindful Pause works",
                         style = MaterialTheme.typography.labelLarge,
-                        color = MintTeal
+                        color = ElectricAmber
                     )
                 }
             }
@@ -563,13 +564,13 @@ private fun ProtectionStatusCard(
                 modifier = modifier.testTag("home_service_disconnected_card")
             ) {
                 Text(
-                    text = "Protection needs a quick reconnect",
+                    text = "Focus Guard needs a quick reconnect",
                     style = MaterialTheme.typography.titleLarge,
                     color = TextPrimary
                 )
                 Spacer(modifier = Modifier.height(6.dp))
                 Text(
-                    text = "Accessibility permission is enabled, but Android stopped the background service. Open Accessibility Settings and switch Feed Surgeon off and back on.",
+                    text = "Accessibility permission is enabled, but Android stopped the background service. Open Accessibility Settings and switch Stillspace off and back on.",
                     style = MaterialTheme.typography.bodyMedium,
                     color = TextSecondary
                 )
@@ -582,8 +583,8 @@ private fun ProtectionStatusCard(
                         .testTag("home_reconnect_service_button"),
                     shape = RoundedCornerShape(100.dp),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = MintTeal,
-                        contentColor = OnMintTeal
+                        containerColor = ElectricAmber,
+                        contentColor = OnElectricAmber
                     )
                 ) {
                     Text(
@@ -602,7 +603,7 @@ private fun ProtectionStatusCard(
                     Text(
                         text = "Preview how Mindful Pause works",
                         style = MaterialTheme.typography.labelLarge,
-                        color = MintTeal
+                        color = ElectricAmber
                     )
                 }
             }
@@ -614,13 +615,13 @@ private fun ProtectionStatusCard(
                 modifier = modifier.testTag("home_no_apps_active_card")
             ) {
                 Text(
-                    text = "No apps guarded right now",
+                    text = "No focus apps active right now",
                     style = MaterialTheme.typography.titleLarge,
                     color = TextPrimary
                 )
                 Spacer(modifier = Modifier.height(6.dp))
                 Text(
-                    text = "Feed Surgeon is ready, but none of your installed apps are switched on below. Turn on at least one app to start guarding.",
+                    text = "Stillspace is ready, but none of your installed apps are switched on below. Turn on at least one app to protect your focus.",
                     style = MaterialTheme.typography.bodyMedium,
                     color = TextSecondary
                 )
@@ -634,7 +635,7 @@ private fun ProtectionStatusCard(
                     Text(
                         text = "See how Mindful Pause looks",
                         style = MaterialTheme.typography.labelLarge,
-                        color = MintTeal
+                        color = ElectricAmber
                     )
                 }
             }
@@ -644,7 +645,7 @@ private fun ProtectionStatusCard(
         ProtectionStatus.OPERATIONAL -> {
             val isPausedCard = effectiveStatus == ProtectionStatus.PAUSED
             SurgeonCard(
-                borderColor = if (isPausedCard) AmberWarningBorder else MintTealBorder,
+                borderColor = if (isPausedCard) AmberWarningBorder else CalmSageBorder,
                 modifier = modifier.testTag("home_protection_control_card")
             ) {
                 Row(
@@ -654,7 +655,7 @@ private fun ProtectionStatusCard(
                 ) {
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = if (isPausedCard) "Taking a break" else "Protection is active",
+                            text = if (isPausedCard) "Taking a mindful break" else "Focus mode is active",
                             style = MaterialTheme.typography.titleMedium,
                             color = TextPrimary
                         )
@@ -668,7 +669,7 @@ private fun ProtectionStatusCard(
                                 }
                             } else {
                                 val activeCount = uiState.activeInstalledCount
-                                "Guarding $activeCount installed app${if (activeCount == 1) "" else "s"}"
+                                "Protecting focus across $activeCount installed app${if (activeCount == 1) "" else "s"}"
                             },
                             style = MaterialTheme.typography.bodyMedium.copy(
                                 fontFeatureSettings = "tnum"
@@ -697,12 +698,12 @@ private fun ProtectionStatusCard(
                             .testTag("home_resume_protection_button"),
                         shape = RoundedCornerShape(100.dp),
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = MintTeal,
-                            contentColor = OnMintTeal
+                            containerColor = ElectricAmber,
+                            contentColor = OnElectricAmber
                         )
                     ) {
                         Text(
-                            text = "Resume protection now",
+                            text = "Resume Focus Guard",
                             style = MaterialTheme.typography.labelLarge,
                             fontWeight = FontWeight.Bold
                         )
@@ -748,7 +749,7 @@ private fun ProtectionStatusCard(
                         Text(
                             text = "See how Mindful Pause looks",
                             style = MaterialTheme.typography.labelLarge,
-                            color = MintTeal
+                            color = ElectricAmber
                         )
                     }
                 }
@@ -791,9 +792,9 @@ private fun HeroMetricsCard(
                 AnimatedIntCounter(
                     target = uiState.todayReclaimedMinutes,
                     prefix = "~",
-                    suffix = " min est. reclaimed",
+                    suffix = " min focus reclaimed",
                     style = MaterialTheme.typography.titleMedium,
-                    color = MintTeal
+                    color = CalmSage
                 )
                 Spacer(modifier = Modifier.height(2.dp))
                 Row(
@@ -813,7 +814,7 @@ private fun HeroMetricsCard(
                                 .width(10.dp)
                                 .height((38f * animatedFraction).dp)
                                 .clip(RoundedCornerShape(5.dp))
-                                .background(if (isToday) MintTeal else BarInactive)
+                                .background(if (isToday) ElectricAmber else BarInactive)
                         )
                     }
                 }

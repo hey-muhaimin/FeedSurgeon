@@ -22,6 +22,6 @@ dependencyResolutionManagement {
   }
 }
 
-rootProject.name = "Feed Surgeon"
+rootProject.name = "Stillspace"
 
 include(":app")

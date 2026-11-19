@@ -56,6 +56,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
@@ -73,12 +74,15 @@ import com.example.ui.components.SurgeonCard
 import com.example.ui.components.SurgeonSwitch
 import com.example.ui.theme.AmberWarning
 import com.example.ui.theme.AmberWarningBorder
+import com.example.ui.theme.CalmSage
+import com.example.ui.theme.CalmSageBorder
+import com.example.ui.theme.CalmSageDark
 import com.example.ui.theme.CardBorder
 import com.example.ui.theme.CardSurfaceElevated
+import com.example.ui.theme.ElectricAmber
+import com.example.ui.theme.ElectricAmberBorder
+import com.example.ui.theme.ElectricAmberDark
 import com.example.ui.theme.GlassSurfaceElevated
-import com.example.ui.theme.MintTeal
-import com.example.ui.theme.MintTealBorder
-import com.example.ui.theme.MintTealDark
 import com.example.ui.theme.TextMuted
 import com.example.ui.theme.TextPrimary
 import com.example.ui.theme.TextSecondary
@@ -143,18 +147,18 @@ private fun WelcomeHeroBlock(showcasePackages: List<String>) {
             modifier = Modifier
                 .size(52.dp)
                 .clip(RoundedCornerShape(16.dp))
-                .background(MintTealDark.copy(alpha = 0.78f))
+                .background(ElectricAmberDark.copy(alpha = 0.80f))
                 .border(
                     1.dp,
-                    specularRimBrush(MintTealBorder, isHighlighted = true),
+                    specularRimBrush(ElectricAmberBorder, isHighlighted = true),
                     RoundedCornerShape(16.dp)
                 ),
             contentAlignment = Alignment.Center
         ) {
             Icon(
-                imageVector = Icons.Outlined.Shield,
-                contentDescription = null,
-                tint = MintTeal,
+                painter = painterResource(id = R.drawable.ic_shield_notification),
+                contentDescription = "Stillspace",
+                tint = ElectricAmber,
                 modifier = Modifier.size(26.dp)
             )
         }
@@ -167,7 +171,7 @@ private fun WelcomeHeroBlock(showcasePackages: List<String>) {
         text = buildAnnotatedString {
             append(stringResource(R.string.onboarding_title_lead))
             append("\n")
-            withStyle(SpanStyle(color = MintTeal)) {
+            withStyle(SpanStyle(color = ElectricAmber)) {
                 append(stringResource(R.string.onboarding_title_accent))
             }
         },
@@ -199,17 +203,17 @@ private fun WelcomeHeroBlock(showcasePackages: List<String>) {
     ) {
         OnboardingGlassFeatureChip(
             icon = Icons.Outlined.Bolt,
-            label = "Instant Feed Cut",
+            label = "Instant Loop Break",
             modifier = Modifier.testTag("onboarding_feature_chip_cut")
         )
         OnboardingGlassFeatureChip(
             icon = Icons.Outlined.Lock,
-            label = "Zero-Cloud Privacy",
+            label = "100% On-Device",
             modifier = Modifier.testTag("onboarding_feature_chip_privacy")
         )
         OnboardingGlassFeatureChip(
             icon = Icons.Outlined.Timer,
-            label = "5-Min Mindful Pass",
+            label = "5-Min Intentional Pass",
             modifier = Modifier.testTag("onboarding_feature_chip_pass")
         )
     }
@@ -231,7 +235,7 @@ private fun WelcomeHeroBlock(showcasePackages: List<String>) {
 
 @Composable
 private fun WelcomeDisclosureBlock() {
-    SurgeonCard(borderColor = MintTealBorder) {
+    SurgeonCard(borderColor = CalmSageBorder) {
         SectionLabel(text = "PRIVACY & ACCESSIBILITY")
         Spacer(modifier = Modifier.height(14.dp))
 
@@ -242,7 +246,7 @@ private fun WelcomeDisclosureBlock() {
             Icon(
                 imageVector = Icons.Outlined.Visibility,
                 contentDescription = null,
-                tint = MintTeal,
+                tint = CalmSage,
                 modifier = Modifier
                     .padding(top = 2.dp)
                     .size(20.dp)
@@ -275,7 +279,7 @@ private fun WelcomeDisclosureBlock() {
             Icon(
                 imageVector = Icons.Outlined.Lock,
                 contentDescription = null,
-                tint = MintTeal,
+                tint = CalmSage,
                 modifier = Modifier
                     .padding(top = 2.dp)
                     .size(20.dp)
@@ -339,13 +343,13 @@ internal fun OnboardingAppsStep(
             modifier = Modifier
                 .size(56.dp)
                 .clip(RoundedCornerShape(16.dp))
-                .background(MintTealDark.copy(alpha = 0.7f)),
+                .background(ElectricAmberDark.copy(alpha = 0.72f)),
             contentAlignment = Alignment.Center
         ) {
             Icon(
                 imageVector = Icons.Outlined.Apps,
                 contentDescription = null,
-                tint = MintTeal,
+                tint = ElectricAmber,
                 modifier = Modifier.size(28.dp)
             )
         }
@@ -469,9 +473,9 @@ private fun OnboardingAppRuleCard(
                 Spacer(modifier = Modifier.height(2.dp))
                 Text(
                     text = if (isDimmed) {
-                        "Block ${rule.feedLabel} \u00B7 Not installed yet"
+                        "Guard ${rule.feedLabel} \u00B7 Not installed yet"
                     } else {
-                        "Block ${rule.feedLabel}"
+                        "Guard ${rule.feedLabel}"
                     },
                     style = MaterialTheme.typography.bodyMedium,
                     color = if (isDimmed) TextMuted else TextSecondary
@@ -544,13 +548,13 @@ private fun AccessibilityStatusColumn(
         modifier = Modifier
             .size(56.dp)
             .clip(RoundedCornerShape(16.dp))
-            .background(MintTealDark.copy(alpha = 0.7f)),
+            .background(ElectricAmberDark.copy(alpha = 0.72f)),
         contentAlignment = Alignment.Center
     ) {
         Icon(
             imageVector = Icons.Outlined.SettingsAccessibility,
             contentDescription = null,
-            tint = MintTeal,
+            tint = ElectricAmber,
             modifier = Modifier.size(28.dp)
         )
     }
@@ -574,19 +578,19 @@ private fun AccessibilityStatusColumn(
     Spacer(modifier = Modifier.height(18.dp))
 
     SurgeonCard(
-        borderColor = if (isAccessibilityEnabled) MintTealBorder else AmberWarningBorder
+        borderColor = if (isAccessibilityEnabled) CalmSageBorder else AmberWarningBorder
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Box(
                 modifier = Modifier
                     .size(10.dp)
                     .clip(CircleShape)
-                    .background(if (isAccessibilityEnabled) MintTeal else AmberWarning)
+                    .background(if (isAccessibilityEnabled) CalmSage else AmberWarning)
             )
             Spacer(modifier = Modifier.width(10.dp))
             Text(
                 text = if (isAccessibilityEnabled) {
-                    "Protection is turned on!"
+                    "Focus Guard is turned on!"
                 } else {
                     "Waiting for permission"
                 },
@@ -619,7 +623,7 @@ private fun AccessibilityStatusColumn(
             )
             Spacer(modifier = Modifier.height(4.dp))
             Text(
-                text = "Tap Open System Settings again, open Downloaded apps \u2192 Feed Surgeon, and switch it on. If it is grayed out, expand the restricted settings tip below.",
+                text = "Tap Open System Settings again, open Downloaded apps \u2192 Stillspace, and switch it on. If it is grayed out, expand the restricted settings tip below.",
                 style = MaterialTheme.typography.bodyMedium,
                 color = TextSecondary
             )
@@ -636,7 +640,7 @@ private fun AccessibilityGuideColumn(
         Text(
             text = "HOW TO TURN IT ON",
             style = MaterialTheme.typography.labelSmall,
-            color = MintTeal
+            color = ElectricAmber
         )
         Spacer(modifier = Modifier.height(14.dp))
         VisualGuideStep(
@@ -653,8 +657,8 @@ private fun AccessibilityGuideColumn(
         Spacer(modifier = Modifier.height(12.dp))
         VisualGuideStep(
             number = "3",
-            title = "Select Feed Surgeon",
-            detail = "Switch Use Feed Surgeon ON and tap Allow"
+            title = "Select Stillspace",
+            detail = "Switch Use Stillspace ON and tap Allow"
         )
     }
 
@@ -687,7 +691,7 @@ private fun AccessibilityGuideColumn(
             exit = fadeOut(tween(140)) + shrinkVertically()
         ) {
             Text(
-                text = "On newer Android phones, open phone Settings \u2192 Apps \u2192 Feed Surgeon \u2192 tap the \u22EE menu in the top corner \u2192 Allow restricted settings, then return here.",
+                text = "On newer Android phones, open phone Settings \u2192 Apps \u2192 Stillspace \u2192 tap the \u22EE menu in the top corner \u2192 Allow restricted settings, then return here.",
                 style = MaterialTheme.typography.bodyMedium,
                 color = TextSecondary,
                 modifier = Modifier.padding(top = 10.dp)
@@ -769,13 +773,13 @@ private fun ReadyHeaderBlock() {
         modifier = Modifier
             .size(56.dp)
             .clip(RoundedCornerShape(16.dp))
-            .background(MintTealDark.copy(alpha = 0.7f)),
+            .background(CalmSageDark.copy(alpha = 0.72f)),
         contentAlignment = Alignment.Center
     ) {
         Icon(
             imageVector = Icons.Outlined.CheckCircle,
             contentDescription = null,
-            tint = MintTeal,
+            tint = CalmSage,
             modifier = Modifier.size(28.dp)
         )
     }
@@ -809,16 +813,16 @@ private fun ReadySummaryBlock(
         Text(
             text = "WHAT HAPPENS NEXT",
             style = MaterialTheme.typography.labelSmall,
-            color = MintTeal
+            color = CalmSage
         )
         Spacer(modifier = Modifier.height(12.dp))
         val appsSummary = if (guardedCount > 0) {
-            "Guarding $guardedCount installed app${if (guardedCount == 1) "" else "s"}"
+            "Protecting focus across $guardedCount installed app${if (guardedCount == 1) "" else "s"}"
         } else {
             "Ready whenever you install or enable apps"
         }
         Text(
-            text = "\u2022 $appsSummary\n\u2022 Take a 5, 15, or 60-minute break anytime\n\u2022 All stats stay completely private on your device",
+            text = "\u2022 $appsSummary\n\u2022 Take a 5, 15, or 60-minute intentional break anytime\n\u2022 All focus stats stay completely private on your device",
             style = MaterialTheme.typography.bodyLarge,
             color = TextPrimary
         )
@@ -836,7 +840,7 @@ private fun ReadySummaryBlock(
             border = BorderStroke(1.dp, CardBorder),
             colors = ButtonDefaults.outlinedButtonColors(
                 containerColor = CardSurfaceElevated,
-                contentColor = MintTeal
+                contentColor = ElectricAmber
             )
         ) {
             Text("Keep running smoothly in background", fontWeight = FontWeight.SemiBold)
@@ -858,7 +862,7 @@ private fun ReadySummaryBlock(
                 contentColor = TextPrimary
             )
         ) {
-            Text("Show active status notification")
+            Text("Show active focus notification")
         }
     }
 }
@@ -877,14 +881,14 @@ private fun VisualGuideStep(
             modifier = Modifier
                 .size(26.dp)
                 .clip(CircleShape)
-                .background(MintTealDark)
-                .border(1.dp, MintTealBorder, CircleShape),
+                .background(ElectricAmberDark)
+                .border(1.dp, ElectricAmberBorder, CircleShape),
             contentAlignment = Alignment.Center
         ) {
             Text(
                 text = number,
                 style = MaterialTheme.typography.labelMedium,
-                color = MintTeal,
+                color = ElectricAmber,
                 fontWeight = FontWeight.Bold
             )
         }
@@ -917,7 +921,7 @@ private fun OnboardingGlassFeatureChip(
             .background(GlassSurfaceElevated.copy(alpha = 0.92f))
             .border(
                 1.dp,
-                specularRimBrush(MintTealBorder.copy(alpha = 0.65f)),
+                specularRimBrush(CalmSageBorder.copy(alpha = 0.65f)),
                 RoundedCornerShape(100.dp)
             )
             .padding(horizontal = 12.dp, vertical = 7.dp),
@@ -927,7 +931,7 @@ private fun OnboardingGlassFeatureChip(
         Icon(
             imageVector = icon,
             contentDescription = null,
-            tint = MintTeal,
+            tint = ElectricAmber,
             modifier = Modifier.size(15.dp)
         )
         Text(

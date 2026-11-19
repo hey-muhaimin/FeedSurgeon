@@ -65,7 +65,7 @@ BUNDLED_DIR="$ROOT_DIR/bundled-apk"
 mkdir -p "$BUNDLED_DIR"
 
 cat > "$BUNDLED_DIR/RELEASE_INFO.txt" <<EOF
-App: Feed Surgeon
+App: Stillspace
 Version Name: $VERSION_NAME
 Version Code: $VERSION_CODE
 Build Mode: $MODE

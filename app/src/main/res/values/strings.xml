@@ -1,6 +1,6 @@
 <resources>
-    <string name="app_name">Feed Surgeon</string>
-    <string name="accessibility_service_desc">Inspects active screen labels and view IDs in configured apps (YouTube, Instagram, Facebook, Snapchat, Reddit) strictly on-device to exit short-form video feeds. No screen content is ever stored off-device or transmitted.</string>
+    <string name="app_name">Stillspace</string>
+    <string name="accessibility_service_desc">Inspects active screen labels and view IDs in configured apps (YouTube, Instagram, Facebook, Snapchat, Reddit) strictly on-device to gently step back from short-form video loops. No screen content is ever stored off-device or transmitted.</string>
     <string name="privacy_policy_url">https://suprbuild.com/privacy</string>
     <string name="privacy_policy_label">Privacy Policy</string>
 
@@ -10,43 +10,43 @@
     <string name="nav_settings">Settings</string>
 
     <!-- Onboarding & Prominent Disclosure -->
-    <string name="onboarding_title_lead">Cut the endless scroll.</string>
-    <string name="onboarding_title_accent">Keep the apps you love.</string>
-    <string name="onboarding_title">Cut the endless scroll.\nKeep the apps you love.</string>
-    <string name="onboarding_subtitle">Auto-blocks Shorts, Reels, and Spotlight feeds the instant they open \u2014 100% on-device.</string>
+    <string name="onboarding_title_lead">Break the endless loop.</string>
+    <string name="onboarding_title_accent">Stay present in your day.</string>
+    <string name="onboarding_title">Break the endless loop.\nStay present in your day.</string>
+    <string name="onboarding_subtitle">Stillspace gently pauses Shorts, Reels, and Spotlight feeds the moment they pull you in \u2014 100% on-device.</string>
     <string name="onboarding_consent_prefix">By tapping Get started, you agree to our </string>
     <string name="onboarding_what_we_read_title">WHAT IT CHECKS</string>
-    <string name="onboarding_what_we_read_body">Whether a Shorts, Reels, or Watch feed is currently open in the apps you pick</string>
+    <string name="onboarding_what_we_read_body">Whether a Shorts, Reels, or Spotlight loop is currently open in the apps you pick</string>
     <string name="onboarding_what_we_never_send_title">WHAT STAYS PRIVATE</string>
     <string name="onboarding_what_we_never_send_body">Your messages, passwords, and videos are never read or sent off your phone</string>
     <string name="onboarding_decline">Not now</string>
     <string name="onboarding_agree">Get started</string>
-    <string name="onboarding_apps_title">Choose apps to guard</string>
-    <string name="onboarding_apps_body">Pick which short-form feeds you want Feed Surgeon to watch out for. You can change these anytime.</string>
-    <string name="onboarding_step2_title">Turn on protection</string>
-    <string name="onboarding_step2_body">Android asks you to turn on Feed Surgeon in Accessibility Settings so it can spot when a short-form feed opens.</string>
+    <string name="onboarding_apps_title">Choose your focus boundaries</string>
+    <string name="onboarding_apps_body">Pick which short-form feeds you want Stillspace to gently interrupt. You can adjust these anytime.</string>
+    <string name="onboarding_step2_title">Turn on Focus Guard</string>
+    <string name="onboarding_step2_body">Android asks you to turn on Stillspace in Accessibility Settings so it can recognize when an endless video loop opens.</string>
     <string name="onboarding_open_settings">Open System Settings</string>
     <string name="onboarding_continue_without">Skip</string>
-    <string name="onboarding_step3_title">You\u2019re all set</string>
-    <string name="onboarding_step3_body">Feed Surgeon runs quietly on your phone, uses minimal battery, and can be paused anytime with one tap.</string>
+    <string name="onboarding_step3_title">Your space is ready</string>
+    <string name="onboarding_step3_body">Stillspace runs quietly on your phone, uses minimal battery, and lets you take an intentional break anytime.</string>
     <string name="onboarding_preview_action">Preview</string>
     <string name="onboarding_finish">Go to Home</string>
 
     <!-- Home -->
-    <string name="status_running">Protected</string>
-    <string name="status_paused">Paused</string>
-    <string name="status_service_off">Setup needed</string>
-    <string name="status_disconnected">Reconnect needed</string>
-    <string name="status_no_apps">No apps active</string>
-    <string name="feeds_cut_today">Distractions avoided today</string>
-    <string name="reclaimed_label">Est. time reclaimed</string>
-    <string name="target_apps_header">YOUR APPS</string>
+    <string name="status_running">Focus Active</string>
+    <string name="status_paused">On a Break</string>
+    <string name="status_service_off">Finish Setup</string>
+    <string name="status_disconnected">Reconnect</string>
+    <string name="status_no_apps">Pick Apps</string>
+    <string name="feeds_cut_today">Focus Wins today</string>
+    <string name="reclaimed_label">Time Reclaimed</string>
+    <string name="target_apps_header">YOUR FOCUS APPS</string>
     <string name="allow_once">5-min passes</string>
     <string name="undo">Undo</string>
 
     <!-- Insights & Settings -->
-    <string name="insights_title">Insights</string>
+    <string name="insights_title">Focus Insights</string>
     <string name="this_week">This week</string>
-    <string name="by_app_header">BY APP</string>
+    <string name="by_app_header">FOCUS BY APP</string>
     <string name="settings_title">Settings</string>
 </resources>

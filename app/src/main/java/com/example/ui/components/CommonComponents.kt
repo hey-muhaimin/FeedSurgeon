@@ -113,20 +113,24 @@ import java.util.Locale
 import com.example.ui.theme.AmberWarning
 import com.example.ui.theme.AmberWarningBg
 import com.example.ui.theme.AmberWarningBorder
+import com.example.ui.theme.CalmSage
+import com.example.ui.theme.CalmSageBorder
+import com.example.ui.theme.CalmSageDark
 import com.example.ui.theme.CardBorder
 import com.example.ui.theme.CardSurface
 import com.example.ui.theme.CardSurfaceElevated
 import com.example.ui.theme.CoralDanger
 import com.example.ui.theme.DockGlassSurface
+import com.example.ui.theme.ElectricAmber
+import com.example.ui.theme.ElectricAmberBorder
+import com.example.ui.theme.ElectricAmberDark
 import com.example.ui.theme.GlassSurface
 import com.example.ui.theme.GlassSurfaceElevated
-import com.example.ui.theme.MintTeal
-import com.example.ui.theme.MintTealBorder
-import com.example.ui.theme.MintTealDark
 import com.example.ui.theme.NavPillBorder
 import com.example.ui.theme.NavPillSurface
 import com.example.ui.theme.ObsidianBg
 import com.example.ui.theme.ObsidianGlow
+import com.example.ui.theme.OnElectricAmber
 import com.example.ui.theme.SurgeonMotion
 import com.example.ui.theme.TextMuted
 import com.example.ui.theme.TextPrimary
@@ -265,9 +269,9 @@ fun StatusBadgePill(
     isWarning: Boolean = false,
     modifier: Modifier = Modifier
 ) {
-    val borderColor = if (isWarning) AmberWarningBorder else MintTealBorder
-    val bgColor = if (isWarning) AmberWarningBg else MintTealDark.copy(alpha = 0.45f)
-    val textColor = if (isWarning) AmberWarning else MintTeal
+    val borderColor = if (isWarning) AmberWarningBorder else CalmSageBorder
+    val bgColor = if (isWarning) AmberWarningBg else CalmSageDark.copy(alpha = 0.50f)
+    val textColor = if (isWarning) AmberWarning else CalmSage
     Box(
         modifier = modifier
             .semantics(mergeDescendants = true) {}
@@ -355,9 +359,9 @@ fun SurgeonSwitch(
         },
         modifier = Modifier.testTag(testTag),
         colors = SwitchDefaults.colors(
-            checkedThumbColor = ObsidianBg,
-            checkedTrackColor = MintTeal,
-            checkedBorderColor = MintTeal,
+            checkedThumbColor = OnElectricAmber,
+            checkedTrackColor = ElectricAmber,
+            checkedBorderColor = ElectricAmber,
             uncheckedThumbColor = TextSecondary,
             uncheckedTrackColor = CardSurfaceElevated,
             uncheckedBorderColor = CardBorder
@@ -412,7 +416,7 @@ fun MindfulPausePreviewDialog(
 
     Dialog(onDismissRequest = onDismiss) {
         SurgeonCard(
-            borderColor = MintTealBorder,
+            borderColor = CalmSageBorder,
             containerColor = GlassSurfaceElevated,
             modifier = Modifier.testTag("mindful_pause_preview_dialog")
         ) {
@@ -431,9 +435,9 @@ fun MindfulPausePreviewDialog(
             }
             Spacer(modifier = Modifier.height(10.dp))
             Text(
-                text = "MINDFUL PAUSE · PREVIEW",
+                text = "MINDFUL PAUSE \u00B7 PREVIEW",
                 style = MaterialTheme.typography.labelSmall,
-                color = MintTeal,
+                color = CalmSage,
                 textAlign = TextAlign.Center,
                 modifier = Modifier.fillMaxWidth()
             )
@@ -447,7 +451,7 @@ fun MindfulPausePreviewDialog(
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
-                text = "$appName $feedLabel opened. Step back to stay intentional, or allow 5 minutes for this visit.",
+                text = "$appName $feedLabel opened. Step back to protect your focus, or allow 5 minutes for this visit.",
                 style = MaterialTheme.typography.bodyMedium,
                 color = TextSecondary,
                 textAlign = TextAlign.Center,
@@ -460,14 +464,14 @@ fun MindfulPausePreviewDialog(
                     modifier = Modifier
                         .fillMaxWidth()
                         .clip(RoundedCornerShape(12.dp))
-                        .background(MintTealDark.copy(alpha = 0.65f))
-                        .border(1.dp, MintTealBorder, RoundedCornerShape(12.dp))
+                        .background(CalmSageDark.copy(alpha = 0.65f))
+                        .border(1.dp, CalmSageBorder, RoundedCornerShape(12.dp))
                         .padding(12.dp)
                 ) {
                     Text(
                         text = demoOutcome.orEmpty(),
                         style = MaterialTheme.typography.bodyMedium,
-                        color = MintTeal
+                        color = CalmSage
                     )
                 }
             }
@@ -476,7 +480,7 @@ fun MindfulPausePreviewDialog(
             Button(
                 onClick = {
                     haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                    demoOutcome = "Nice! In $appName, this exits $feedLabel right back to your main feed."
+                    demoOutcome = "Focus win! In $appName, this exits $feedLabel right back to your main feed."
                 },
                 modifier = Modifier
                     .fillMaxWidth()
@@ -484,8 +488,8 @@ fun MindfulPausePreviewDialog(
                     .testTag("preview_leave_feed_button"),
                 shape = RoundedCornerShape(100.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = MintTeal,
-                    contentColor = Color(0xFF061B15)
+                    containerColor = ElectricAmber,
+                    contentColor = OnElectricAmber
                 )
             ) {
                 Text(
@@ -615,7 +619,7 @@ fun InterventionBanner(
                 Text(
                     text = "Undo",
                     style = MaterialTheme.typography.labelLarge,
-                    color = MintTeal
+                    color = ElectricAmber
                 )
             }
         }
@@ -732,10 +736,10 @@ fun FloatingPillNavBar(
                             scaleY = 1f - 0.04f * pillStretch.value
                         }
                         .clip(RoundedCornerShape(24.dp))
-                        .background(MintTealDark.copy(alpha = 0.92f))
+                        .background(ElectricAmberDark.copy(alpha = 0.92f))
                         .border(
                             1.dp,
-                            specularRimBrush(MintTealBorder, isHighlighted = true),
+                            specularRimBrush(ElectricAmberBorder, isHighlighted = true),
                             RoundedCornerShape(24.dp)
                         )
                         .testTag("nav_sliding_pill")
@@ -754,7 +758,7 @@ fun FloatingPillNavBar(
                             BottomTab.SETTINGS -> if (isSelected) Icons.Filled.Tune else Icons.Outlined.Tune
                         }
                         val tint by animateColorAsState(
-                            targetValue = if (isSelected) MintTeal else TextSecondary,
+                            targetValue = if (isSelected) ElectricAmber else TextSecondary,
                             animationSpec = tween(durationMillis = 200),
                             label = "dock_tint_${tab.name}"
                         )
@@ -875,19 +879,19 @@ fun ObsidianSideRail(
                     .padding(horizontal = 8.dp, vertical = 16.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                // Brand shield emblem
+                // Stillspace geometric broken-ring brand emblem
                 Box(
                     modifier = Modifier
                         .size(44.dp)
                         .clip(RoundedCornerShape(14.dp))
-                        .background(MintTealDark.copy(alpha = 0.7f))
-                        .border(1.dp, specularRimBrush(MintTealBorder), RoundedCornerShape(14.dp)),
+                        .background(ElectricAmberDark.copy(alpha = 0.72f))
+                        .border(1.dp, specularRimBrush(ElectricAmberBorder), RoundedCornerShape(14.dp)),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
-                        imageVector = Icons.Outlined.Shield,
-                        contentDescription = "Feed Surgeon",
-                        tint = MintTeal,
+                        painter = painterResource(id = R.drawable.ic_shield_notification),
+                        contentDescription = "Stillspace",
+                        tint = ElectricAmber,
                         modifier = Modifier.size(22.dp)
                     )
                 }
@@ -918,10 +922,10 @@ fun ObsidianSideRail(
                                 scaleX = 1f - 0.04f * railStretch.value
                             }
                             .clip(RoundedCornerShape(20.dp))
-                            .background(MintTealDark.copy(alpha = 0.92f))
+                            .background(ElectricAmberDark.copy(alpha = 0.92f))
                             .border(
                                 1.dp,
-                                specularRimBrush(MintTealBorder, isHighlighted = true),
+                                specularRimBrush(ElectricAmberBorder, isHighlighted = true),
                                 RoundedCornerShape(20.dp)
                             )
                             .testTag("rail_sliding_pill")
@@ -940,7 +944,7 @@ fun ObsidianSideRail(
                                 BottomTab.SETTINGS -> if (isSelected) Icons.Filled.Tune else Icons.Outlined.Tune
                             }
                             val tint by animateColorAsState(
-                                targetValue = if (isSelected) MintTeal else TextSecondary,
+                                targetValue = if (isSelected) ElectricAmber else TextSecondary,
                                 animationSpec = tween(durationMillis = 200),
                                 label = "rail_tint_${tab.name}"
                             )
@@ -1079,7 +1083,7 @@ fun SurgicalSyncLoadingBar(
                     .fillMaxWidth(0.38f + 0.32f * offsetFraction)
                     .height(3.dp)
                     .clip(RoundedCornerShape(2.dp))
-                    .background(MintTeal)
+                    .background(ElectricAmber)
             )
         }
     }

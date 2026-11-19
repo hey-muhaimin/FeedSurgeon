@@ -290,7 +290,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             when (val result = rulesetRepo.autoSyncIfDue(force = false)) {
                 is RulesetSyncResult.Success -> {
                     if (!result.fromLocalCache) {
-                        _syncMessage.value = "Updated blockers for ${result.updatedApps} apps"
+                        _syncMessage.value = "Updated focus rules for ${result.updatedApps} apps"
                     }
                 }
                 is RulesetSyncResult.Error -> Unit
@@ -337,7 +337,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         return Intent(Intent.ACTION_SEND).apply {
             type = "text/plain"
             putExtra(Intent.EXTRA_STREAM, uri)
-            putExtra(Intent.EXTRA_SUBJECT, "Feed Surgeon Accessibility Event Log")
+            putExtra(Intent.EXTRA_SUBJECT, "Stillspace Accessibility Event Log")
             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
         }
     }
@@ -477,14 +477,14 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 is RulesetSyncResult.Success -> {
                     _syncMessage.value = when {
                         result.etagUnchanged ->
-                            "Your app blockers are already up to date"
+                            "Your focus rules are already up to date"
                         result.revertedToHardcoded ->
-                            "Restored built-in protection for ${result.updatedApps} apps"
+                            "Restored built-in focus rules for ${result.updatedApps} apps"
                         result.fromLocalCache ->
                             result.networkErrorReason
-                                ?: "Using saved protection rules (${result.updatedApps} apps)"
+                                ?: "Using saved focus rules (${result.updatedApps} apps)"
                         else ->
-                            "Updated blockers for ${result.updatedApps} apps"
+                            "Updated focus rules for ${result.updatedApps} apps"
                     }
                 }
                 is RulesetSyncResult.Error -> {

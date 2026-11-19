@@ -8,7 +8,6 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -48,10 +47,8 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
@@ -66,14 +63,16 @@ import com.example.ui.components.AppBadgeIcon
 import com.example.ui.components.MindfulPausePreviewDialog
 import com.example.ui.components.SectionLabel
 import com.example.ui.components.StatusBadgePill
+import com.example.ui.components.StillspaceEmptyFocusArtwork
 import com.example.ui.components.SurgeonCard
 import com.example.ui.components.SurgeonScreenHeader
 import com.example.ui.theme.BarInactive
+import com.example.ui.theme.CalmSage
+import com.example.ui.theme.CalmSageBorder
+import com.example.ui.theme.CalmSageDark
 import com.example.ui.theme.CardBorder
 import com.example.ui.theme.CardSurfaceElevated
-import com.example.ui.theme.MintTeal
-import com.example.ui.theme.MintTealBorder
-import com.example.ui.theme.MintTealDark
+import com.example.ui.theme.ElectricAmber
 import com.example.ui.theme.StaggeredReveal
 import com.example.ui.theme.TextPrimary
 import com.example.ui.theme.TextSecondary
@@ -107,7 +106,7 @@ fun InsightsScreen(
         ) {
             item {
                 val badgeText = if (uiState.streakDays > 0) {
-                    "${uiState.streakDays}d streak"
+                    "${uiState.streakDays}d focus streak"
                 } else {
                     "7-day view"
                 }
@@ -156,7 +155,7 @@ fun InsightsScreen(
                                     weeklyAllowedOnceCount = uiState.weeklyAllowedOnceCount
                                 )
                                 SurgeonCard(modifier = Modifier.weight(1f)) {
-                                    SectionLabel(text = "ESTIMATE METHOD")
+                                    SectionLabel(text = "HOW FOCUS TIME IS ESTIMATED")
                                     Spacer(modifier = Modifier.height(8.dp))
                                     EstimateNoteText(
                                         reclaimedSecondsPerCut = uiState.preferences.reclaimedSecondsPerCut
@@ -213,25 +212,20 @@ fun InsightsScreen(
                                     horizontalArrangement = Arrangement.spacedBy(16.dp),
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    Image(
-                                        painter = painterResource(id = R.drawable.img_empty_insights),
-                                        contentDescription = "Calm focus landscape illustration",
-                                        contentScale = ContentScale.Crop,
+                                    StillspaceEmptyFocusArtwork(
                                         modifier = Modifier
                                             .weight(1f)
                                             .height(148.dp)
-                                            .clip(RoundedCornerShape(14.dp))
-                                            .border(1.dp, CardBorder, RoundedCornerShape(14.dp))
                                     )
                                     Column(modifier = Modifier.weight(1.1f)) {
                                         Text(
-                                            text = "Your calm progress starts here",
+                                            text = "Your focus momentum starts here",
                                             style = MaterialTheme.typography.titleMedium,
                                             color = TextPrimary
                                         )
                                         Spacer(modifier = Modifier.height(4.dp))
                                         Text(
-                                            text = "Everything stays private on your phone. Once protection steps in on Shorts or Reels, your daily streak and time saved appear here.",
+                                            text = "Everything stays private on your phone. Once Stillspace steps in on Shorts or Reels, your focus wins, streak, and time reclaimed appear here.",
                                             style = MaterialTheme.typography.bodyMedium,
                                             color = TextSecondary
                                         )
@@ -246,7 +240,7 @@ fun InsightsScreen(
                                             border = BorderStroke(1.dp, CardBorder),
                                             colors = ButtonDefaults.outlinedButtonColors(
                                                 containerColor = CardSurfaceElevated,
-                                                contentColor = MintTeal
+                                                contentColor = ElectricAmber
                                             )
                                         ) {
                                             Text("Preview Mindful Pause")
@@ -254,25 +248,20 @@ fun InsightsScreen(
                                     }
                                 }
                             } else {
-                                Image(
-                                    painter = painterResource(id = R.drawable.img_empty_insights),
-                                    contentDescription = "Calm focus landscape illustration",
-                                    contentScale = ContentScale.Crop,
+                                StillspaceEmptyFocusArtwork(
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .height(132.dp)
-                                        .clip(RoundedCornerShape(14.dp))
-                                        .border(1.dp, CardBorder, RoundedCornerShape(14.dp))
                                 )
                                 Spacer(modifier = Modifier.height(14.dp))
                                 Text(
-                                    text = "Your calm progress starts here",
+                                    text = "Your focus momentum starts here",
                                     style = MaterialTheme.typography.titleMedium,
                                     color = TextPrimary
                                 )
                                 Spacer(modifier = Modifier.height(4.dp))
                                 Text(
-                                    text = "Everything stays private on your phone. Once protection steps in on Shorts or Reels, your daily streak and time saved appear here.",
+                                    text = "Everything stays private on your phone. Once Stillspace steps in on Shorts or Reels, your focus wins, streak, and time reclaimed appear here.",
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = TextSecondary
                                 )
@@ -287,7 +276,7 @@ fun InsightsScreen(
                                     border = BorderStroke(1.dp, CardBorder),
                                     colors = ButtonDefaults.outlinedButtonColors(
                                         containerColor = CardSurfaceElevated,
-                                        contentColor = MintTeal
+                                        contentColor = ElectricAmber
                                     )
                                 ) {
                                     Text("Preview Mindful Pause")
@@ -308,7 +297,7 @@ fun InsightsScreen(
                     SurgeonCard {
                         if (uiState.byAppBreakdown.isEmpty()) {
                             Text(
-                                text = "Your app activity will appear here once protection starts.",
+                                text = "Your focus wins by app will appear here once Focus Guard starts.",
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = TextSecondary
                             )
@@ -380,13 +369,13 @@ private fun WeeklyChartCard(
             Text(
                 text = "Tap a day",
                 style = MaterialTheme.typography.labelMedium,
-                color = MintTeal
+                color = ElectricAmber
             )
         }
         Spacer(modifier = Modifier.height(6.dp))
         AnimatedIntCounter(
             target = weeklyCutsCount,
-            suffix = " distractions avoided",
+            suffix = " focus wins",
             style = MaterialTheme.typography.headlineLarge,
             color = TextPrimary,
             modifier = Modifier.testTag("weekly_cuts_count")
@@ -428,8 +417,8 @@ private fun WeeklyChartCard(
                             .clip(RoundedCornerShape(10.dp))
                             .background(
                                 when {
-                                    isSelected -> MintTeal
-                                    day.isToday -> MintTeal.copy(alpha = 0.55f)
+                                    isSelected -> ElectricAmber
+                                    day.isToday -> ElectricAmber.copy(alpha = 0.55f)
                                     else -> BarInactive
                                 }
                             )
@@ -437,7 +426,7 @@ private fun WeeklyChartCard(
                                 if (isSelected) {
                                     Modifier.border(
                                         width = 1.5.dp,
-                                        color = Color.White.copy(alpha = 0.65f),
+                                        color = Color(0xFFFFF8EE).copy(alpha = 0.75f),
                                         shape = RoundedCornerShape(10.dp)
                                     )
                                 } else {
@@ -450,7 +439,7 @@ private fun WeeklyChartCard(
                         text = day.dayLetter,
                         style = MaterialTheme.typography.labelMedium,
                         fontWeight = if (isSelected) FontWeight.Bold else FontWeight.SemiBold,
-                        color = if (isSelected) MintTeal else TextSecondary
+                        color = if (isSelected) ElectricAmber else TextSecondary
                     )
                 }
             }
@@ -468,8 +457,8 @@ private fun WeeklyChartCard(
                         .fillMaxWidth()
                         .semantics(mergeDescendants = true) {}
                         .clip(RoundedCornerShape(12.dp))
-                        .background(MintTealDark.copy(alpha = 0.45f))
-                        .border(1.dp, MintTealBorder, RoundedCornerShape(12.dp))
+                        .background(CalmSageDark.copy(alpha = 0.48f))
+                        .border(1.dp, CalmSageBorder, RoundedCornerShape(12.dp))
                         .padding(horizontal = 14.dp, vertical = 10.dp)
                         .testTag("selected_day_summary"),
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -482,7 +471,7 @@ private fun WeeklyChartCard(
                             color = TextPrimary
                         )
                         Text(
-                            text = "${day.count} avoided",
+                            text = "${day.count} focus wins",
                             style = MaterialTheme.typography.bodyMedium,
                             color = TextSecondary
                         )
@@ -490,9 +479,9 @@ private fun WeeklyChartCard(
                     AnimatedIntCounter(
                         target = day.reclaimedMinutes,
                         prefix = "~",
-                        suffix = " min saved",
+                        suffix = " min reclaimed",
                         style = MaterialTheme.typography.labelLarge,
-                        color = MintTeal
+                        color = CalmSage
                     )
                 }
             }
@@ -516,12 +505,12 @@ private fun StatTripletRow(
                 target = streakDays,
                 suffix = "d",
                 style = MaterialTheme.typography.headlineMedium,
-                color = if (streakDays > 0) MintTeal else TextPrimary,
+                color = if (streakDays > 0) CalmSage else TextPrimary,
                 modifier = Modifier.testTag("insights_streak_value")
             )
             Spacer(modifier = Modifier.height(4.dp))
             Text(
-                text = "Streak",
+                text = "Focus Streak",
                 style = MaterialTheme.typography.bodyMedium,
                 color = TextSecondary
             )
@@ -551,7 +540,7 @@ private fun StatTripletRow(
             )
             Spacer(modifier = Modifier.height(4.dp))
             Text(
-                text = "Passes",
+                text = "Intentional Passes",
                 style = MaterialTheme.typography.bodyMedium,
                 color = TextSecondary
             )
@@ -574,7 +563,7 @@ private fun EstimateNoteText(
         )
     }
     Text(
-        text = "Estimated time reclaimed is based on confirmed exits \u00D7 your $perVisitLabel per-visit estimate in Settings (not measured screen time). Failed exits are excluded.",
+        text = "Estimated focus time reclaimed is based on confirmed loop breaks \u00D7 your $perVisitLabel per-visit estimate in Settings (not measured screen time). Uncompleted triggers are excluded.",
         style = MaterialTheme.typography.bodyMedium,
         color = TextSecondary,
         modifier = modifier.testTag("insights_estimate_note")
@@ -629,7 +618,7 @@ private fun AppBreakdownRow(
                         .fillMaxWidth(animatedWidth)
                         .height(6.dp)
                         .clip(RoundedCornerShape(3.dp))
-                        .background(MintTeal)
+                        .background(ElectricAmber)
                 )
             }
         }

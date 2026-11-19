@@ -4,15 +4,17 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.runtime.Composable
 
-private val FeedSurgeonDarkColorScheme = darkColorScheme(
-    primary = MintTeal,
-    onPrimary = OnMintTeal,
-    primaryContainer = MintTealDark,
-    onPrimaryContainer = MintTeal,
-    secondary = AmberWarning,
-    onSecondary = ObsidianBg,
-    tertiary = CoralDanger,
-    onTertiary = TextPrimary,
+private val StillspaceDarkColorScheme = darkColorScheme(
+    primary = ElectricAmber,
+    onPrimary = OnElectricAmber,
+    primaryContainer = ElectricAmberDark,
+    onPrimaryContainer = ElectricAmber,
+    secondary = CalmSage,
+    onSecondary = OnCalmSage,
+    secondaryContainer = CalmSageDark,
+    onSecondaryContainer = CalmSage,
+    tertiary = SoftGold,
+    onTertiary = ObsidianBg,
     background = ObsidianBg,
     onBackground = TextPrimary,
     surface = CardSurface,
@@ -21,7 +23,7 @@ private val FeedSurgeonDarkColorScheme = darkColorScheme(
     onSurfaceVariant = TextSecondary,
     outline = CardBorder,
     outlineVariant = NavPillBorder,
-    error = CoralDanger,
+    error = MutedTerracotta,
     onError = TextPrimary
 )
 
@@ -30,7 +32,7 @@ fun FeedSurgeonTheme(
     content: @Composable () -> Unit
 ) {
     MaterialTheme(
-        colorScheme = FeedSurgeonDarkColorScheme,
+        colorScheme = StillspaceDarkColorScheme,
         typography = FeedSurgeonTypography,
         content = content
     )

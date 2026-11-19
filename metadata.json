@@ -1,6 +1,6 @@
 {
-  "name": "Feed Surgeon",
-  "description": "Real-time Accessibility Service feed blocker for YouTube Shorts, Instagram Reels, and custom short-form video feeds.",
+  "name": "Stillspace",
+  "description": "Calm focus and digital habit companion that gently steps in when short-form video loops open, 100% on-device.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

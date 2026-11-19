@@ -24,8 +24,9 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.example.ui.theme.MintTeal
-import com.example.ui.theme.MintTealDark
+import com.example.ui.theme.CalmSage
+import com.example.ui.theme.CalmSageDark
+import com.example.ui.theme.ElectricAmber
 import com.example.ui.theme.ObsidianBg
 import com.example.ui.theme.ObsidianGlow
 import com.example.ui.theme.rememberReducedMotionEnabled
@@ -34,7 +35,7 @@ import com.example.ui.theme.rememberReducedMotionEnabled
 fun LiquidShieldOverlay(
     modifier: Modifier = Modifier,
     orbSize: Dp = 180.dp,
-    accentColor: Color = MintTeal,
+    accentColor: Color = CalmSage,
     showObsidianBackdrop: Boolean = true,
     testTag: String = "liquid_shield_overlay",
     content: @Composable BoxScope.() -> Unit = {}
@@ -112,12 +113,13 @@ fun LiquidShieldOverlay(
             val coreRadius = maxRadius * 0.42f * radiusScale
             val haloRadius = maxRadius * (0.78f + 0.18f * (radiusScale - 0.72f) / 0.28f)
 
-            // Outer translucent obsidian glass aura
+            // Outer translucent Warm Obsidian & Calm Sage aura
             drawCircle(
                 brush = Brush.radialGradient(
                     colors = listOf(
                         accentColor.copy(alpha = 0.28f * orbOpacity),
-                        MintTealDark.copy(alpha = 0.36f * orbOpacity),
+                        ElectricAmber.copy(alpha = 0.12f * orbOpacity),
+                        CalmSageDark.copy(alpha = 0.34f * orbOpacity),
                         Color.Transparent
                     ),
                     center = center,
@@ -133,8 +135,9 @@ fun LiquidShieldOverlay(
                 val waveRadius = coreRadius + (maxRadius * 0.92f - coreRadius) * p
                 val waveAlpha = (1f - p) * (1f - p) * 0.48f * orbOpacity
                 if (waveAlpha > 0.01f) {
+                    val rippleColor = if (i == 1) ElectricAmber else accentColor
                     drawCircle(
-                        color = accentColor.copy(alpha = waveAlpha),
+                        color = rippleColor.copy(alpha = waveAlpha),
                         radius = waveRadius,
                         center = center,
                         style = Stroke(width = (1.5.dp.toPx()) * (1f - 0.3f * p))
@@ -146,10 +149,10 @@ fun LiquidShieldOverlay(
             drawCircle(
                 brush = Brush.radialGradient(
                     colors = listOf(
-                        Color(0xFFC6FAF0).copy(alpha = 0.85f * orbOpacity),
+                        Color(0xFFC9EAD6).copy(alpha = 0.85f * orbOpacity),
                         accentColor.copy(alpha = 0.68f * orbOpacity),
-                        MintTealDark.copy(alpha = 0.78f * orbOpacity),
-                        Color(0xFF0A1412).copy(alpha = 0.35f * orbOpacity)
+                        CalmSageDark.copy(alpha = 0.78f * orbOpacity),
+                        ObsidianBg.copy(alpha = 0.38f * orbOpacity)
                     ),
                     center = Offset(
                         center.x - coreRadius * 0.22f,
@@ -165,7 +168,7 @@ fun LiquidShieldOverlay(
             drawCircle(
                 brush = Brush.linearGradient(
                     colors = listOf(
-                        Color.White.copy(alpha = 0.62f * orbOpacity),
+                        Color(0xFFFFF8EE).copy(alpha = 0.62f * orbOpacity),
                         accentColor.copy(alpha = 0.40f * orbOpacity),
                         Color.Transparent
                     ),

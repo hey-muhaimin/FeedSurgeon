@@ -43,7 +43,7 @@ import androidx.compose.ui.unit.dp
 import com.example.ui.OnboardingStep
 import com.example.ui.components.CircularBackButton
 import com.example.ui.theme.CardBorder
-import com.example.ui.theme.MintTeal
+import com.example.ui.theme.ElectricAmber
 import com.example.ui.theme.TextMuted
 import com.example.ui.theme.rememberReducedMotionEnabled
 
@@ -103,7 +103,7 @@ fun OnboardingScaffold(
                         ) {
                             repeat(OnboardingStep.entries.size) { index ->
                                 val segmentColor by animateColorAsState(
-                                    targetValue = if (index <= currentStep.index) MintTeal else CardBorder,
+                                    targetValue = if (index <= currentStep.index) ElectricAmber else CardBorder,
                                     animationSpec = tween(
                                         durationMillis = if (reducedMotion) 0 else 280,
                                         easing = FastOutSlowInEasing
