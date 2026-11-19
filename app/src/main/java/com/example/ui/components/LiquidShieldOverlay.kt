@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.size
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -24,23 +25,21 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.example.ui.theme.CalmSage
-import com.example.ui.theme.CalmSageDark
-import com.example.ui.theme.ElectricAmber
-import com.example.ui.theme.ObsidianBg
-import com.example.ui.theme.ObsidianGlow
+import com.example.ui.theme.StillspaceTheme
 import com.example.ui.theme.rememberReducedMotionEnabled
 
 @Composable
 fun LiquidShieldOverlay(
     modifier: Modifier = Modifier,
     orbSize: Dp = 180.dp,
-    accentColor: Color = CalmSage,
+    accentColor: Color = MaterialTheme.colorScheme.primary,
     showObsidianBackdrop: Boolean = true,
     testTag: String = "liquid_shield_overlay",
     content: @Composable BoxScope.() -> Unit = {}
 ) {
     val reducedMotion = rememberReducedMotionEnabled()
+    val scheme = MaterialTheme.colorScheme
+    val neu = StillspaceTheme.colors
 
     val radiusScale: Float
     val orbOpacity: Float
@@ -48,7 +47,7 @@ fun LiquidShieldOverlay(
 
     if (reducedMotion) {
         radiusScale = 0.86f
-        orbOpacity = 0.68f
+        orbOpacity = 0.72f
         ripplePhase = 0.30f
     } else {
         val infiniteTransition = rememberInfiniteTransition(label = "liquid_shield_overlay_transition")
@@ -62,8 +61,8 @@ fun LiquidShieldOverlay(
             label = "liquid_shield_orb_radius"
         )
         val animatedOpacity by infiniteTransition.animateFloat(
-            initialValue = 0.45f,
-            targetValue = 0.88f,
+            initialValue = 0.50f,
+            targetValue = 0.90f,
             animationSpec = infiniteRepeatable(
                 animation = tween(durationMillis = 3200, easing = FastOutSlowInEasing),
                 repeatMode = RepeatMode.Reverse
@@ -91,8 +90,8 @@ fun LiquidShieldOverlay(
                     Modifier.background(
                         Brush.radialGradient(
                             colors = listOf(
-                                ObsidianGlow.copy(alpha = 0.92f),
-                                ObsidianBg.copy(alpha = 0.94f)
+                                neu.bgBloomPrimary.copy(alpha = 0.92f),
+                                scheme.background.copy(alpha = 0.96f)
                             )
                         )
                     )
@@ -113,13 +112,13 @@ fun LiquidShieldOverlay(
             val coreRadius = maxRadius * 0.42f * radiusScale
             val haloRadius = maxRadius * (0.78f + 0.18f * (radiusScale - 0.72f) / 0.28f)
 
-            // Outer translucent Warm Obsidian & Calm Sage aura
+            // Outer translucent Electric Cyan & Glacial Cobalt aura
             drawCircle(
                 brush = Brush.radialGradient(
                     colors = listOf(
-                        accentColor.copy(alpha = 0.28f * orbOpacity),
-                        ElectricAmber.copy(alpha = 0.12f * orbOpacity),
-                        CalmSageDark.copy(alpha = 0.34f * orbOpacity),
+                        accentColor.copy(alpha = 0.30f * orbOpacity),
+                        scheme.primary.copy(alpha = 0.14f * orbOpacity),
+                        neu.orbCoreDeep.copy(alpha = 0.28f * orbOpacity),
                         Color.Transparent
                     ),
                     center = center,
@@ -135,7 +134,7 @@ fun LiquidShieldOverlay(
                 val waveRadius = coreRadius + (maxRadius * 0.92f - coreRadius) * p
                 val waveAlpha = (1f - p) * (1f - p) * 0.48f * orbOpacity
                 if (waveAlpha > 0.01f) {
-                    val rippleColor = if (i == 1) ElectricAmber else accentColor
+                    val rippleColor = if (i == 1) scheme.primary else accentColor
                     drawCircle(
                         color = rippleColor.copy(alpha = waveAlpha),
                         radius = waveRadius,
@@ -149,10 +148,10 @@ fun LiquidShieldOverlay(
             drawCircle(
                 brush = Brush.radialGradient(
                     colors = listOf(
-                        Color(0xFFC9EAD6).copy(alpha = 0.85f * orbOpacity),
-                        accentColor.copy(alpha = 0.68f * orbOpacity),
-                        CalmSageDark.copy(alpha = 0.78f * orbOpacity),
-                        ObsidianBg.copy(alpha = 0.38f * orbOpacity)
+                        neu.orbCoreHighlight.copy(alpha = 0.90f * orbOpacity),
+                        accentColor.copy(alpha = 0.74f * orbOpacity),
+                        neu.orbCoreDeep.copy(alpha = 0.80f * orbOpacity),
+                        scheme.background.copy(alpha = 0.30f * orbOpacity)
                     ),
                     center = Offset(
                         center.x - coreRadius * 0.22f,
@@ -164,12 +163,12 @@ fun LiquidShieldOverlay(
                 center = center
             )
 
-            // Specular obsidian glass rim highlight
+            // Specular cyan/white glass rim highlight
             drawCircle(
                 brush = Brush.linearGradient(
                     colors = listOf(
-                        Color(0xFFFFF8EE).copy(alpha = 0.62f * orbOpacity),
-                        accentColor.copy(alpha = 0.40f * orbOpacity),
+                        Color.White.copy(alpha = 0.72f * orbOpacity),
+                        accentColor.copy(alpha = 0.45f * orbOpacity),
                         Color.Transparent
                     ),
                     start = Offset(center.x - coreRadius, center.y - coreRadius),

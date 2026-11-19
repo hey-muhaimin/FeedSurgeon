@@ -9,6 +9,7 @@ import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import com.example.data.model.ThemeMode
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
@@ -28,7 +29,8 @@ data class AppPreferences(
     val reclaimedSecondsPerCut: Int = 165,
     val showInterventionBanner: Boolean = true,
     val cachedRulesetJson: String = BUNDLED_RULESET_JSON,
-    val globalPauseUntilMs: Long = 0L
+    val globalPauseUntilMs: Long = 0L,
+    val themeMode: ThemeMode = ThemeMode.LIGHT
 ) {
     fun isGloballyPaused(nowMs: Long = System.currentTimeMillis()): Boolean =
         globalPauseUntilMs == Long.MAX_VALUE || globalPauseUntilMs > nowMs
@@ -120,6 +122,7 @@ class SettingsDataStore(private val context: Context) {
         val SHOW_INTERVENTION_BANNER = booleanPreferencesKey("show_intervention_banner")
         val CACHED_RULESET_JSON = stringPreferencesKey("cached_ruleset_json")
         val GLOBAL_PAUSE_UNTIL_MS = longPreferencesKey("global_pause_until_ms")
+        val THEME_MODE = stringPreferencesKey("theme_mode")
     }
 
     val preferencesFlow: Flow<AppPreferences> = context.feedSurgeonDataStore.data.map { prefs ->
@@ -135,7 +138,8 @@ class SettingsDataStore(private val context: Context) {
             reclaimedSecondsPerCut = prefs[Keys.RECLAIMED_SECONDS_PER_CUT] ?: 165,
             showInterventionBanner = prefs[Keys.SHOW_INTERVENTION_BANNER] ?: true,
             cachedRulesetJson = prefs[Keys.CACHED_RULESET_JSON] ?: AppPreferences.BUNDLED_RULESET_JSON,
-            globalPauseUntilMs = prefs[Keys.GLOBAL_PAUSE_UNTIL_MS] ?: 0L
+            globalPauseUntilMs = prefs[Keys.GLOBAL_PAUSE_UNTIL_MS] ?: 0L,
+            themeMode = ThemeMode.fromStored(prefs[Keys.THEME_MODE])
         )
     }
 
@@ -178,6 +182,12 @@ class SettingsDataStore(private val context: Context) {
     suspend fun setGlobalPauseUntilMs(untilMs: Long) {
         context.feedSurgeonDataStore.edit { prefs ->
             prefs[Keys.GLOBAL_PAUSE_UNTIL_MS] = untilMs
+        }
+    }
+
+    suspend fun setThemeMode(mode: ThemeMode) {
+        context.feedSurgeonDataStore.edit { prefs ->
+            prefs[Keys.THEME_MODE] = mode.name
         }
     }
 

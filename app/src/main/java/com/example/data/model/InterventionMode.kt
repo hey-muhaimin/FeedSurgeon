@@ -17,7 +17,7 @@ enum class InterventionMode(
     ),
     OVERLAY(
         shortLabel = "Calm pause",
-        subtitleLabel = "Calm focus pause",
+        subtitleLabel = "Calm reminder",
         explanation = "Shows a calm full-screen breathing pause so you can step away intentionally."
     )
 }

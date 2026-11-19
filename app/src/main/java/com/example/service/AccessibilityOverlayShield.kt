@@ -13,6 +13,7 @@ import android.graphics.drawable.GradientDrawable
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
+import android.text.TextUtils
 import android.view.Gravity
 import android.view.KeyEvent
 import android.view.View
@@ -52,7 +53,7 @@ class AccessibilityOverlayShield(private val context: Context) {
             fun dp(value: Int): Int = (value * density).toInt()
 
             val root = FrameLayout(context).apply {
-                setBackgroundColor(Color.parseColor("#EB11100E"))
+                setBackgroundColor(Color.parseColor("#E80D1020"))
                 setPadding(dp(20), dp(24), dp(20), dp(24))
                 isFocusable = true
                 isFocusableInTouchMode = true
@@ -84,12 +85,12 @@ class AccessibilityOverlayShield(private val context: Context) {
                 background = GradientDrawable(
                     GradientDrawable.Orientation.TL_BR,
                     intArrayOf(
-                        Color.parseColor("#F5221F1B"),
-                        Color.parseColor("#F0191714")
+                        Color.parseColor("#F5171C36"),
+                        Color.parseColor("#F211152A")
                     )
                 ).apply {
-                    cornerRadius = dp(22).toFloat()
-                    setStroke(dp(1), Color.parseColor("#3A694F"))
+                    cornerRadius = dp(24).toFloat()
+                    setStroke(dp(1), Color.parseColor("#2E3762"))
                 }
             }
 
@@ -104,7 +105,7 @@ class AccessibilityOverlayShield(private val context: Context) {
                 textSize = 11f
                 gravity = Gravity.CENTER_HORIZONTAL
                 setTypeface(Typeface.SANS_SERIF, Typeface.BOLD)
-                setTextColor(Color.parseColor("#88C09E"))
+                setTextColor(Color.parseColor("#A5B4FC"))
                 letterSpacing = 0.08f
                 setPadding(0, dp(10), 0, 0)
             }
@@ -114,7 +115,7 @@ class AccessibilityOverlayShield(private val context: Context) {
                 textSize = 22f
                 gravity = Gravity.CENTER_HORIZONTAL
                 setTypeface(Typeface.DEFAULT_BOLD)
-                setTextColor(Color.parseColor("#F5F2EC"))
+                setTextColor(Color.parseColor("#F1F4FF"))
                 setPadding(0, dp(8), 0, dp(8))
                 isFocusable = true
                 importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_YES
@@ -124,7 +125,7 @@ class AccessibilityOverlayShield(private val context: Context) {
                 text = "$appName $feedLabel opened. Step back to protect your focus, or allow 5 minutes for this visit."
                 textSize = 14f
                 gravity = Gravity.CENTER_HORIZONTAL
-                setTextColor(Color.parseColor("#9C968D"))
+                setTextColor(Color.parseColor("#9AA3C2"))
                 setPadding(0, 0, 0, dp(20))
             }
 
@@ -132,16 +133,18 @@ class AccessibilityOverlayShield(private val context: Context) {
                 text = "Leave $feedLabel"
                 contentDescription = "Leave $feedLabel and return to $appName Home"
                 isAllCaps = false
+                maxLines = 1
+                ellipsize = TextUtils.TruncateAt.END
                 textSize = 15f
                 setTypeface(Typeface.DEFAULT_BOLD)
-                setTextColor(Color.parseColor("#1A1104"))
+                setTextColor(Color.parseColor("#FFFFFF"))
                 setPadding(dp(16), dp(12), dp(16), dp(12))
                 background = GradientDrawable().apply {
-                    setColor(Color.parseColor("#F5A623"))
-                    cornerRadius = dp(100).toFloat()
+                    setColor(Color.parseColor("#5B54F2"))
+                    cornerRadius = dp(16).toFloat()
                 }
-                minimumHeight = dp(48)
-                minHeight = dp(48)
+                minimumHeight = dp(50)
+                minHeight = dp(50)
                 setOnClickListener {
                     dismiss()
                     onExitFeed()
@@ -149,19 +152,22 @@ class AccessibilityOverlayShield(private val context: Context) {
             }
 
             val allowButton = Button(context).apply {
-                text = "Allow 5 min (this visit)"
+                text = "Allow 5 min"
                 contentDescription = "Allow $appName $feedLabel for 5 minutes on this visit"
                 isAllCaps = false
+                maxLines = 1
+                ellipsize = TextUtils.TruncateAt.END
                 textSize = 14f
-                setTextColor(Color.parseColor("#F5F2EC"))
+                setTypeface(Typeface.DEFAULT_BOLD)
+                setTextColor(Color.parseColor("#F3F5FC"))
                 setPadding(dp(16), dp(12), dp(16), dp(12))
                 background = GradientDrawable().apply {
-                    setColor(Color.parseColor("#221F1B"))
-                    cornerRadius = dp(100).toFloat()
-                    setStroke(dp(1), Color.parseColor("#2C2823"))
+                    setColor(Color.parseColor("#1E2440"))
+                    cornerRadius = dp(16).toFloat()
+                    setStroke(dp(1), Color.parseColor("#3D4773"))
                 }
-                minimumHeight = dp(48)
-                minHeight = dp(48)
+                minimumHeight = dp(50)
+                minHeight = dp(50)
                 setOnClickListener {
                     dismiss()
                     onAllowOnce()
@@ -259,13 +265,13 @@ class AccessibilityOverlayShield(private val context: Context) {
         private val haloPaint = Paint(Paint.ANTI_ALIAS_FLAG)
         private val ripplePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
             style = Paint.Style.STROKE
-            color = Color.parseColor("#88C09E")
+            color = Color.parseColor("#818CF8")
         }
         private val corePaint = Paint(Paint.ANTI_ALIAS_FLAG)
         private val rimPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
             style = Paint.Style.STROKE
             strokeWidth = 1.25f * density
-            color = Color.argb(150, 255, 248, 238)
+            color = Color.argb(165, 199, 210, 254)
         }
 
         private var phase = 0.25f
@@ -285,8 +291,8 @@ class AccessibilityOverlayShield(private val context: Context) {
                     centerY,
                     maxRadius * 0.98f,
                     intArrayOf(
-                        Color.argb(74, 136, 192, 158),
-                        Color.argb(26, 245, 166, 35),
+                        Color.argb(85, 129, 140, 248),
+                        Color.argb(38, 31, 169, 113),
                         Color.TRANSPARENT
                     ),
                     floatArrayOf(0f, 0.55f, 1f),
@@ -298,9 +304,9 @@ class AccessibilityOverlayShield(private val context: Context) {
                     centerY - coreRadius * 0.28f,
                     coreRadius * 1.45f,
                     intArrayOf(
-                        Color.parseColor("#C9EAD6"),
-                        Color.parseColor("#88C09E"),
-                        Color.parseColor("#182920")
+                        Color.parseColor("#C7D2FE"),
+                        Color.parseColor("#4F46E5"),
+                        Color.parseColor("#312E81")
                     ),
                     floatArrayOf(0f, 0.55f, 1f),
                     Shader.TileMode.CLAMP

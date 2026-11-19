@@ -42,9 +42,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import com.example.ui.OnboardingStep
 import com.example.ui.components.CircularBackButton
-import com.example.ui.theme.CardBorder
-import com.example.ui.theme.ElectricAmber
-import com.example.ui.theme.TextMuted
+import com.example.ui.theme.StillspaceTheme
 import com.example.ui.theme.rememberReducedMotionEnabled
 
 @Composable
@@ -56,6 +54,8 @@ fun OnboardingScaffold(
     stepContent: @Composable (step: OnboardingStep, isWideLayout: Boolean) -> Unit
 ) {
     val reducedMotion = rememberReducedMotionEnabled()
+    val scheme = MaterialTheme.colorScheme
+    val neu = StillspaceTheme.colors
 
     BackHandler(enabled = currentStep.index > 0) {
         onPreviousStep()
@@ -102,8 +102,9 @@ fun OnboardingScaffold(
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
                             repeat(OnboardingStep.entries.size) { index ->
+                                val isActive = index <= currentStep.index
                                 val segmentColor by animateColorAsState(
-                                    targetValue = if (index <= currentStep.index) ElectricAmber else CardBorder,
+                                    targetValue = if (isActive) scheme.primary else neu.trackInactive,
                                     animationSpec = tween(
                                         durationMillis = if (reducedMotion) 0 else 280,
                                         easing = FastOutSlowInEasing
@@ -114,7 +115,7 @@ fun OnboardingScaffold(
                                     modifier = Modifier
                                         .weight(1f)
                                         .height(4.dp)
-                                        .clip(RoundedCornerShape(2.dp))
+                                        .clip(RoundedCornerShape(100.dp))
                                         .background(segmentColor)
                                 )
                             }
@@ -124,7 +125,7 @@ fun OnboardingScaffold(
                             Text(
                                 text = "STEP ${currentStep.index + 1} OF ${OnboardingStep.entries.size}",
                                 style = MaterialTheme.typography.labelSmall,
-                                color = TextMuted,
+                                color = neu.textMuted,
                                 modifier = Modifier.testTag("onboarding_wide_step_badge")
                             )
                         }
@@ -146,7 +147,7 @@ fun OnboardingScaffold(
                                 start = horizontalPadding,
                                 end = horizontalPadding,
                                 top = 8.dp,
-                                bottom = 16.dp
+                                bottom = 18.dp
                             )
                     ) {
                         bottomBar(isWideLayout)

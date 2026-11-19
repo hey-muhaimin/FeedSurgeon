@@ -25,7 +25,7 @@
     <string name="onboarding_apps_body">Pick which short-form feeds you want Stillspace to gently interrupt. You can adjust these anytime.</string>
     <string name="onboarding_step2_title">Turn on Focus Guard</string>
     <string name="onboarding_step2_body">Android asks you to turn on Stillspace in Accessibility Settings so it can recognize when an endless video loop opens.</string>
-    <string name="onboarding_open_settings">Open System Settings</string>
+    <string name="onboarding_open_settings">Open Settings</string>
     <string name="onboarding_continue_without">Skip</string>
     <string name="onboarding_step3_title">Your space is ready</string>
     <string name="onboarding_step3_body">Stillspace runs quietly on your phone, uses minimal battery, and lets you take an intentional break anytime.</string>

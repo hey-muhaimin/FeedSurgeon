@@ -6,8 +6,8 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -29,7 +29,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
@@ -41,26 +40,23 @@ import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.example.data.local.TargetAppRuleEntity
 import com.example.data.model.InterventionMode
 import com.example.ui.components.AppBadgeIcon
 import com.example.ui.components.CircularBackButton
+import com.example.ui.components.NeumorphicSegmentedTrack
 import com.example.ui.components.SectionLabel
 import com.example.ui.components.StatusBadgePill
 import com.example.ui.components.SurgeonCard
 import com.example.ui.components.SurgeonSwitch
 import com.example.ui.components.rememberCountdownLabel
 import com.example.ui.components.surgeonSharedBounds
-import com.example.ui.theme.AmberWarning
-import com.example.ui.theme.CardBorder
-import com.example.ui.theme.CardSurfaceElevated
-import com.example.ui.theme.ElectricAmber
-import com.example.ui.theme.ObsidianBg
-import com.example.ui.theme.OnElectricAmber
 import com.example.ui.theme.StaggeredReveal
-import com.example.ui.theme.TextPrimary
-import com.example.ui.theme.TextSecondary
+import com.example.ui.theme.StillspaceTheme
+import com.example.ui.theme.neumorphicExtruded
+import com.example.ui.theme.tactilePressPhysics
 
 private enum class ResponseSpeedPreset(
     val label: String,
@@ -103,6 +99,7 @@ fun AppDetailScreen(
     onResumeSnooze: () -> Unit
 ) {
     BackHandler(onBack = onBack)
+    val scheme = MaterialTheme.colorScheme
 
     if (rule == null) {
         Column(
@@ -112,7 +109,11 @@ fun AppDetailScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             CircularBackButton(onClick = onBack)
-            Text("App settings not found.", style = MaterialTheme.typography.bodyLarge, color = TextSecondary)
+            Text(
+                "App settings not found.",
+                style = MaterialTheme.typography.bodyLarge,
+                color = scheme.onSurfaceVariant
+            )
         }
         return
     }
@@ -151,12 +152,12 @@ fun AppDetailScreen(
                         Text(
                             text = rule.displayName,
                             style = MaterialTheme.typography.headlineMedium,
-                            color = TextPrimary
+                            color = scheme.onBackground
                         )
                         Text(
                             text = "${rule.feedLabel} \u00B7 ${rule.interventionMode.shortLabel}",
                             style = MaterialTheme.typography.bodyMedium,
-                            color = TextSecondary
+                            color = scheme.onSurfaceVariant
                         )
                     }
                 }
@@ -218,7 +219,7 @@ fun AppDetailScreen(
                     }
                 }
 
-                // Intervention Mode Segmented Pill Card
+                // Intervention Mode Inset Segmented Pill Card
                 item {
                     StaggeredReveal(index = 1) {
                         HowToStepInCard(
@@ -261,6 +262,7 @@ private fun MasterToggleCard(
     isSnoozed: Boolean,
     onToggleEnabled: (Boolean) -> Unit
 ) {
+    val scheme = MaterialTheme.colorScheme
     SurgeonCard(
         modifier = Modifier.surgeonSharedBounds("app_card_${rule.packageName}")
     ) {
@@ -274,7 +276,7 @@ private fun MasterToggleCard(
                 Text(
                     text = "Guard ${rule.feedLabel}",
                     style = MaterialTheme.typography.titleMedium,
-                    color = TextPrimary
+                    color = scheme.onSurface
                 )
                 Spacer(modifier = Modifier.height(6.dp))
                 val pillText = when {
@@ -304,7 +306,7 @@ private fun MasterToggleCard(
             Text(
                 text = "Rule Sync Status",
                 style = MaterialTheme.typography.bodyMedium,
-                color = TextSecondary
+                color = scheme.onSurfaceVariant
             )
             StatusBadgePill(
                 text = if (rule.isOutdated) "Update recommended" else "Synced",
@@ -319,44 +321,17 @@ private fun HowToStepInCard(
     rule: TargetAppRuleEntity,
     onSelectMode: (InterventionMode) -> Unit
 ) {
-    val haptics = LocalHapticFeedback.current
+    val scheme = MaterialTheme.colorScheme
     SurgeonCard {
         SectionLabel(text = "HOW STILLSPACE STEPS IN")
         Spacer(modifier = Modifier.height(14.dp))
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(100.dp))
-                .background(ObsidianBg)
-                .padding(4.dp),
-            horizontalArrangement = Arrangement.spacedBy(4.dp)
-        ) {
-            InterventionMode.entries.forEach { mode ->
-                val selected = mode == rule.interventionMode
-                Box(
-                    modifier = Modifier
-                        .weight(1f)
-                        .minimumInteractiveComponentSize()
-                        .clip(RoundedCornerShape(100.dp))
-                        .background(if (selected) ElectricAmber else Color.Transparent)
-                        .clickable {
-                            haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                            onSelectMode(mode)
-                        }
-                        .padding(vertical = 12.dp)
-                        .testTag("mode_${mode.name.lowercase()}"),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = mode.shortLabel,
-                        style = MaterialTheme.typography.labelLarge,
-                        fontWeight = if (selected) FontWeight.Bold else FontWeight.SemiBold,
-                        color = if (selected) OnElectricAmber else TextSecondary,
-                        maxLines = 1
-                    )
-                }
-            }
-        }
+        NeumorphicSegmentedTrack(
+            items = InterventionMode.entries,
+            selectedItem = rule.interventionMode,
+            labelProvider = { it.shortLabel },
+            testTagProvider = { "mode_${it.name.lowercase()}" },
+            onSelect = onSelectMode
+        )
         Spacer(modifier = Modifier.height(14.dp))
         AnimatedContent(
             targetState = rule.interventionMode,
@@ -366,7 +341,7 @@ private fun HowToStepInCard(
             Text(
                 text = mode.explanation,
                 style = MaterialTheme.typography.bodyMedium,
-                color = TextSecondary
+                color = scheme.onSurfaceVariant
             )
         }
     }
@@ -377,44 +352,17 @@ private fun ResponseSpeedCard(
     currentPreset: ResponseSpeedPreset,
     onChangeCooldown: (Int) -> Unit
 ) {
-    val haptics = LocalHapticFeedback.current
+    val scheme = MaterialTheme.colorScheme
     SurgeonCard {
         SectionLabel(text = "RESPONSE SPEED")
         Spacer(modifier = Modifier.height(14.dp))
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(100.dp))
-                .background(ObsidianBg)
-                .padding(4.dp),
-            horizontalArrangement = Arrangement.spacedBy(4.dp)
-        ) {
-            ResponseSpeedPreset.entries.forEach { preset ->
-                val selected = preset == currentPreset
-                Box(
-                    modifier = Modifier
-                        .weight(1f)
-                        .minimumInteractiveComponentSize()
-                        .clip(RoundedCornerShape(100.dp))
-                        .background(if (selected) ElectricAmber else Color.Transparent)
-                        .clickable {
-                            haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                            onChangeCooldown(preset.cooldownMs)
-                        }
-                        .padding(vertical = 12.dp)
-                        .testTag("speed_preset_${preset.name.lowercase()}"),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = preset.label,
-                        style = MaterialTheme.typography.labelLarge,
-                        fontWeight = if (selected) FontWeight.Bold else FontWeight.SemiBold,
-                        color = if (selected) OnElectricAmber else TextSecondary,
-                        maxLines = 1
-                    )
-                }
-            }
-        }
+        NeumorphicSegmentedTrack(
+            items = ResponseSpeedPreset.entries,
+            selectedItem = currentPreset,
+            labelProvider = { it.label },
+            testTagProvider = { "speed_preset_${it.name.lowercase()}" },
+            onSelect = { preset -> onChangeCooldown(preset.cooldownMs) }
+        )
         Spacer(modifier = Modifier.height(14.dp))
         AnimatedContent(
             targetState = currentPreset,
@@ -424,7 +372,7 @@ private fun ResponseSpeedCard(
             Text(
                 text = preset.description,
                 style = MaterialTheme.typography.bodyMedium,
-                color = TextSecondary
+                color = scheme.onSurfaceVariant
             )
         }
     }
@@ -438,6 +386,9 @@ private fun TakeABreakCard(
     onResumeSnooze: () -> Unit
 ) {
     val haptics = LocalHapticFeedback.current
+    val scheme = MaterialTheme.colorScheme
+    val neu = StillspaceTheme.colors
+
     SurgeonCard {
         SectionLabel(text = "TAKE AN INTENTIONAL BREAK")
         Spacer(modifier = Modifier.height(8.dp))
@@ -447,14 +398,14 @@ private fun TakeABreakCard(
                 style = MaterialTheme.typography.headlineMedium.copy(
                     fontFeatureSettings = "tnum"
                 ),
-                color = AmberWarning,
+                color = neu.statusWarningText,
                 modifier = Modifier.testTag("snooze_countdown_text")
             )
             Spacer(modifier = Modifier.height(4.dp))
             Text(
                 text = "${rule.displayName} ${rule.feedLabel} will automatically start guarding focus again when the timer ends.",
                 style = MaterialTheme.typography.bodyMedium,
-                color = TextSecondary
+                color = scheme.onSurfaceVariant
             )
             Spacer(modifier = Modifier.height(14.dp))
             Button(
@@ -465,50 +416,67 @@ private fun TakeABreakCard(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(50.dp)
+                    .neumorphicExtruded(
+                        cornerRadius = 16.dp,
+                        elevation = 4.dp,
+                        containerColor = neu.primaryActionBg,
+                        borderColor = Color.Transparent,
+                        shadowTint = neu.primaryActionBg.copy(alpha = 0.25f)
+                    )
                     .testTag("snooze_button"),
-                shape = RoundedCornerShape(100.dp),
+                shape = RoundedCornerShape(16.dp),
+                contentPadding = PaddingValues(horizontal = 16.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = ElectricAmber,
-                    contentColor = OnElectricAmber
+                    containerColor = neu.primaryActionBg,
+                    contentColor = neu.primaryActionText
                 )
             ) {
                 Text(
-                    text = "Resume guarding ${rule.feedLabel}",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
+                    text = "Resume guarding",
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1,
+                    softWrap = false,
+                    overflow = TextOverflow.Ellipsis
                 )
             }
         } else {
             Text(
                 text = "Pause Focus Guard for ${rule.displayName} ${rule.feedLabel} across all visits until the timer ends (separate from 5m single-visit passes).",
                 style = MaterialTheme.typography.bodyMedium,
-                color = TextSecondary
+                color = scheme.onSurfaceVariant
             )
             Spacer(modifier = Modifier.height(14.dp))
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                listOf(5 to "5 min", 15 to "15 min", 60 to "1 hr").forEach { (minutes, label) ->
-                    OutlinedButton(
-                        onClick = {
-                            haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                            onSnoozeMinutes(minutes)
-                        },
+                listOf(5 to "5 min", 15 to "15 min", 60 to "1 hour").forEach { (minutes, label) ->
+                    val pillShape = RoundedCornerShape(14.dp)
+                    Box(
                         modifier = Modifier
                             .weight(1f)
-                            .height(48.dp)
+                            .minimumInteractiveComponentSize()
+                            .height(44.dp)
+                            .tactilePressPhysics(pressedScale = 0.96f)
+                            .clip(pillShape)
+                            .background(scheme.primaryContainer)
+                            .border(1.dp, neu.indigoTintBorder, pillShape)
+                            .clickable {
+                                haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                onSnoozeMinutes(minutes)
+                            }
+                            .padding(horizontal = 6.dp)
                             .testTag("snooze_${minutes}m_button"),
-                        shape = RoundedCornerShape(100.dp),
-                        border = BorderStroke(1.dp, CardBorder),
-                        colors = ButtonDefaults.outlinedButtonColors(
-                            containerColor = CardSurfaceElevated,
-                            contentColor = TextPrimary
-                        )
+                        contentAlignment = Alignment.Center
                     ) {
                         Text(
                             text = label,
-                            style = MaterialTheme.typography.labelLarge
+                            style = MaterialTheme.typography.labelLarge,
+                            color = scheme.onPrimaryContainer,
+                            maxLines = 1,
+                            softWrap = false,
+                            overflow = TextOverflow.Ellipsis
                         )
                     }
                 }

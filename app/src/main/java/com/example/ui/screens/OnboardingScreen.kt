@@ -25,6 +25,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.platform.testTag
@@ -41,12 +42,8 @@ import com.example.ui.MainViewModel
 import com.example.ui.OnboardingFlowState
 import com.example.ui.OnboardingStep
 import com.example.ui.components.MindfulPausePreviewDialog
-import com.example.ui.theme.CardBorder
-import com.example.ui.theme.CardSurface
-import com.example.ui.theme.ElectricAmber
-import com.example.ui.theme.OnElectricAmber
-import com.example.ui.theme.TextPrimary
-import com.example.ui.theme.TextSecondary
+import com.example.ui.theme.StillspaceTheme
+import com.example.ui.theme.neumorphicExtruded
 
 @Composable
 fun OnboardingScreen(
@@ -183,7 +180,6 @@ private fun OnboardingContentScaffold(
         when (step) {
             OnboardingStep.WELCOME -> {
                 OnboardingWelcomeStep(
-                    rules = rules,
                     isWideLayout = isWideLayout
                 )
             }
@@ -238,22 +234,33 @@ private fun OnboardingBottomActionBar(
     onShowPreview: () -> Unit,
     onCompleteOnboarding: () -> Unit
 ) {
+    val scheme = MaterialTheme.colorScheme
+    val neu = StillspaceTheme.colors
     val uriHandler = LocalUriHandler.current
     val privacyPolicyUrl = stringResource(R.string.privacy_policy_url)
 
     when (currentStep) {
         OnboardingStep.WELCOME -> {
+            Text(
+                text = "Choosing Not now leaves protection off until you enable it later.",
+                style = MaterialTheme.typography.bodySmall,
+                color = neu.textMuted,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 4.dp)
+                    .testTag("onboarding_decline_note")
+            )
             FlowRow(
                 modifier = Modifier
                     .fillMaxWidth()
                     .testTag("onboarding_privacy_consent_line"),
-                horizontalArrangement = Arrangement.Center,
+                horizontalArrangement = Arrangement.Start,
                 verticalArrangement = Arrangement.Center
             ) {
                 Text(
                     text = stringResource(R.string.onboarding_consent_prefix),
                     style = MaterialTheme.typography.bodySmall,
-                    color = TextSecondary
+                    color = scheme.onSurfaceVariant
                 )
                 Text(
                     text = stringResource(R.string.privacy_policy_label),
@@ -261,7 +268,7 @@ private fun OnboardingBottomActionBar(
                         fontWeight = FontWeight.SemiBold,
                         textDecoration = TextDecoration.Underline
                     ),
-                    color = ElectricAmber,
+                    color = scheme.primary,
                     modifier = Modifier
                         .clip(RoundedCornerShape(4.dp))
                         .clickable { uriHandler.openUri(privacyPolicyUrl) }
@@ -276,7 +283,7 @@ private fun OnboardingBottomActionBar(
                 modifier = Modifier
                     .fillMaxWidth()
                     .testTag("onboarding_step0_actions_row"),
-                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 OutlinedButton(
@@ -285,17 +292,18 @@ private fun OnboardingBottomActionBar(
                         .weight(1f)
                         .height(52.dp)
                         .testTag("onboarding_decline_button"),
-                    shape = RoundedCornerShape(100.dp),
-                    border = BorderStroke(1.dp, CardBorder),
+                    shape = RoundedCornerShape(16.dp),
+                    border = BorderStroke(1.dp, neu.secondaryButtonBorder),
                     contentPadding = PaddingValues(horizontal = 12.dp),
                     colors = ButtonDefaults.outlinedButtonColors(
-                        containerColor = CardSurface,
-                        contentColor = TextPrimary
+                        containerColor = neu.secondaryButtonBg,
+                        contentColor = scheme.onSurface
                     )
                 ) {
                     Text(
                         text = stringResource(R.string.onboarding_decline),
                         style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.SemiBold,
                         maxLines = 1,
                         softWrap = false,
                         overflow = TextOverflow.Ellipsis
@@ -305,14 +313,21 @@ private fun OnboardingBottomActionBar(
                 Button(
                     onClick = onAcceptDisclosure,
                     modifier = Modifier
-                        .weight(1.85f)
+                        .weight(1.12f)
                         .height(52.dp)
+                        .neumorphicExtruded(
+                            cornerRadius = 16.dp,
+                            elevation = 5.dp,
+                            containerColor = neu.primaryActionBg,
+                            borderColor = Color.Transparent,
+                            shadowTint = neu.primaryActionBg.copy(alpha = 0.28f)
+                        )
                         .testTag("onboarding_agree_button"),
-                    shape = RoundedCornerShape(100.dp),
-                    contentPadding = PaddingValues(horizontal = 16.dp),
+                    shape = RoundedCornerShape(16.dp),
+                    contentPadding = PaddingValues(horizontal = 14.dp),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = ElectricAmber,
-                        contentColor = OnElectricAmber
+                        containerColor = neu.primaryActionBg,
+                        contentColor = neu.primaryActionText
                     )
                 ) {
                     Text(
@@ -333,17 +348,28 @@ private fun OnboardingBottomActionBar(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(52.dp)
+                    .neumorphicExtruded(
+                        cornerRadius = 16.dp,
+                        elevation = 5.dp,
+                        containerColor = neu.primaryActionBg,
+                        borderColor = Color.Transparent,
+                        shadowTint = neu.primaryActionBg.copy(alpha = 0.28f)
+                    )
                     .testTag("onboarding_apps_continue_button"),
-                shape = RoundedCornerShape(100.dp),
+                shape = RoundedCornerShape(16.dp),
+                contentPadding = PaddingValues(horizontal = 16.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = ElectricAmber,
-                    contentColor = OnElectricAmber
+                    containerColor = neu.primaryActionBg,
+                    contentColor = neu.primaryActionText
                 )
             ) {
                 Text(
                     text = "Continue",
                     style = MaterialTheme.typography.labelLarge,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1,
+                    softWrap = false,
+                    overflow = TextOverflow.Ellipsis
                 )
             }
         }
@@ -353,47 +379,27 @@ private fun OnboardingBottomActionBar(
                 modifier = Modifier
                     .fillMaxWidth()
                     .testTag("onboarding_step2_actions_row"),
-                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                OutlinedButton(
-                    onClick = onNextStep,
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(52.dp)
-                        .testTag("onboarding_continue_step2"),
-                    shape = RoundedCornerShape(100.dp),
-                    border = BorderStroke(1.dp, CardBorder),
-                    contentPadding = PaddingValues(horizontal = 12.dp),
-                    colors = ButtonDefaults.outlinedButtonColors(
-                        containerColor = CardSurface,
-                        contentColor = TextPrimary
-                    )
-                ) {
-                    Text(
-                        text = if (isAccessibilityEnabled) {
-                            "Continue"
-                        } else {
-                            stringResource(R.string.onboarding_continue_without)
-                        },
-                        style = MaterialTheme.typography.labelLarge,
-                        maxLines = 1,
-                        softWrap = false,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                }
-
                 Button(
                     onClick = onOpenSystemSettings,
                     modifier = Modifier
-                        .weight(1.85f)
+                        .weight(1.35f)
                         .height(52.dp)
+                        .neumorphicExtruded(
+                            cornerRadius = 16.dp,
+                            elevation = 5.dp,
+                            containerColor = neu.primaryActionBg,
+                            borderColor = Color.Transparent,
+                            shadowTint = neu.primaryActionBg.copy(alpha = 0.28f)
+                        )
                         .testTag("open_accessibility_settings_button"),
-                    shape = RoundedCornerShape(100.dp),
-                    contentPadding = PaddingValues(horizontal = 14.dp),
+                    shape = RoundedCornerShape(16.dp),
+                    contentPadding = PaddingValues(horizontal = 12.dp),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = ElectricAmber,
-                        contentColor = OnElectricAmber
+                        containerColor = neu.primaryActionBg,
+                        contentColor = neu.primaryActionText
                     )
                 ) {
                     Text(
@@ -405,34 +411,62 @@ private fun OnboardingBottomActionBar(
                         overflow = TextOverflow.Ellipsis
                     )
                 }
+
+                OutlinedButton(
+                    onClick = onNextStep,
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(52.dp)
+                        .testTag("onboarding_continue_step2"),
+                    shape = RoundedCornerShape(16.dp),
+                    border = BorderStroke(1.dp, neu.secondaryButtonBorder),
+                    contentPadding = PaddingValues(horizontal = 12.dp),
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        containerColor = neu.secondaryButtonBg,
+                        contentColor = scheme.onSurface
+                    )
+                ) {
+                    Text(
+                        text = if (isAccessibilityEnabled) {
+                            "Continue"
+                        } else {
+                            stringResource(R.string.onboarding_continue_without)
+                        },
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.SemiBold,
+                        maxLines = 1,
+                        softWrap = false,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
             }
         }
 
         OnboardingStep.READY -> {
-            Row(
+            androidx.compose.foundation.layout.Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .testTag("onboarding_step3_actions_row"),
-                horizontalArrangement = Arrangement.spacedBy(10.dp),
-                verticalAlignment = Alignment.CenterVertically
+                verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 OutlinedButton(
                     onClick = onShowPreview,
                     modifier = Modifier
-                        .weight(1f)
+                        .fillMaxWidth()
                         .height(52.dp)
                         .testTag("onboarding_try_preview_button"),
-                    shape = RoundedCornerShape(100.dp),
-                    border = BorderStroke(1.dp, CardBorder),
-                    contentPadding = PaddingValues(horizontal = 12.dp),
+                    shape = RoundedCornerShape(16.dp),
+                    border = BorderStroke(1.dp, neu.secondaryButtonBorder),
+                    contentPadding = PaddingValues(horizontal = 16.dp),
                     colors = ButtonDefaults.outlinedButtonColors(
-                        containerColor = CardSurface,
-                        contentColor = TextPrimary
+                        containerColor = neu.secondaryButtonBg,
+                        contentColor = scheme.onSurface
                     )
                 ) {
                     Text(
-                        text = stringResource(R.string.onboarding_preview_action),
+                        text = "Preview how it works",
                         style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.SemiBold,
                         maxLines = 1,
                         softWrap = false,
                         overflow = TextOverflow.Ellipsis
@@ -442,14 +476,21 @@ private fun OnboardingBottomActionBar(
                 Button(
                     onClick = onCompleteOnboarding,
                     modifier = Modifier
-                        .weight(1.85f)
+                        .fillMaxWidth()
                         .height(52.dp)
+                        .neumorphicExtruded(
+                            cornerRadius = 16.dp,
+                            elevation = 5.dp,
+                            containerColor = neu.primaryActionBg,
+                            borderColor = Color.Transparent,
+                            shadowTint = neu.primaryActionBg.copy(alpha = 0.28f)
+                        )
                         .testTag("onboarding_finish_button"),
-                    shape = RoundedCornerShape(100.dp),
+                    shape = RoundedCornerShape(16.dp),
                     contentPadding = PaddingValues(horizontal = 16.dp),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = ElectricAmber,
-                        contentColor = OnElectricAmber
+                        containerColor = neu.primaryActionBg,
+                        contentColor = neu.primaryActionText
                     )
                 ) {
                     Text(

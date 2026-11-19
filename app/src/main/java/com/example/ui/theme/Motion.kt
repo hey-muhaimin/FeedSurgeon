@@ -115,20 +115,20 @@ fun Modifier.tactilePressPhysics(
 
 fun specularRimBrush(
     baseBorder: Color,
+    highlightTop: Color = Color(0x80FFFFFF),
+    highlightBottom: Color = baseBorder.copy(alpha = 0.45f),
     isHighlighted: Boolean = false
 ): Brush {
-    val topLeft = when {
-        isHighlighted -> ElectricAmber.copy(alpha = 0.68f)
-        baseBorder == ElectricAmberBorder -> ElectricAmber.copy(alpha = 0.52f)
-        baseBorder == CalmSageBorder -> CalmSage.copy(alpha = 0.52f)
-        baseBorder == AmberWarningBorder -> AmberWarning.copy(alpha = 0.55f)
-        else -> SpecularHighlightTop
+    val topLeft = if (isHighlighted) {
+        highlightTop.copy(alpha = (highlightTop.alpha * 1.15f).coerceAtMost(0.95f))
+    } else {
+        highlightTop
     }
-    val mid = if (isHighlighted) ElectricAmberBorder else baseBorder
-    val bottomRight = when {
-        isHighlighted -> ElectricAmber.copy(alpha = 0.28f)
-        baseBorder == CardBorder -> SpecularHighlightEdge
-        else -> baseBorder.copy(alpha = 0.55f)
+    val mid = baseBorder
+    val bottomRight = if (isHighlighted) {
+        highlightBottom.copy(alpha = (highlightBottom.alpha * 1.2f).coerceAtMost(0.85f))
+    } else {
+        highlightBottom
     }
     return Brush.linearGradient(
         colors = listOf(topLeft, mid, bottomRight),

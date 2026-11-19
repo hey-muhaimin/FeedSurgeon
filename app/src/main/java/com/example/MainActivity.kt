@@ -30,7 +30,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
-import androidx.compose.ui.unit.dp
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
@@ -41,6 +40,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -57,17 +57,18 @@ import com.example.ui.MainUiState
 import com.example.ui.MainViewModel
 import com.example.ui.components.AtmosphericBackground
 import com.example.ui.components.BottomTab
-import com.example.ui.components.FloatingPillNavBar
 import com.example.ui.components.InterventionBanner
 import com.example.ui.components.LocalAnimatedVisibilityScope
 import com.example.ui.components.LocalSharedTransitionScope
-import com.example.ui.components.ObsidianSideRail
+import com.example.ui.components.StillspaceBottomNavBar
+import com.example.ui.components.StillspaceNavigationRail
 import com.example.ui.screens.AppDetailScreen
 import com.example.ui.screens.HomeScreen
 import com.example.ui.screens.InsightsScreen
 import com.example.ui.screens.OnboardingScreen
 import com.example.ui.screens.SettingsScreen
 import com.example.ui.theme.FeedSurgeonTheme
+import com.example.ui.theme.resolveDarkTheme
 import kotlinx.coroutines.delay
 
 object Routes {
@@ -100,13 +101,30 @@ internal fun computeNavAlertTabs(uiState: MainUiState): Set<BottomTab> = buildSe
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge(
-            statusBarStyle = SystemBarStyle.dark(Color.Transparent.toArgb()),
-            navigationBarStyle = SystemBarStyle.dark(Color.Transparent.toArgb())
-        )
+        enableEdgeToEdge()
         setContent {
-            FeedSurgeonTheme {
-                FeedSurgeonRoot()
+            val mainViewModel: MainViewModel = viewModel()
+            val uiState by mainViewModel.uiState.collectAsStateWithLifecycle()
+            val themeMode = uiState.preferences.themeMode
+            val isDark = resolveDarkTheme(themeMode)
+
+            LaunchedEffect(isDark) {
+                val transparent = Color.Transparent.toArgb()
+                if (isDark) {
+                    enableEdgeToEdge(
+                        statusBarStyle = SystemBarStyle.dark(transparent),
+                        navigationBarStyle = SystemBarStyle.dark(transparent)
+                    )
+                } else {
+                    enableEdgeToEdge(
+                        statusBarStyle = SystemBarStyle.light(transparent, transparent),
+                        navigationBarStyle = SystemBarStyle.light(transparent, transparent)
+                    )
+                }
+            }
+
+            FeedSurgeonTheme(themeMode = themeMode) {
+                FeedSurgeonRoot(viewModel = mainViewModel)
             }
         }
     }
@@ -207,12 +225,12 @@ fun FeedSurgeonRoot(
                     val dynamicBottomPadding = when {
                         !showTopLevelNav -> 28.dp
                         isWideLayout -> if (hasBanner) 96.dp else 24.dp
-                        else -> if (hasBanner) 176.dp else 104.dp
+                        else -> if (hasBanner) 168.dp else 96.dp
                     }
 
                     Row(modifier = Modifier.fillMaxSize()) {
                         if (isWideLayout && selectedBottomTab != null) {
-                            ObsidianSideRail(
+                            StillspaceNavigationRail(
                                 selectedTab = selectedBottomTab,
                                 onTabSelected = ::navigateToTopLevel,
                                 alertTabs = navAlertTabs
@@ -348,6 +366,9 @@ fun FeedSurgeonRoot(
                                             onToggleGlobalPause = { paused ->
                                                 viewModel.setGlobalProtectionPaused(paused)
                                             },
+                                            onSetThemeMode = { mode ->
+                                                viewModel.setThemeMode(mode)
+                                            },
                                             onSetAutoUpdateRules = { enabled ->
                                                 viewModel.setAutoUpdateRules(enabled)
                                             },
@@ -428,7 +449,7 @@ fun FeedSurgeonRoot(
                                     }
 
                                     if (!isWideLayout) {
-                                        FloatingPillNavBar(
+                                        StillspaceBottomNavBar(
                                             selectedTab = selectedBottomTab,
                                             onTabSelected = ::navigateToTopLevel,
                                             alertTabs = navAlertTabs

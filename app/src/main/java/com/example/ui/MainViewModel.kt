@@ -13,6 +13,7 @@ import com.example.data.model.InterventionMode
 import com.example.data.model.InterventionOutcome
 import com.example.data.model.InterventionToastState
 import com.example.data.model.ProtectionStatus
+import com.example.data.model.ThemeMode
 import com.example.data.repository.DiagnosticsBridge
 import com.example.data.repository.InterventionRepository
 import com.example.data.repository.RulesetSyncResult
@@ -504,6 +505,12 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun setShowInterventionBanner(show: Boolean) {
         viewModelScope.launch {
             settingsDataStore.setShowInterventionBanner(show)
+        }
+    }
+
+    fun setThemeMode(mode: ThemeMode) {
+        viewModelScope.launch {
+            settingsDataStore.setThemeMode(mode)
         }
     }
 

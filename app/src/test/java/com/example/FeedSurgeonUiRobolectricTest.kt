@@ -1,7 +1,9 @@
 package com.example
 
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertTextContains
@@ -22,22 +24,28 @@ import com.example.data.local.AppPreferences
 import com.example.data.local.FeedSurgeonDatabase
 import com.example.data.model.InterventionMode
 import com.example.data.model.ProtectionStatus
+import com.example.data.model.ThemeMode
 import com.example.ui.DayBarStat
 import com.example.ui.MainUiState
 import com.example.ui.MainViewModel
 import com.example.ui.OnboardingStep
 import com.example.ui.components.BottomTab
-import com.example.ui.components.FloatingPillNavBar
 import com.example.ui.components.LiquidShieldOverlay
 import com.example.ui.components.MindfulPausePreviewDialog
-import com.example.ui.components.ObsidianSideRail
+import com.example.ui.components.StillspaceBottomNavBar
+import com.example.ui.components.StillspaceNavigationRail
 import com.example.ui.components.SurgeonCard
 import com.example.ui.screens.AppDetailScreen
 import com.example.ui.screens.HomeScreen
 import com.example.ui.screens.InsightsScreen
 import com.example.ui.screens.OnboardingScreen
 import com.example.ui.screens.SettingsScreen
+import com.example.ui.theme.DarkHabitBg
+import com.example.ui.theme.DarkHabitSurface
 import com.example.ui.theme.FeedSurgeonTheme
+import com.example.ui.theme.HabitBg
+import com.example.ui.theme.HabitSurface
+import com.example.ui.theme.StillspaceTheme
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -85,7 +93,6 @@ class FeedSurgeonUiRobolectricTest {
             .performScrollTo()
             .assertIsDisplayed()
         composeRule.onNodeWithTag("onboarding_decline_note")
-            .performScrollTo()
             .assertIsDisplayed()
 
         composeRule.onNodeWithTag("onboarding_agree_button").performClick()
@@ -140,6 +147,8 @@ class FeedSurgeonUiRobolectricTest {
         composeRule.waitForIdle()
 
         composeRule.onNodeWithTag("home_service_disconnected_card").assertIsDisplayed()
+        composeRule.onNode(hasScrollToNodeAction())
+            .performScrollToNode(hasTestTag("home_reconnect_service_button"))
         composeRule.onNodeWithTag("home_reconnect_service_button").assertIsDisplayed()
         composeRule.onNodeWithTag("home_protection_control_card").assertDoesNotExist()
     }
@@ -216,6 +225,8 @@ class FeedSurgeonUiRobolectricTest {
         composeRule.waitForIdle()
 
         composeRule.onNodeWithTag("home_protection_control_card").assertIsDisplayed()
+        composeRule.onNode(hasScrollToNodeAction())
+            .performScrollToNode(hasTestTag("home_resume_protection_button"))
         composeRule.onNodeWithTag("home_resume_protection_button").assertIsDisplayed()
     }
 
@@ -344,11 +355,55 @@ class FeedSurgeonUiRobolectricTest {
     }
 
     @Test
-    fun `compact floating dock always shows all labels, sliding pill, and contextual alert dots`() {
+    fun `settings screen allows selecting light and dark blue theme modes`() {
+        var selectedThemeMode: ThemeMode? = null
+        composeRule.setContent {
+            FeedSurgeonTheme(themeMode = ThemeMode.LIGHT) {
+                SettingsScreen(
+                    uiState = MainUiState(
+                        isInitialLoading = false,
+                        preferences = AppPreferences(themeMode = ThemeMode.LIGHT),
+                        rules = FeedSurgeonDatabase.defaultBuiltInRules(),
+                        installedPackages = setOf("com.google.android.youtube"),
+                        isAccessibilityEnabled = true,
+                        isServiceConnected = true,
+                        protectionStatus = ProtectionStatus.OPERATIONAL,
+                        activeInstalledCount = 1,
+                        installedSupportedCount = 1
+                    ),
+                    onReopenDisclosure = {},
+                    onToggleGlobalPause = {},
+                    onSetThemeMode = { selectedThemeMode = it },
+                    onSetAutoUpdateRules = {},
+                    onCheckRulesNow = {},
+                    onSetEventCaptureEnabled = {},
+                    onRefreshEventLog = {},
+                    onClearEventLog = {},
+                    onShareEventLog = {},
+                    onSetReclaimedSeconds = {},
+                    onSetShowBanner = {},
+                    onClearHistory = {}
+                )
+            }
+        }
+        composeRule.waitForIdle()
+
+        composeRule.onNode(hasScrollToNodeAction())
+            .performScrollToNode(hasTestTag("settings_appearance_card"))
+        composeRule.onNodeWithTag("settings_appearance_card").assertIsDisplayed()
+        composeRule.onNode(hasScrollToNodeAction())
+            .performScrollToNode(hasTestTag("theme_mode_dark"))
+        composeRule.onNodeWithTag("theme_mode_dark").performClick()
+        composeRule.waitForIdle()
+        assertEquals(ThemeMode.DARK, selectedThemeMode)
+    }
+
+    @Test
+    fun `m3 bottom nav bar always shows all labels and contextual alert badges`() {
         var selected = BottomTab.HOME
         composeRule.setContent {
             FeedSurgeonTheme {
-                FloatingPillNavBar(
+                StillspaceBottomNavBar(
                     selectedTab = selected,
                     onTabSelected = { selected = it },
                     alertTabs = setOf(BottomTab.HOME, BottomTab.SETTINGS)
@@ -357,8 +412,7 @@ class FeedSurgeonUiRobolectricTest {
         }
         composeRule.waitForIdle()
 
-        composeRule.onNodeWithTag("compact_floating_dock").assertIsDisplayed()
-        composeRule.onNodeWithTag("nav_sliding_pill").assertIsDisplayed()
+        composeRule.onNodeWithTag("stillspace_bottom_nav").assertIsDisplayed()
         composeRule.onNodeWithText("Home").assertIsDisplayed()
         composeRule.onNodeWithText("Insights").assertIsDisplayed()
         composeRule.onNodeWithText("Settings").assertIsDisplayed()
@@ -371,11 +425,11 @@ class FeedSurgeonUiRobolectricTest {
     }
 
     @Test
-    fun `obsidian side rail displays labels, sliding pill, and alert indicators`() {
+    fun `m3 side navigation rail displays labels and alert indicators`() {
         var selected = BottomTab.INSIGHTS
         composeRule.setContent {
             FeedSurgeonTheme {
-                ObsidianSideRail(
+                StillspaceNavigationRail(
                     selectedTab = selected,
                     onTabSelected = { selected = it },
                     alertTabs = setOf(BottomTab.SETTINGS)
@@ -384,8 +438,7 @@ class FeedSurgeonUiRobolectricTest {
         }
         composeRule.waitForIdle()
 
-        composeRule.onNodeWithTag("obsidian_side_rail").assertIsDisplayed()
-        composeRule.onNodeWithTag("rail_sliding_pill").assertIsDisplayed()
+        composeRule.onNodeWithTag("stillspace_side_rail").assertIsDisplayed()
         composeRule.onNodeWithText("Home").assertIsDisplayed()
         composeRule.onNodeWithText("Insights").assertIsDisplayed()
         composeRule.onNodeWithText("Settings").assertIsDisplayed()
@@ -560,13 +613,17 @@ class FeedSurgeonUiRobolectricTest {
     }
 
     @Test
-    fun `welcome screen displays official app logo strip`() {
+    fun `welcome screen displays hero illustration and choose apps displays official app logos`() {
         val rules = FeedSurgeonDatabase.defaultBuiltInRules()
         composeRule.setContent {
             FeedSurgeonTheme {
                 OnboardingScreen(
                     rules = rules,
-                    installedPackages = setOf("com.google.android.youtube"),
+                    installedPackages = setOf(
+                        "com.google.android.youtube",
+                        "com.instagram.android",
+                        "com.facebook.katana"
+                    ),
                     isAccessibilityEnabled = false,
                     onToggleApp = { _, _ -> },
                     onAcceptDisclosure = {},
@@ -577,22 +634,27 @@ class FeedSurgeonUiRobolectricTest {
         }
         composeRule.waitForIdle()
 
-        composeRule.onNodeWithTag("onboarding_supported_logos_row").assertIsDisplayed()
+        composeRule.onNodeWithTag("onboarding_hero_illustration").assertIsDisplayed()
+        composeRule.onNodeWithText("Reels paused").assertIsDisplayed()
+        composeRule.onNodeWithText("Shorts paused").assertIsDisplayed()
+
+        composeRule.onNodeWithTag("onboarding_agree_button").performClick()
+        composeRule.waitForIdle()
+
         composeRule.onNodeWithTag("app_logo_com.google.android.youtube", useUnmergedTree = true)
+            .performScrollTo()
             .assertIsDisplayed()
         composeRule.onNodeWithTag("app_logo_com.instagram.android", useUnmergedTree = true)
+            .performScrollTo()
             .assertIsDisplayed()
         composeRule.onNodeWithTag("app_logo_com.facebook.katana", useUnmergedTree = true)
-            .assertIsDisplayed()
-        composeRule.onNodeWithTag("app_logo_com.snapchat.android", useUnmergedTree = true)
-            .assertIsDisplayed()
-        composeRule.onNodeWithTag("app_logo_com.reddit.frontpage", useUnmergedTree = true)
+            .performScrollTo()
             .assertIsDisplayed()
     }
 
     @Test
     @Config(sdk = [36], qualifiers = "w411dp-h915dp")
-    fun `onboarding welcome features, consent line, and step3 and step4 inline buttons align cleanly`() {
+    fun `onboarding welcome features, consent line, and step3 and step4 mockup buttons align cleanly`() {
         val rules = FeedSurgeonDatabase.defaultBuiltInRules()
         composeRule.setContent {
             FeedSurgeonTheme {
@@ -609,12 +671,11 @@ class FeedSurgeonUiRobolectricTest {
         }
         composeRule.waitForIdle()
 
-        // Step 0: Hero title, 3 glass feature chips, inline consent line, and split buttons
+        // Step 0: Hero illustration, title, privacy cards, consent line, and split buttons
+        composeRule.onNodeWithTag("onboarding_hero_illustration").assertIsDisplayed()
         composeRule.onNodeWithTag("onboarding_hero_title").assertIsDisplayed()
-        composeRule.onNodeWithTag("onboarding_feature_chips_row").assertIsDisplayed()
-        composeRule.onNodeWithTag("onboarding_feature_chip_cut").assertIsDisplayed()
-        composeRule.onNodeWithTag("onboarding_feature_chip_privacy").assertIsDisplayed()
-        composeRule.onNodeWithTag("onboarding_feature_chip_pass").assertIsDisplayed()
+        composeRule.onNodeWithText("What it checks").assertIsDisplayed()
+        composeRule.onNodeWithText("What stays private").performScrollTo().assertIsDisplayed()
         composeRule.onNodeWithTag("onboarding_privacy_consent_line").assertIsDisplayed()
         composeRule.onNodeWithTag("onboarding_privacy_link").assertIsDisplayed()
 
@@ -636,20 +697,25 @@ class FeedSurgeonUiRobolectricTest {
         val openSettingsBounds = composeRule.onNodeWithTag("open_accessibility_settings_button").getBoundsInRoot()
         assertEquals(skipBounds.top.value, openSettingsBounds.top.value, 1f)
         assertTrue(
-            "Expected Open System Settings wider than Skip on 3rd onboarding screen",
-            (openSettingsBounds.right - openSettingsBounds.left) > (skipBounds.right - skipBounds.left)
+            "Expected Open Settings on left and wider than Skip on 3rd onboarding screen",
+            openSettingsBounds.left < skipBounds.left &&
+                (openSettingsBounds.right - openSettingsBounds.left) > (skipBounds.right - skipBounds.left)
         )
 
-        // Advance to Step 3 (4th onboarding screen)
+        // Advance to Step 3 (4th onboarding screen) — stacked full-width buttons
         composeRule.onNodeWithTag("onboarding_continue_step2").performClick()
         composeRule.waitForIdle()
 
         val previewBounds = composeRule.onNodeWithTag("onboarding_try_preview_button").getBoundsInRoot()
         val finishBounds = composeRule.onNodeWithTag("onboarding_finish_button").getBoundsInRoot()
-        assertEquals(previewBounds.top.value, finishBounds.top.value, 1f)
         assertTrue(
-            "Expected Go to Home wider than Preview on 4th onboarding screen",
-            (finishBounds.right - finishBounds.left) > (previewBounds.right - previewBounds.left)
+            "Expected Preview stacked above Go to Home on 4th onboarding screen",
+            finishBounds.top >= previewBounds.bottom
+        )
+        assertEquals(
+            (previewBounds.right - previewBounds.left).value,
+            (finishBounds.right - finishBounds.left).value,
+            1f
         )
     }
 
@@ -752,5 +818,118 @@ class FeedSurgeonUiRobolectricTest {
         composeRule.waitForIdle()
         composeRule.onNodeWithTag("onboarding_wide_step_badge").assertTextContains("STEP 4 OF 4")
         composeRule.onNodeWithTag("onboarding_ready_wide_pane").assertIsDisplayed()
+    }
+
+    @Test
+    @Config(sdk = [36], qualifiers = "w360dp-h800dp")
+    fun `compact width split buttons remain aligned and single-line without wrapping`() {
+        val rules = FeedSurgeonDatabase.defaultBuiltInRules()
+        composeRule.setContent {
+            FeedSurgeonTheme {
+                OnboardingScreen(
+                    rules = rules,
+                    installedPackages = setOf("com.google.android.youtube"),
+                    isAccessibilityEnabled = false,
+                    onToggleApp = { _, _ -> },
+                    onAcceptDisclosure = {},
+                    onDeclineDisclosure = {},
+                    onCompleteOnboarding = {}
+                )
+            }
+        }
+        composeRule.waitForIdle()
+
+        val notNowBounds = composeRule.onNodeWithTag("onboarding_decline_button").getBoundsInRoot()
+        val getStartedBounds = composeRule.onNodeWithTag("onboarding_agree_button").getBoundsInRoot()
+        assertEquals(notNowBounds.top.value, getStartedBounds.top.value, 1f)
+        assertTrue((notNowBounds.bottom - notNowBounds.top).value <= 56f)
+        assertTrue((getStartedBounds.bottom - getStartedBounds.top).value <= 56f)
+
+        composeRule.onNodeWithTag("onboarding_agree_button").performClick()
+        composeRule.waitForIdle()
+        composeRule.onNodeWithTag("onboarding_apps_continue_button").performClick()
+        composeRule.waitForIdle()
+
+        val openSettingsBounds = composeRule.onNodeWithTag("open_accessibility_settings_button").getBoundsInRoot()
+        val skipBounds = composeRule.onNodeWithTag("onboarding_continue_step2").getBoundsInRoot()
+        assertEquals(openSettingsBounds.top.value, skipBounds.top.value, 1f)
+        assertTrue((openSettingsBounds.bottom - openSettingsBounds.top).value <= 56f)
+        assertTrue((skipBounds.bottom - skipBounds.top).value <= 56f)
+    }
+
+    @Test
+    @Config(sdk = [36], qualifiers = "w360dp-h800dp")
+    fun `settings screen renders cleanly in dark blue mode with single-line protection buttons`() {
+        val rules = FeedSurgeonDatabase.defaultBuiltInRules()
+        composeRule.setContent {
+            FeedSurgeonTheme(themeMode = ThemeMode.DARK) {
+                SettingsScreen(
+                    uiState = MainUiState(
+                        isInitialLoading = false,
+                        preferences = AppPreferences(themeMode = ThemeMode.DARK),
+                        rules = rules,
+                        installedPackages = setOf("com.google.android.youtube"),
+                        isAccessibilityEnabled = true,
+                        isServiceConnected = true,
+                        protectionStatus = ProtectionStatus.OPERATIONAL,
+                        activeInstalledCount = 1,
+                        installedSupportedCount = 1
+                    ),
+                    onReopenDisclosure = {},
+                    onToggleGlobalPause = {},
+                    onSetAutoUpdateRules = {},
+                    onCheckRulesNow = {},
+                    onSetEventCaptureEnabled = {},
+                    onRefreshEventLog = {},
+                    onClearEventLog = {},
+                    onShareEventLog = {},
+                    onSetReclaimedSeconds = {},
+                    onSetShowBanner = {},
+                    onClearHistory = {}
+                )
+            }
+        }
+        composeRule.waitForIdle()
+
+        composeRule.onNodeWithTag("settings_protection_pill").assertIsDisplayed()
+        composeRule.onNodeWithText("Open Settings").assertIsDisplayed()
+        composeRule.onNodeWithText("Guided setup").assertIsDisplayed()
+
+        val openBounds = composeRule.onNodeWithText("Open Settings").getBoundsInRoot()
+        val guidedBounds = composeRule.onNodeWithText("Guided setup").getBoundsInRoot()
+        assertTrue((openBounds.bottom - openBounds.top).value <= 56f)
+        assertTrue((guidedBounds.bottom - guidedBounds.top).value <= 56f)
+    }
+
+    @Test
+    fun `light theme enforces f5f6fa background and ffffff surface cards`() {
+        var lightBg: Color? = null
+        var lightSurface: Color? = null
+        var lightCardSurface: Color? = null
+        var lightDock: Color? = null
+        var darkBg: Color? = null
+        var darkSurface: Color? = null
+
+        composeRule.setContent {
+            FeedSurgeonTheme(themeMode = ThemeMode.LIGHT) {
+                lightBg = MaterialTheme.colorScheme.background
+                lightSurface = MaterialTheme.colorScheme.surface
+                lightCardSurface = MaterialTheme.colorScheme.surfaceContainer
+                lightDock = StillspaceTheme.colors.dockSurface
+            }
+            FeedSurgeonTheme(themeMode = ThemeMode.DARK) {
+                darkBg = MaterialTheme.colorScheme.background
+                darkSurface = MaterialTheme.colorScheme.surfaceContainer
+            }
+        }
+        composeRule.waitForIdle()
+
+        assertEquals(HabitBg, lightBg)
+        assertEquals(Color(0xFFF5F6FA), lightBg)
+        assertEquals(HabitSurface, lightSurface)
+        assertEquals(Color(0xFFFFFFFF), lightCardSurface)
+        assertEquals(Color(0xFFFFFFFF), lightDock)
+        assertEquals(DarkHabitBg, darkBg)
+        assertEquals(DarkHabitSurface, darkSurface)
     }
 }
