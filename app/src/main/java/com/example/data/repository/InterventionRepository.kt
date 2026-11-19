@@ -24,14 +24,26 @@ class InterventionRepository(
     fun observeRule(packageName: String): Flow<TargetAppRuleEntity?> =
         dao.observeRuleByPackage(packageName)
 
-    suspend fun ensureDefaultRulesSeeded() {
+    suspend fun ensureDefaultRulesSeeded(installedPackages: Set<String>? = null) {
         val existingPackages = dao.getAllRulesSnapshot().map { it.packageName }.toSet()
-        val missingDefaults = FeedSurgeonDatabase.defaultBuiltInRules().filter {
+        val missingDefaults = FeedSurgeonDatabase.defaultBuiltInRules(installedPackages).filter {
             it.packageName !in existingPackages
         }
         if (missingDefaults.isNotEmpty()) {
             dao.upsertRules(missingDefaults)
         }
+    }
+
+    suspend fun syncInitialUninstalledRulesOff(installedPackages: Set<String>) {
+        val prefs = settingsDataStore.preferencesFlow.first()
+        if (prefs.initialUninstalledRulesSynced) return
+        val currentRules = dao.getAllRulesSnapshot()
+        currentRules
+            .filter { it.packageName !in installedPackages && it.enabled }
+            .forEach { rule ->
+                dao.updateRule(rule.copy(enabled = false))
+            }
+        settingsDataStore.setInitialUninstalledSynced(true)
     }
 
     suspend fun setRuleEnabled(packageName: String, enabled: Boolean) {

@@ -1,11 +1,17 @@
 package com.example
 
+import android.content.ComponentName
+import android.provider.Settings
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsEnabled
+import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.assertIsOff
+import androidx.compose.ui.test.assertIsOn
 import androidx.compose.ui.test.assertTextContains
 import androidx.compose.ui.test.down
 import androidx.compose.ui.test.getBoundsInRoot
@@ -356,14 +362,13 @@ class FeedSurgeonUiRobolectricTest {
     }
 
     @Test
-    fun `settings screen allows selecting light and dark blue theme modes`() {
-        var selectedThemeMode: ThemeMode? = null
+    fun `settings screen hides dark theme switcher when light-only theme is enforced`() {
         composeRule.setContent {
-            FeedSurgeonTheme(themeMode = ThemeMode.LIGHT) {
+            FeedSurgeonTheme(themeMode = ThemeMode.DARK) {
                 SettingsScreen(
                     uiState = MainUiState(
                         isInitialLoading = false,
-                        preferences = AppPreferences(themeMode = ThemeMode.LIGHT),
+                        preferences = AppPreferences(themeMode = ThemeMode.DARK),
                         rules = FeedSurgeonDatabase.defaultBuiltInRules(),
                         installedPackages = setOf("com.google.android.youtube"),
                         isAccessibilityEnabled = true,
@@ -374,7 +379,7 @@ class FeedSurgeonUiRobolectricTest {
                     ),
                     onReopenDisclosure = {},
                     onToggleGlobalPause = {},
-                    onSetThemeMode = { selectedThemeMode = it },
+                    onSetThemeMode = {},
                     onSetAutoUpdateRules = {},
                     onCheckRulesNow = {},
                     onSetEventCaptureEnabled = {},
@@ -389,14 +394,8 @@ class FeedSurgeonUiRobolectricTest {
         }
         composeRule.waitForIdle()
 
-        composeRule.onNode(hasScrollToNodeAction())
-            .performScrollToNode(hasTestTag("settings_appearance_card"))
-        composeRule.onNodeWithTag("settings_appearance_card").assertIsDisplayed()
-        composeRule.onNode(hasScrollToNodeAction())
-            .performScrollToNode(hasTestTag("theme_mode_dark"))
-        composeRule.onNodeWithTag("theme_mode_dark").performClick()
-        composeRule.waitForIdle()
-        assertEquals(ThemeMode.DARK, selectedThemeMode)
+        composeRule.onNodeWithTag("settings_appearance_card").assertDoesNotExist()
+        composeRule.onNodeWithTag("theme_mode_dark").assertDoesNotExist()
     }
 
     @Test
@@ -656,13 +655,15 @@ class FeedSurgeonUiRobolectricTest {
     @Test
     @Config(sdk = [36], qualifiers = "w411dp-h915dp")
     fun `onboarding welcome features, consent line, and step3 and step4 mockup buttons align cleanly`() {
-        val rules = FeedSurgeonDatabase.defaultBuiltInRules()
+        val installed = setOf("com.google.android.youtube")
+        val rules = FeedSurgeonDatabase.defaultBuiltInRules(installed)
+        val accessibilityEnabled = androidx.compose.runtime.mutableStateOf(false)
         composeRule.setContent {
             FeedSurgeonTheme {
                 OnboardingScreen(
                     rules = rules,
-                    installedPackages = setOf("com.google.android.youtube"),
-                    isAccessibilityEnabled = false,
+                    installedPackages = installed,
+                    isAccessibilityEnabled = accessibilityEnabled.value,
                     onToggleApp = { _, _ -> },
                     onAcceptDisclosure = {},
                     onDeclineDisclosure = {},
@@ -688,43 +689,53 @@ class FeedSurgeonUiRobolectricTest {
             (agreeBounds.right - agreeBounds.left) > (declineBounds.right - declineBounds.left)
         )
 
-        // Advance to Step 1 -> Step 2 (3rd onboarding screen)
+        // Advance to Step 1 -> Verify installed ON, not-installed OFF by default
         composeRule.onNodeWithTag("onboarding_agree_button").performClick()
         composeRule.waitForIdle()
+        composeRule.onNodeWithTag("onboarding_app_toggle_com.google.android.youtube").assertIsOn()
+        composeRule.onNodeWithTag("onboarding_app_toggle_com.instagram.android").performScrollTo().assertIsOff()
+
+        // Advance to Step 2 (3rd onboarding screen)
         composeRule.onNodeWithTag("onboarding_apps_continue_button").performClick()
         composeRule.waitForIdle()
 
-        val skipBounds = composeRule.onNodeWithTag("onboarding_continue_step2").getBoundsInRoot()
-        val openSettingsBounds = composeRule.onNodeWithTag("open_accessibility_settings_button").getBoundsInRoot()
-        assertEquals(skipBounds.top.value, openSettingsBounds.top.value, 1f)
+        val mutedContinueBounds = composeRule.onNodeWithTag("onboarding_continue_step2").getBoundsInRoot()
+        val openSettingsBoundsOff = composeRule.onNodeWithTag("open_accessibility_settings_button").getBoundsInRoot()
+        assertEquals(mutedContinueBounds.top.value, openSettingsBoundsOff.top.value, 1f)
         assertTrue(
-            "Expected Open Settings on left and wider than Skip on 3rd onboarding screen",
-            openSettingsBounds.left < skipBounds.left &&
-                (openSettingsBounds.right - openSettingsBounds.left) > (skipBounds.right - skipBounds.left)
+            "Expected Open Settings on left and wider than muted Continue while Accessibility is off",
+            openSettingsBoundsOff.left < mutedContinueBounds.left &&
+                (openSettingsBoundsOff.right - openSettingsBoundsOff.left) > (mutedContinueBounds.right - mutedContinueBounds.left)
+        )
+        composeRule.onNodeWithTag("onboarding_continue_step2").assertIsNotEnabled()
+
+        // Enable Accessibility -> Continue becomes clickable and takes wider primary emphasis
+        accessibilityEnabled.value = true
+        composeRule.waitForIdle()
+
+        composeRule.onNodeWithTag("onboarding_continue_step2").assertIsEnabled()
+        val activeContinueBounds = composeRule.onNodeWithTag("onboarding_continue_step2").getBoundsInRoot()
+        val openSettingsBoundsOn = composeRule.onNodeWithTag("open_accessibility_settings_button").getBoundsInRoot()
+        assertTrue(
+            "Expected active Continue wider than Open Settings once Focus Guard is enabled",
+            (activeContinueBounds.right - activeContinueBounds.left) > (openSettingsBoundsOn.right - openSettingsBoundsOn.left)
         )
 
-        // Advance to Step 3 (4th onboarding screen) — stacked full-width buttons
+        // Advance to Step 3 (4th onboarding screen) — Preview removed, single Go to Home button
         composeRule.onNodeWithTag("onboarding_continue_step2").performClick()
         composeRule.waitForIdle()
 
-        val previewBounds = composeRule.onNodeWithTag("onboarding_try_preview_button").getBoundsInRoot()
-        val finishBounds = composeRule.onNodeWithTag("onboarding_finish_button").getBoundsInRoot()
-        assertTrue(
-            "Expected Preview stacked above Go to Home on 4th onboarding screen",
-            finishBounds.top >= previewBounds.bottom
-        )
-        assertEquals(
-            (previewBounds.right - previewBounds.left).value,
-            (finishBounds.right - finishBounds.left).value,
-            1f
-        )
+        composeRule.onNodeWithTag("onboarding_try_preview_button").assertDoesNotExist()
+        composeRule.onNodeWithTag("onboarding_finish_button").assertIsDisplayed()
     }
 
     @Test
     @Config(sdk = [36], qualifiers = "w411dp-h915dp")
     fun `shared viewmodel manages onboarding state across all four steps with slide transitions`() {
         val app = ApplicationProvider.getApplicationContext<FeedSurgeonApp>()
+        Settings.Secure.putString(app.contentResolver, Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES, "")
         val sharedViewModel = MainViewModel(app)
+        sharedViewModel.refreshAccessibilityStatus(app)
         var completedNavigation = false
 
         composeRule.setContent {
@@ -760,39 +771,42 @@ class FeedSurgeonUiRobolectricTest {
         composeRule.onNodeWithTag("open_accessibility_settings_button").performClick()
         composeRule.waitForIdle()
         assertTrue(sharedViewModel.uiState.value.onboardingState.openedSystemSettings)
+        composeRule.onNodeWithTag("onboarding_continue_step2").assertIsNotEnabled()
+
+        // Simulate enabling Accessibility Service in Android Settings & resuming
+        val component = ComponentName(app, com.example.service.FeedSurgeonService::class.java).flattenToString()
+        Settings.Secure.putString(app.contentResolver, Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES, component)
+        sharedViewModel.refreshAccessibilityStatus(app)
+        composeRule.waitForIdle()
+
+        composeRule.onNodeWithTag("onboarding_continue_step2").assertIsEnabled()
 
         // Step 2 -> Step 3
         composeRule.onNodeWithTag("onboarding_continue_step2").performClick()
         composeRule.waitForIdle()
         assertEquals(OnboardingStep.READY, sharedViewModel.uiState.value.onboardingState.currentStep)
-
-        // Preview dialog managed in shared ViewModel
-        composeRule.onNodeWithTag("onboarding_try_preview_button").performClick()
-        composeRule.waitForIdle()
-        assertTrue(sharedViewModel.uiState.value.onboardingState.showPausePreview)
-        composeRule.onNodeWithTag("mindful_pause_preview_dialog").assertIsDisplayed()
-
-        composeRule.onNodeWithTag("preview_close_button").performClick()
-        composeRule.waitForIdle()
-        assertFalse(sharedViewModel.uiState.value.onboardingState.showPausePreview)
+        composeRule.onNodeWithTag("onboarding_try_preview_button").assertDoesNotExist()
 
         // Complete onboarding resets step cleanly and triggers navigation callback
         composeRule.onNodeWithTag("onboarding_finish_button").performClick()
         composeRule.waitForIdle()
         assertTrue(completedNavigation)
         assertEquals(OnboardingStep.WELCOME, sharedViewModel.uiState.value.onboardingState.currentStep)
+        Settings.Secure.putString(app.contentResolver, Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES, "")
     }
 
     @Test
     @Config(sdk = [36], qualifiers = "w900dp-h900dp")
     fun `onboarding scaffold switches to two-pane responsive layout on wide tablet width`() {
-        val rules = FeedSurgeonDatabase.defaultBuiltInRules()
+        val installed = setOf("com.google.android.youtube", "com.instagram.android")
+        val rules = FeedSurgeonDatabase.defaultBuiltInRules(installed)
+        val accessibilityEnabled = androidx.compose.runtime.mutableStateOf(false)
         composeRule.setContent {
             FeedSurgeonTheme {
                 OnboardingScreen(
                     rules = rules,
-                    installedPackages = setOf("com.google.android.youtube", "com.instagram.android"),
-                    isAccessibilityEnabled = false,
+                    installedPackages = installed,
+                    isAccessibilityEnabled = accessibilityEnabled.value,
                     onToggleApp = { _, _ -> },
                     onAcceptDisclosure = {},
                     onDeclineDisclosure = {},
@@ -802,22 +816,26 @@ class FeedSurgeonUiRobolectricTest {
         }
         composeRule.waitForIdle()
 
-        composeRule.onNodeWithTag("onboarding_wide_step_badge").assertTextContains("STEP 1 OF 4")
+        composeRule.onNodeWithTag("onboarding_wide_step_badge").assertTextContains("STEP 1 OF 4", substring = true)
         composeRule.onNodeWithTag("onboarding_welcome_wide_pane").assertIsDisplayed()
 
         composeRule.onNodeWithTag("onboarding_agree_button").performClick()
         composeRule.waitForIdle()
-        composeRule.onNodeWithTag("onboarding_wide_step_badge").assertTextContains("STEP 2 OF 4")
+        composeRule.onNodeWithTag("onboarding_wide_step_badge").assertTextContains("STEP 2 OF 4", substring = true)
         composeRule.onNodeWithTag("onboarding_apps_wide_grid").assertIsDisplayed()
 
         composeRule.onNodeWithTag("onboarding_apps_continue_button").performClick()
         composeRule.waitForIdle()
-        composeRule.onNodeWithTag("onboarding_wide_step_badge").assertTextContains("STEP 3 OF 4")
+        composeRule.onNodeWithTag("onboarding_wide_step_badge").assertTextContains("STEP 3 OF 4", substring = true)
         composeRule.onNodeWithTag("onboarding_accessibility_wide_pane").assertIsDisplayed()
+        composeRule.onNodeWithTag("onboarding_continue_step2").assertIsNotEnabled()
 
-        composeRule.onNodeWithTag("onboarding_continue_step2").performClick()
+        accessibilityEnabled.value = true
         composeRule.waitForIdle()
-        composeRule.onNodeWithTag("onboarding_wide_step_badge").assertTextContains("STEP 4 OF 4")
+
+        composeRule.onNodeWithTag("onboarding_continue_step2").assertIsEnabled().performClick()
+        composeRule.waitForIdle()
+        composeRule.onNodeWithTag("onboarding_wide_step_badge").assertTextContains("STEP 4 OF 4", substring = true)
         composeRule.onNodeWithTag("onboarding_ready_wide_pane").assertIsDisplayed()
     }
 
@@ -903,35 +921,42 @@ class FeedSurgeonUiRobolectricTest {
     }
 
     @Test
-    fun `light theme enforces f5f6fa background and ffffff surface cards`() {
+    fun `light theme enforces f2f4fa background and ffffff surface cards even when dark mode requested`() {
         var lightBg: Color? = null
         var lightSurface: Color? = null
+        var lightSurfaceVariant: Color? = null
         var lightCardSurface: Color? = null
+        var lightSurfaceHigh: Color? = null
         var lightDock: Color? = null
-        var darkBg: Color? = null
-        var darkSurface: Color? = null
+        var darkRequestedBg: Color? = null
+        var darkRequestedSurface: Color? = null
 
         composeRule.setContent {
             FeedSurgeonTheme(themeMode = ThemeMode.LIGHT) {
                 lightBg = MaterialTheme.colorScheme.background
                 lightSurface = MaterialTheme.colorScheme.surface
+                lightSurfaceVariant = MaterialTheme.colorScheme.surfaceVariant
                 lightCardSurface = MaterialTheme.colorScheme.surfaceContainer
+                lightSurfaceHigh = MaterialTheme.colorScheme.surfaceContainerHigh
                 lightDock = StillspaceTheme.colors.dockSurface
             }
             FeedSurgeonTheme(themeMode = ThemeMode.DARK) {
-                darkBg = MaterialTheme.colorScheme.background
-                darkSurface = MaterialTheme.colorScheme.surfaceContainer
+                darkRequestedBg = MaterialTheme.colorScheme.background
+                darkRequestedSurface = MaterialTheme.colorScheme.surfaceContainer
             }
         }
         composeRule.waitForIdle()
 
         assertEquals(HabitBg, lightBg)
-        assertEquals(Color(0xFFF5F6FA), lightBg)
+        assertEquals(Color(0xFFF2F4FA), lightBg)
         assertEquals(HabitSurface, lightSurface)
+        assertEquals(Color(0xFFFFFFFF), lightSurface)
+        assertEquals(Color(0xFFFFFFFF), lightSurfaceVariant)
         assertEquals(Color(0xFFFFFFFF), lightCardSurface)
+        assertEquals(Color(0xFFFFFFFF), lightSurfaceHigh)
         assertEquals(Color(0xFFFFFFFF), lightDock)
-        assertEquals(DarkHabitBg, darkBg)
-        assertEquals(DarkHabitSurface, darkSurface)
+        assertEquals(Color(0xFFF2F4FA), darkRequestedBg)
+        assertEquals(Color(0xFFFFFFFF), darkRequestedSurface)
     }
 
     @Test
@@ -1057,5 +1082,95 @@ class FeedSurgeonUiRobolectricTest {
         composeRule.onNodeWithTag("target_app_card_com.google.android.youtube").performClick()
         composeRule.waitForIdle()
         assertEquals("com.google.android.youtube", clickedApp)
+    }
+
+    @Test
+    @Config(sdk = [36], qualifiers = "w411dp-h915dp")
+    fun `onboarding renders concise flow, uninstalled apps off by default, and gated accessibility continue`() {
+        val installed = setOf("com.google.android.youtube", "com.instagram.android")
+        val rules = FeedSurgeonDatabase.defaultBuiltInRules(installed)
+        val accessibilityEnabledState = androidx.compose.runtime.mutableStateOf(false)
+
+        composeRule.setContent {
+            FeedSurgeonTheme {
+                OnboardingScreen(
+                    rules = rules,
+                    installedPackages = installed,
+                    isAccessibilityEnabled = accessibilityEnabledState.value,
+                    isBatteryOptimizationIgnored = false,
+                    isNotificationPermissionGranted = false,
+                    onToggleApp = { _, _ -> },
+                    onAcceptDisclosure = {},
+                    onDeclineDisclosure = {},
+                    onCompleteOnboarding = {}
+                )
+            }
+        }
+        composeRule.waitForIdle()
+
+        // Step 1: Concise hero & compact disclosure card
+        composeRule.onNodeWithTag("onboarding_compact_step_badge")
+            .assertIsDisplayed()
+            .assertTextContains("1/4 · Mission")
+        composeRule.onNodeWithTag("onboarding_hero_illustration").assertIsDisplayed()
+        composeRule.onNodeWithTag("onboarding_hero_title").assertIsDisplayed()
+        composeRule.onNodeWithTag("onboarding_disclosure_card")
+            .performScrollTo()
+            .assertIsDisplayed()
+
+        // Step 2: Installed ON, not-installed OFF by default
+        composeRule.onNodeWithTag("onboarding_agree_button").performClick()
+        composeRule.waitForIdle()
+        composeRule.onNodeWithTag("onboarding_compact_step_badge")
+            .assertTextContains("2/4 · Boundaries")
+        composeRule.onNodeWithTag("onboarding_selected_count_pill")
+            .assertIsDisplayed()
+            .assertTextContains("2 of 2 active")
+        composeRule.onNodeWithTag("onboarding_app_toggle_com.google.android.youtube").assertIsOn()
+        composeRule.onNodeWithTag("onboarding_app_toggle_com.facebook.katana")
+            .performScrollTo()
+            .assertIsOff()
+
+        // Step 3: Muted Continue while Accessibility is off -> active accent Continue once enabled
+        composeRule.onNodeWithTag("onboarding_apps_continue_button").performClick()
+        composeRule.waitForIdle()
+        composeRule.onNodeWithTag("onboarding_compact_step_badge")
+            .assertTextContains("3/4 · Permission")
+        composeRule.onNodeWithTag("onboarding_accessibility_status_card")
+            .performScrollTo()
+            .assertIsDisplayed()
+        composeRule.onNodeWithText("Waiting for Accessibility")
+            .performScrollTo()
+            .assertIsDisplayed()
+        composeRule.onNodeWithTag("onboarding_continue_step2")
+            .assertTextContains("Continue")
+            .assertIsNotEnabled()
+
+        accessibilityEnabledState.value = true
+        composeRule.waitForIdle()
+
+        composeRule.onNodeWithTag("onboarding_accessibility_status_card")
+            .performScrollTo()
+            .assertIsDisplayed()
+        composeRule.onNodeWithText("Focus Guard active")
+            .performScrollTo()
+            .assertIsDisplayed()
+        composeRule.onNodeWithTag("onboarding_continue_step2")
+            .assertTextContains("Continue")
+            .assertIsEnabled()
+
+        // Step 4: Ready screen without Preview button
+        composeRule.onNodeWithTag("onboarding_continue_step2").performClick()
+        composeRule.waitForIdle()
+        composeRule.onNodeWithTag("onboarding_compact_step_badge")
+            .assertTextContains("4/4 · Ready")
+        composeRule.onNodeWithTag("onboarding_try_preview_button").assertDoesNotExist()
+        composeRule.onNodeWithTag("onboarding_finish_button").assertIsDisplayed()
+        composeRule.onNodeWithTag("onboarding_optional_reliability_card")
+            .performScrollTo()
+            .assertIsDisplayed()
+        composeRule.onNodeWithTag("onboarding_battery_optimization_button")
+            .performScrollTo()
+            .assertIsDisplayed()
     }
 }

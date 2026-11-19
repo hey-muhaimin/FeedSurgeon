@@ -578,4 +578,28 @@ class ExampleRobolectricTest {
         val resumedRule = db.feedSurgeonDao().getRuleByPackage("com.google.android.youtube")!!
         assertFalse(resumedRule.isCurrentlySnoozed())
     }
+
+    @Test
+    fun `syncInitialUninstalledRulesOff disables uninstalled apps once without overriding later toggles`() = runTest {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val db = FeedSurgeonDatabase.getInstance(context)
+        val settings = SettingsDataStore(context)
+        val repo = InterventionRepository(db.feedSurgeonDao(), settings)
+        repo.ensureDefaultRulesSeeded()
+
+        val installed = setOf("com.google.android.youtube")
+        settings.setInitialUninstalledSynced(false)
+        repo.syncInitialUninstalledRulesOff(installed)
+
+        val rulesAfterSync = db.feedSurgeonDao().getAllRulesSnapshot().associateBy { it.packageName }
+        assertTrue(rulesAfterSync.getValue("com.google.android.youtube").enabled)
+        assertFalse(rulesAfterSync.getValue("com.instagram.android").enabled)
+        assertFalse(rulesAfterSync.getValue("com.facebook.katana").enabled)
+        assertTrue(settings.preferencesFlow.first().initialUninstalledRulesSynced)
+
+        // Manual user toggle on an uninstalled app must persist across subsequent sync calls
+        repo.setRuleEnabled("com.instagram.android", true)
+        repo.syncInitialUninstalledRulesOff(installed)
+        assertTrue(db.feedSurgeonDao().getRuleByPackage("com.instagram.android")!!.enabled)
+    }
 }

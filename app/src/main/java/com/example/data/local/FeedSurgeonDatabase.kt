@@ -58,12 +58,12 @@ abstract class FeedSurgeonDatabase : RoomDatabase() {
             "com.reddit.frontpage"
         )
 
-        fun defaultBuiltInRules(): List<TargetAppRuleEntity> = listOf(
+        fun defaultBuiltInRules(installedPackages: Set<String>? = null): List<TargetAppRuleEntity> = listOf(
             TargetAppRuleEntity(
                 packageName = "com.google.android.youtube",
                 displayName = "YouTube",
                 feedLabel = "Shorts",
-                enabled = true,
+                enabled = installedPackages == null || "com.google.android.youtube" in installedPackages,
                 interventionMode = InterventionMode.OVERLAY,
                 cooldownMs = 800,
                 homeTabLabel = "Home",
@@ -82,7 +82,7 @@ abstract class FeedSurgeonDatabase : RoomDatabase() {
                 packageName = "com.instagram.android",
                 displayName = "Instagram",
                 feedLabel = "Reels",
-                enabled = true,
+                enabled = installedPackages == null || "com.instagram.android" in installedPackages,
                 interventionMode = InterventionMode.OVERLAY,
                 cooldownMs = 800,
                 homeTabLabel = "Home",
@@ -100,7 +100,7 @@ abstract class FeedSurgeonDatabase : RoomDatabase() {
                 packageName = "com.facebook.katana",
                 displayName = "Facebook",
                 feedLabel = "Reels",
-                enabled = true,
+                enabled = installedPackages == null || "com.facebook.katana" in installedPackages,
                 interventionMode = InterventionMode.OVERLAY,
                 cooldownMs = 800,
                 homeTabLabel = "Home",
@@ -118,7 +118,7 @@ abstract class FeedSurgeonDatabase : RoomDatabase() {
                 packageName = "com.snapchat.android",
                 displayName = "Snapchat",
                 feedLabel = "Spotlight",
-                enabled = true,
+                enabled = installedPackages == null || "com.snapchat.android" in installedPackages,
                 interventionMode = InterventionMode.OVERLAY,
                 cooldownMs = 800,
                 homeTabLabel = "Chat",
@@ -136,7 +136,7 @@ abstract class FeedSurgeonDatabase : RoomDatabase() {
                 packageName = "com.reddit.frontpage",
                 displayName = "Reddit",
                 feedLabel = "Watch",
-                enabled = true,
+                enabled = installedPackages == null || "com.reddit.frontpage" in installedPackages,
                 interventionMode = InterventionMode.OVERLAY,
                 cooldownMs = 800,
                 homeTabLabel = "Home",

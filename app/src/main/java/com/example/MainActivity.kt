@@ -101,29 +101,14 @@ internal fun computeNavAlertTabs(uiState: MainUiState): Set<BottomTab> = buildSe
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
+        val transparent = Color.Transparent.toArgb()
+        enableEdgeToEdge(
+            statusBarStyle = SystemBarStyle.light(transparent, transparent),
+            navigationBarStyle = SystemBarStyle.light(transparent, transparent)
+        )
         setContent {
             val mainViewModel: MainViewModel = viewModel()
-            val uiState by mainViewModel.uiState.collectAsStateWithLifecycle()
-            val themeMode = uiState.preferences.themeMode
-            val isDark = resolveDarkTheme(themeMode)
-
-            LaunchedEffect(isDark) {
-                val transparent = Color.Transparent.toArgb()
-                if (isDark) {
-                    enableEdgeToEdge(
-                        statusBarStyle = SystemBarStyle.dark(transparent),
-                        navigationBarStyle = SystemBarStyle.dark(transparent)
-                    )
-                } else {
-                    enableEdgeToEdge(
-                        statusBarStyle = SystemBarStyle.light(transparent, transparent),
-                        navigationBarStyle = SystemBarStyle.light(transparent, transparent)
-                    )
-                }
-            }
-
-            FeedSurgeonTheme(themeMode = themeMode) {
+            FeedSurgeonTheme {
                 FeedSurgeonRoot(viewModel = mainViewModel)
             }
         }

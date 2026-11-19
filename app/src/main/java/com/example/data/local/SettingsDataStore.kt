@@ -30,7 +30,8 @@ data class AppPreferences(
     val showInterventionBanner: Boolean = true,
     val cachedRulesetJson: String = BUNDLED_RULESET_JSON,
     val globalPauseUntilMs: Long = 0L,
-    val themeMode: ThemeMode = ThemeMode.LIGHT
+    val themeMode: ThemeMode = ThemeMode.LIGHT,
+    val initialUninstalledRulesSynced: Boolean = false
 ) {
     fun isGloballyPaused(nowMs: Long = System.currentTimeMillis()): Boolean =
         globalPauseUntilMs == Long.MAX_VALUE || globalPauseUntilMs > nowMs
@@ -123,6 +124,7 @@ class SettingsDataStore(private val context: Context) {
         val CACHED_RULESET_JSON = stringPreferencesKey("cached_ruleset_json")
         val GLOBAL_PAUSE_UNTIL_MS = longPreferencesKey("global_pause_until_ms")
         val THEME_MODE = stringPreferencesKey("theme_mode")
+        val INITIAL_UNINSTALLED_SYNCED = booleanPreferencesKey("initial_uninstalled_synced")
     }
 
     val preferencesFlow: Flow<AppPreferences> = context.feedSurgeonDataStore.data.map { prefs ->
@@ -139,7 +141,8 @@ class SettingsDataStore(private val context: Context) {
             showInterventionBanner = prefs[Keys.SHOW_INTERVENTION_BANNER] ?: true,
             cachedRulesetJson = prefs[Keys.CACHED_RULESET_JSON] ?: AppPreferences.BUNDLED_RULESET_JSON,
             globalPauseUntilMs = prefs[Keys.GLOBAL_PAUSE_UNTIL_MS] ?: 0L,
-            themeMode = ThemeMode.fromStored(prefs[Keys.THEME_MODE])
+            themeMode = ThemeMode.fromStored(prefs[Keys.THEME_MODE]),
+            initialUninstalledRulesSynced = prefs[Keys.INITIAL_UNINSTALLED_SYNCED] ?: false
         )
     }
 
@@ -188,6 +191,12 @@ class SettingsDataStore(private val context: Context) {
     suspend fun setThemeMode(mode: ThemeMode) {
         context.feedSurgeonDataStore.edit { prefs ->
             prefs[Keys.THEME_MODE] = mode.name
+        }
+    }
+
+    suspend fun setInitialUninstalledSynced(synced: Boolean) {
+        context.feedSurgeonDataStore.edit { prefs ->
+            prefs[Keys.INITIAL_UNINSTALLED_SYNCED] = synced
         }
     }
 

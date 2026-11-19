@@ -8,6 +8,7 @@ import com.example.data.local.SettingsDataStore
 import com.example.data.local.TargetAppRuleEntity
 import com.example.data.model.InterventionMode
 import com.example.data.model.RemoteRulesetPayload
+import com.example.service.InstalledAppDetector
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import kotlinx.coroutines.Dispatchers
@@ -359,13 +360,17 @@ class RulesetRepository(
 
     private suspend fun applyPayloadToDatabase(payload: RemoteRulesetPayload) {
         val existingByPkg = dao.getAllRulesSnapshot().associateBy { it.packageName }
+        val installedPackages = InstalledAppDetector.getInstalledPackages(
+            context,
+            payload.apps.map { it.packageName }
+        )
         val updated = payload.apps.map { remote ->
             val prev = existingByPkg[remote.packageName]
             TargetAppRuleEntity(
                 packageName = remote.packageName,
                 displayName = remote.displayName.ifBlank { prev?.displayName ?: remote.packageName },
                 feedLabel = remote.feedLabel,
-                enabled = prev?.enabled ?: true,
+                enabled = prev?.enabled ?: (remote.packageName in installedPackages),
                 interventionMode = prev?.interventionMode ?: InterventionMode.OVERLAY,
                 cooldownMs = prev?.cooldownMs ?: 800,
                 homeTabLabel = remote.homeTabLabel.ifBlank { "Home" },

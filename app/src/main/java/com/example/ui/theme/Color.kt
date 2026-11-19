@@ -8,14 +8,14 @@ import androidx.compose.ui.graphics.Color
 // Focus Habit Design System — Light Palette (Airy Indigo, Emerald & Amber)
 // Verified WCAG AA contrast ratios (>= 4.5:1 text, >= 3:1 UI borders/controls)
 // ============================================================================
-val HabitBg = Color(0xFFF5F6FA)
+val HabitBg = Color(0xFFF2F4FA)
 val HabitBloomPrimary = Color(0xFFE7E9FD)
 val HabitBloomSecondary = Color(0xFFE8F7F0)
 val HabitSurface = Color(0xFFFFFFFF)
-val HabitSurfaceLow = Color(0xFFEEF0F7)
+val HabitSurfaceLow = Color(0xFFE8ECF5)
 val HabitSurfaceHigh = Color(0xFFFFFFFF)
-val HabitSurfaceVariant = Color(0xFFECEEF6)
-val HabitLine = Color(0xFFE6E9F2)
+val HabitSurfaceVariant = Color(0xFFFFFFFF)
+val HabitLine = Color(0xFFE4E8F2)
 val HabitOutline = Color(0xFFCED4E4)
 
 val HabitIndigo = Color(0xFF4F46E5)

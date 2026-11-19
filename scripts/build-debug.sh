@@ -9,7 +9,7 @@ GRADLE="$(resolve_gradle)"
 VERSION_NAME="$(read_version_name)"
 VERSION_CODE="$(read_version_code)"
 
-echo "Building Feed Surgeon Debug APK (v${VERSION_NAME} / ${VERSION_CODE})..."
+echo "Building Stillspace Debug APK (v${VERSION_NAME} / ${VERSION_CODE})..."
 (cd "$ROOT_DIR" && "$GRADLE" :app:assembleDebug)
 
 APK_PATH="$ROOT_DIR/app/build/outputs/apk/debug/app-debug.apk"
@@ -21,8 +21,8 @@ fi
 BUNDLED_DIR="$ROOT_DIR/bundled-apk"
 mkdir -p "$BUNDLED_DIR"
 
-VERSIONED_APK="$BUNDLED_DIR/feed-surgeon-v${VERSION_NAME}-${VERSION_CODE}-debug.apk"
-LATEST_APK="$BUNDLED_DIR/feed-surgeon-debug-latest.apk"
+VERSIONED_APK="$BUNDLED_DIR/stillspace-v${VERSION_NAME}-${VERSION_CODE}-debug.apk"
+LATEST_APK="$BUNDLED_DIR/stillspace-latest-debug.apk"
 
 cp "$APK_PATH" "$VERSIONED_APK"
 cp "$APK_PATH" "$LATEST_APK"
@@ -31,5 +31,5 @@ SHA="$(compute_sha256 "$VERSIONED_APK")"
 echo "$SHA  $(basename "$VERSIONED_APK")" > "${VERSIONED_APK}.sha256"
 
 echo "Debug APK bundled: $VERSIONED_APK"
-echo "Latest symlink/copy: $LATEST_APK"
+echo "Latest copy: $LATEST_APK"
 echo "SHA-256: $SHA"

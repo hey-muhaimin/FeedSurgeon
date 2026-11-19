@@ -89,24 +89,16 @@ object StillspaceTheme {
 }
 
 @Composable
-fun resolveDarkTheme(themeMode: ThemeMode): Boolean = when (themeMode) {
-    ThemeMode.SYSTEM -> isSystemInDarkTheme()
-    ThemeMode.LIGHT -> false
-    ThemeMode.DARK -> true
-}
+fun resolveDarkTheme(themeMode: ThemeMode): Boolean = false
 
 @Composable
 fun FeedSurgeonTheme(
     themeMode: ThemeMode = ThemeMode.LIGHT,
     content: @Composable () -> Unit
 ) {
-    val isDark = resolveDarkTheme(themeMode)
-    val colorScheme = if (isDark) StillspaceDarkColorScheme else StillspaceLightColorScheme
-    val semanticColors = if (isDark) DarkSemanticColors else LightSemanticColors
-
-    CompositionLocalProvider(LocalStillspaceColors provides semanticColors) {
+    CompositionLocalProvider(LocalStillspaceColors provides LightSemanticColors) {
         MaterialTheme(
-            colorScheme = colorScheme,
+            colorScheme = StillspaceLightColorScheme,
             typography = FeedSurgeonTypography,
             shapes = StillspaceShapes,
             content = content

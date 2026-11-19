@@ -294,7 +294,14 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         val packages = uiState.value.rules.map { it.packageName }.ifEmpty {
             com.example.data.local.FeedSurgeonDatabase.BUILT_IN_PACKAGE_NAMES.toList()
         }
-        _installedPackages.value = InstalledAppDetector.getInstalledPackages(context, packages)
+        val installed = InstalledAppDetector.getInstalledPackages(context, packages)
+        _installedPackages.value = installed
+        if (!uiState.value.preferences.initialUninstalledRulesSynced) {
+            viewModelScope.launch {
+                interventionRepo.ensureDefaultRulesSeeded(installed)
+                interventionRepo.syncInitialUninstalledRulesOff(installed)
+            }
+        }
     }
 
     fun triggerAutoSyncIfNeeded() {

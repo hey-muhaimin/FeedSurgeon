@@ -54,7 +54,7 @@ class AccessibilityOverlayShield(private val context: Context) {
             fun dp(value: Int): Int = (value * density).toInt()
 
             val root = FrameLayout(context).apply {
-                setBackgroundColor(Color.parseColor("#E80D1020"))
+                setBackgroundColor(Color.parseColor("#EBF2F4FA"))
                 setPadding(dp(20), dp(24), dp(20), dp(24))
                 isFocusable = true
                 isFocusableInTouchMode = true
@@ -83,15 +83,10 @@ class AccessibilityOverlayShield(private val context: Context) {
             val card = LinearLayout(context).apply {
                 orientation = LinearLayout.VERTICAL
                 setPadding(dp(24), dp(24), dp(24), dp(24))
-                background = GradientDrawable(
-                    GradientDrawable.Orientation.TL_BR,
-                    intArrayOf(
-                        Color.parseColor("#F5171C36"),
-                        Color.parseColor("#F211152A")
-                    )
-                ).apply {
+                background = GradientDrawable().apply {
+                    setColor(Color.parseColor("#FFFFFFFF"))
                     cornerRadius = dp(24).toFloat()
-                    setStroke(dp(1), Color.parseColor("#2E3762"))
+                    setStroke(dp(1), Color.parseColor("#E4E8F2"))
                 }
             }
 
@@ -106,7 +101,7 @@ class AccessibilityOverlayShield(private val context: Context) {
                 textSize = 11f
                 gravity = Gravity.CENTER_HORIZONTAL
                 setTypeface(Typeface.SANS_SERIF, Typeface.BOLD)
-                setTextColor(Color.parseColor("#A5B4FC"))
+                setTextColor(Color.parseColor("#4F46E5"))
                 letterSpacing = 0.08f
                 setPadding(0, dp(10), 0, 0)
             }
@@ -116,7 +111,7 @@ class AccessibilityOverlayShield(private val context: Context) {
                 textSize = 22f
                 gravity = Gravity.CENTER_HORIZONTAL
                 setTypeface(Typeface.DEFAULT_BOLD)
-                setTextColor(Color.parseColor("#F1F4FF"))
+                setTextColor(Color.parseColor("#13162B"))
                 setPadding(0, dp(8), 0, dp(8))
                 isFocusable = true
                 importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_YES
@@ -126,7 +121,7 @@ class AccessibilityOverlayShield(private val context: Context) {
                 text = "$appName $feedLabel opened. Step back to protect your focus, or allow 5 minutes for this visit."
                 textSize = 14f
                 gravity = Gravity.CENTER_HORIZONTAL
-                setTextColor(Color.parseColor("#9AA3C2"))
+                setTextColor(Color.parseColor("#5F6784"))
                 setPadding(0, 0, 0, dp(20))
             }
 
@@ -141,7 +136,7 @@ class AccessibilityOverlayShield(private val context: Context) {
                 setTextColor(Color.parseColor("#FFFFFF"))
                 setPadding(dp(16), dp(12), dp(16), dp(12))
                 background = GradientDrawable().apply {
-                    setColor(Color.parseColor("#5B54F2"))
+                    setColor(Color.parseColor("#4F46E5"))
                     cornerRadius = dp(16).toFloat()
                 }
                 minimumHeight = dp(50)
@@ -160,12 +155,12 @@ class AccessibilityOverlayShield(private val context: Context) {
                 ellipsize = TextUtils.TruncateAt.END
                 textSize = 14f
                 setTypeface(Typeface.DEFAULT_BOLD)
-                setTextColor(Color.parseColor("#F3F5FC"))
+                setTextColor(Color.parseColor("#13162B"))
                 setPadding(dp(16), dp(12), dp(16), dp(12))
                 background = GradientDrawable().apply {
-                    setColor(Color.parseColor("#1E2440"))
+                    setColor(Color.parseColor("#FFFFFFFF"))
                     cornerRadius = dp(16).toFloat()
-                    setStroke(dp(1), Color.parseColor("#3D4773"))
+                    setStroke(dp(1), Color.parseColor("#E4E8F2"))
                 }
                 minimumHeight = dp(50)
                 minHeight = dp(50)

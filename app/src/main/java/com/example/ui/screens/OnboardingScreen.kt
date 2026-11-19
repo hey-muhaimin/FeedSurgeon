@@ -1,5 +1,7 @@
 package com.example.ui.screens
 
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -41,7 +43,6 @@ import com.example.service.AccessibilityStatusHelper
 import com.example.ui.MainViewModel
 import com.example.ui.OnboardingFlowState
 import com.example.ui.OnboardingStep
-import com.example.ui.components.MindfulPausePreviewDialog
 import com.example.ui.theme.StillspaceTheme
 import com.example.ui.theme.neumorphicExtruded
 
@@ -66,7 +67,6 @@ fun OnboardingScreen(
         onNextStep = { viewModel.nextOnboardingStep() },
         onToggleRestrictedTip = { viewModel.toggleOnboardingRestrictedTip() },
         onMarkSettingsOpened = { viewModel.markOnboardingSettingsOpened() },
-        onSetPausePreviewVisible = { visible -> viewModel.setOnboardingPausePreviewVisible(visible) },
         onAcceptDisclosure = { viewModel.acceptDisclosure() },
         onDeclineDisclosure = {
             viewModel.declineDisclosure()
@@ -119,9 +119,6 @@ fun OnboardingScreen(
         onMarkSettingsOpened = {
             localState = localState.copy(openedSystemSettings = true)
         },
-        onSetPausePreviewVisible = { visible ->
-            localState = localState.copy(showPausePreview = visible)
-        },
         onAcceptDisclosure = {
             onAcceptDisclosure()
             localState = localState.copy(currentStep = OnboardingStep.TARGET_APPS)
@@ -145,7 +142,6 @@ private fun OnboardingContentScaffold(
     onNextStep: () -> Unit,
     onToggleRestrictedTip: () -> Unit,
     onMarkSettingsOpened: () -> Unit,
-    onSetPausePreviewVisible: (Boolean) -> Unit,
     onAcceptDisclosure: () -> Unit,
     onDeclineDisclosure: () -> Unit,
     onCompleteOnboarding: () -> Unit
@@ -172,7 +168,6 @@ private fun OnboardingContentScaffold(
                     onMarkSettingsOpened()
                     AccessibilityStatusHelper.openAccessibilitySettings(context)
                 },
-                onShowPreview = { onSetPausePreviewVisible(true) },
                 onCompleteOnboarding = onCompleteOnboarding
             )
         }
@@ -212,14 +207,6 @@ private fun OnboardingContentScaffold(
             }
         }
     }
-
-    if (onboardingState.showPausePreview) {
-        MindfulPausePreviewDialog(
-            appName = "YouTube",
-            feedLabel = "Shorts",
-            onDismiss = { onSetPausePreviewVisible(false) }
-        )
-    }
 }
 
 @OptIn(ExperimentalLayoutApi::class)
@@ -231,7 +218,6 @@ private fun OnboardingBottomActionBar(
     onAcceptDisclosure: () -> Unit,
     onNextStep: () -> Unit,
     onOpenSystemSettings: () -> Unit,
-    onShowPreview: () -> Unit,
     onCompleteOnboarding: () -> Unit
 ) {
     val scheme = MaterialTheme.colorScheme
@@ -242,7 +228,7 @@ private fun OnboardingBottomActionBar(
     when (currentStep) {
         OnboardingStep.WELCOME -> {
             Text(
-                text = "Choosing Not now leaves protection off until you enable it later.",
+                text = "Not now keeps protection off.",
                 style = MaterialTheme.typography.bodySmall,
                 color = neu.textMuted,
                 modifier = Modifier
@@ -313,7 +299,7 @@ private fun OnboardingBottomActionBar(
                 Button(
                     onClick = onAcceptDisclosure,
                     modifier = Modifier
-                        .weight(1.12f)
+                        .weight(1.35f)
                         .height(52.dp)
                         .neumorphicExtruded(
                             cornerRadius = 16.dp,
@@ -375,6 +361,38 @@ private fun OnboardingBottomActionBar(
         }
 
         OnboardingStep.ACCESSIBILITY -> {
+            val openSettingsBg by animateColorAsState(
+                targetValue = if (isAccessibilityEnabled) neu.secondaryButtonBg else neu.primaryActionBg,
+                animationSpec = tween(220),
+                label = "step3_open_settings_bg"
+            )
+            val openSettingsContent by animateColorAsState(
+                targetValue = if (isAccessibilityEnabled) scheme.onSurface else neu.primaryActionText,
+                animationSpec = tween(220),
+                label = "step3_open_settings_content"
+            )
+            val openSettingsBorder by animateColorAsState(
+                targetValue = if (isAccessibilityEnabled) neu.secondaryButtonBorder else Color.Transparent,
+                animationSpec = tween(220),
+                label = "step3_open_settings_border"
+            )
+
+            val continueBg by animateColorAsState(
+                targetValue = if (isAccessibilityEnabled) neu.primaryActionBg else neu.trackInactive,
+                animationSpec = tween(220),
+                label = "step3_continue_bg"
+            )
+            val continueContent by animateColorAsState(
+                targetValue = if (isAccessibilityEnabled) neu.primaryActionText else neu.textMuted.copy(alpha = 0.72f),
+                animationSpec = tween(220),
+                label = "step3_continue_content"
+            )
+            val continueBorder by animateColorAsState(
+                targetValue = if (isAccessibilityEnabled) Color.Transparent else neu.trackInactiveBorder,
+                animationSpec = tween(220),
+                label = "step3_continue_border"
+            )
+
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -382,58 +400,77 @@ private fun OnboardingBottomActionBar(
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Button(
+                OutlinedButton(
                     onClick = onOpenSystemSettings,
                     modifier = Modifier
-                        .weight(1.35f)
+                        .weight(if (isAccessibilityEnabled) 1f else 1.35f)
                         .height(52.dp)
-                        .neumorphicExtruded(
-                            cornerRadius = 16.dp,
-                            elevation = 5.dp,
-                            containerColor = neu.primaryActionBg,
-                            borderColor = Color.Transparent,
-                            shadowTint = neu.primaryActionBg.copy(alpha = 0.28f)
+                        .then(
+                            if (!isAccessibilityEnabled) {
+                                Modifier.neumorphicExtruded(
+                                    cornerRadius = 16.dp,
+                                    elevation = 5.dp,
+                                    containerColor = openSettingsBg,
+                                    borderColor = Color.Transparent,
+                                    shadowTint = neu.primaryActionBg.copy(alpha = 0.28f)
+                                )
+                            } else {
+                                Modifier
+                            }
                         )
                         .testTag("open_accessibility_settings_button"),
                     shape = RoundedCornerShape(16.dp),
+                    border = BorderStroke(1.dp, openSettingsBorder),
                     contentPadding = PaddingValues(horizontal = 12.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = neu.primaryActionBg,
-                        contentColor = neu.primaryActionText
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        containerColor = openSettingsBg,
+                        contentColor = openSettingsContent
                     )
                 ) {
                     Text(
                         text = stringResource(R.string.onboarding_open_settings),
                         style = MaterialTheme.typography.labelLarge,
-                        fontWeight = FontWeight.Bold,
+                        fontWeight = if (isAccessibilityEnabled) FontWeight.SemiBold else FontWeight.Bold,
                         maxLines = 1,
                         softWrap = false,
                         overflow = TextOverflow.Ellipsis
                     )
                 }
 
-                OutlinedButton(
+                Button(
                     onClick = onNextStep,
+                    enabled = isAccessibilityEnabled,
                     modifier = Modifier
-                        .weight(1f)
+                        .weight(if (isAccessibilityEnabled) 1.35f else 1f)
                         .height(52.dp)
+                        .then(
+                            if (isAccessibilityEnabled) {
+                                Modifier.neumorphicExtruded(
+                                    cornerRadius = 16.dp,
+                                    elevation = 5.dp,
+                                    containerColor = continueBg,
+                                    borderColor = Color.Transparent,
+                                    shadowTint = neu.primaryActionBg.copy(alpha = 0.28f)
+                                )
+                            } else {
+                                Modifier
+                            }
+                        )
                         .testTag("onboarding_continue_step2"),
                     shape = RoundedCornerShape(16.dp),
-                    border = BorderStroke(1.dp, neu.secondaryButtonBorder),
+                    border = if (isAccessibilityEnabled) null else BorderStroke(1.dp, continueBorder),
                     contentPadding = PaddingValues(horizontal = 12.dp),
-                    colors = ButtonDefaults.outlinedButtonColors(
-                        containerColor = neu.secondaryButtonBg,
-                        contentColor = scheme.onSurface
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = continueBg,
+                        contentColor = continueContent,
+                        disabledContainerColor = continueBg,
+                        disabledContentColor = continueContent
                     )
                 ) {
                     Text(
-                        text = if (isAccessibilityEnabled) {
-                            "Continue"
-                        } else {
-                            stringResource(R.string.onboarding_continue_without)
-                        },
+                        text = stringResource(R.string.onboarding_continue_without),
                         style = MaterialTheme.typography.labelLarge,
-                        fontWeight = FontWeight.SemiBold,
+                        fontWeight = if (isAccessibilityEnabled) FontWeight.Bold else FontWeight.SemiBold,
                         maxLines = 1,
                         softWrap = false,
                         overflow = TextOverflow.Ellipsis
@@ -443,65 +480,34 @@ private fun OnboardingBottomActionBar(
         }
 
         OnboardingStep.READY -> {
-            androidx.compose.foundation.layout.Column(
+            Button(
+                onClick = onCompleteOnboarding,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .testTag("onboarding_step3_actions_row"),
-                verticalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                OutlinedButton(
-                    onClick = onShowPreview,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(52.dp)
-                        .testTag("onboarding_try_preview_button"),
-                    shape = RoundedCornerShape(16.dp),
-                    border = BorderStroke(1.dp, neu.secondaryButtonBorder),
-                    contentPadding = PaddingValues(horizontal = 16.dp),
-                    colors = ButtonDefaults.outlinedButtonColors(
-                        containerColor = neu.secondaryButtonBg,
-                        contentColor = scheme.onSurface
-                    )
-                ) {
-                    Text(
-                        text = "Preview how it works",
-                        style = MaterialTheme.typography.labelLarge,
-                        fontWeight = FontWeight.SemiBold,
-                        maxLines = 1,
-                        softWrap = false,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                }
-
-                Button(
-                    onClick = onCompleteOnboarding,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(52.dp)
-                        .neumorphicExtruded(
-                            cornerRadius = 16.dp,
-                            elevation = 5.dp,
-                            containerColor = neu.primaryActionBg,
-                            borderColor = Color.Transparent,
-                            shadowTint = neu.primaryActionBg.copy(alpha = 0.28f)
-                        )
-                        .testTag("onboarding_finish_button"),
-                    shape = RoundedCornerShape(16.dp),
-                    contentPadding = PaddingValues(horizontal = 16.dp),
-                    colors = ButtonDefaults.buttonColors(
+                    .height(52.dp)
+                    .neumorphicExtruded(
+                        cornerRadius = 16.dp,
+                        elevation = 5.dp,
                         containerColor = neu.primaryActionBg,
-                        contentColor = neu.primaryActionText
+                        borderColor = Color.Transparent,
+                        shadowTint = neu.primaryActionBg.copy(alpha = 0.28f)
                     )
-                ) {
-                    Text(
-                        text = stringResource(R.string.onboarding_finish),
-                        style = MaterialTheme.typography.labelLarge,
-                        fontWeight = FontWeight.Bold,
-                        maxLines = 1,
-                        softWrap = false,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                }
+                    .testTag("onboarding_finish_button"),
+                shape = RoundedCornerShape(16.dp),
+                contentPadding = PaddingValues(horizontal = 16.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = neu.primaryActionBg,
+                    contentColor = neu.primaryActionText
+                )
+            ) {
+                Text(
+                    text = stringResource(R.string.onboarding_finish),
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1,
+                    softWrap = false,
+                    overflow = TextOverflow.Ellipsis
+                )
             }
         }
     }

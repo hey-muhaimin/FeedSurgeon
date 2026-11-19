@@ -4,18 +4,23 @@ import android.Manifest
 import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -34,12 +39,13 @@ import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.outlined.GridView
 import androidx.compose.material.icons.outlined.Lock
+import androidx.compose.material.icons.outlined.PauseCircle
+import androidx.compose.material.icons.outlined.PhoneAndroid
 import androidx.compose.material.icons.outlined.Schedule
 import androidx.compose.material.icons.outlined.SettingsAccessibility
 import androidx.compose.material.icons.outlined.Shield
 import androidx.compose.material.icons.outlined.Visibility
 import androidx.compose.material.icons.rounded.Check
-import androidx.compose.material.icons.rounded.HourglassTop
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -56,9 +62,13 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.R
@@ -67,8 +77,10 @@ import com.example.service.ProtectionHealthHelper
 import com.example.ui.components.AppBadgeIcon
 import com.example.ui.components.GroupedListDivider
 import com.example.ui.components.HabitIconBadge
+import com.example.ui.components.IndigoTintPill
 import com.example.ui.components.OnboardingPhoneIllustration
 import com.example.ui.components.OnboardingReadyCelebrationBadge
+import com.example.ui.components.SectionLabel
 import com.example.ui.components.SurgeonCard
 import com.example.ui.components.SurgeonSwitch
 import com.example.ui.theme.StillspaceTheme
@@ -89,10 +101,10 @@ internal fun OnboardingWelcomeStep(
             horizontalArrangement = Arrangement.spacedBy(24.dp),
             verticalAlignment = Alignment.Top
         ) {
-            Column(modifier = Modifier.weight(1.02f)) {
+            Column(modifier = Modifier.weight(1.04f)) {
                 WelcomeHeroBlock()
             }
-            Column(modifier = Modifier.weight(0.98f)) {
+            Column(modifier = Modifier.weight(0.96f)) {
                 WelcomeDisclosureBlock()
             }
         }
@@ -102,7 +114,7 @@ internal fun OnboardingWelcomeStep(
             WelcomeHeroBlock()
             Spacer(modifier = Modifier.height(18.dp))
             WelcomeDisclosureBlock()
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(16.dp))
         }
     }
 }
@@ -110,17 +122,25 @@ internal fun OnboardingWelcomeStep(
 @Composable
 private fun WelcomeHeroBlock() {
     val scheme = MaterialTheme.colorScheme
+    val leadLine = stringResource(R.string.onboarding_title_lead)
+    val accentLine = stringResource(R.string.onboarding_title_accent)
 
     OnboardingPhoneIllustration()
 
-    Spacer(modifier = Modifier.height(22.dp))
+    Spacer(modifier = Modifier.height(18.dp))
 
     Text(
-        text = "Take back your focus",
+        text = buildAnnotatedString {
+            append(leadLine)
+            append("\n")
+            withStyle(SpanStyle(color = scheme.primary)) {
+                append(accentLine)
+            }
+        },
         style = MaterialTheme.typography.headlineLarge.copy(
-            fontSize = 30.sp,
-            lineHeight = 36.sp,
-            letterSpacing = (-0.6).sp
+            fontSize = 28.sp,
+            lineHeight = 34.sp,
+            letterSpacing = (-0.5).sp
         ),
         color = scheme.onBackground,
         modifier = Modifier.testTag("onboarding_hero_title")
@@ -129,7 +149,7 @@ private fun WelcomeHeroBlock() {
     Spacer(modifier = Modifier.height(8.dp))
 
     Text(
-        text = "Stillspace gently steps in when short-form videos open in apps you choose, so you can scroll with intention.",
+        text = stringResource(R.string.onboarding_subtitle),
         style = MaterialTheme.typography.bodyLarge,
         color = scheme.onSurfaceVariant
     )
@@ -140,7 +160,13 @@ private fun WelcomeDisclosureBlock() {
     val scheme = MaterialTheme.colorScheme
     val neu = StillspaceTheme.colors
 
-    SurgeonCard(contentPadding = PaddingValues(16.dp)) {
+    SurgeonCard(
+        contentPadding = PaddingValues(18.dp),
+        modifier = Modifier.testTag("onboarding_disclosure_card")
+    ) {
+        SectionLabel(text = "PRIVACY & ACCESS")
+        Spacer(modifier = Modifier.height(12.dp))
+
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.Top
@@ -149,9 +175,9 @@ private fun WelcomeDisclosureBlock() {
                 icon = Icons.Outlined.Visibility,
                 tint = scheme.onPrimaryContainer,
                 containerColor = scheme.primaryContainer,
-                badgeSize = 44.dp,
+                badgeSize = 42.dp,
                 iconSize = 20.dp,
-                cornerRadius = 14.dp
+                cornerRadius = 13.dp
             )
             Spacer(modifier = Modifier.width(14.dp))
             Column(modifier = Modifier.weight(1f)) {
@@ -168,11 +194,11 @@ private fun WelcomeDisclosureBlock() {
                 )
             }
         }
-    }
 
-    Spacer(modifier = Modifier.height(12.dp))
+        GroupedListDivider(
+            modifier = Modifier.padding(start = 56.dp, top = 14.dp, bottom = 14.dp)
+        )
 
-    SurgeonCard(contentPadding = PaddingValues(16.dp)) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.Top
@@ -181,9 +207,9 @@ private fun WelcomeDisclosureBlock() {
                 icon = Icons.Outlined.Lock,
                 tint = neu.statusActiveText,
                 containerColor = neu.statusActiveBg,
-                badgeSize = 44.dp,
+                badgeSize = 42.dp,
                 iconSize = 20.dp,
-                cornerRadius = 14.dp
+                cornerRadius = 13.dp
             )
             Spacer(modifier = Modifier.width(14.dp))
             Column(modifier = Modifier.weight(1f)) {
@@ -200,7 +226,7 @@ private fun WelcomeDisclosureBlock() {
                 )
                 Spacer(modifier = Modifier.height(6.dp))
                 Text(
-                    text = "Optional troubleshooting logs are off by default in Settings.",
+                    text = "Optional debug logs are off by default.",
                     style = MaterialTheme.typography.bodySmall,
                     color = neu.textMuted,
                     modifier = Modifier.testTag("onboarding_diagnostic_disclosure_note")
@@ -224,6 +250,9 @@ internal fun OnboardingAppsStep(
     val notInstalledRules = remember(sortedRules, installedPackages) {
         sortedRules.filter { it.packageName !in installedPackages }
     }
+    val selectedInstalledCount = remember(installedRules) {
+        installedRules.count { it.enabled }
+    }
 
     Column(
         modifier = Modifier
@@ -232,19 +261,31 @@ internal fun OnboardingAppsStep(
     ) {
         Spacer(modifier = Modifier.height(6.dp))
 
-        HabitIconBadge(
-            icon = Icons.Outlined.GridView,
-            tint = scheme.onPrimaryContainer,
-            containerColor = scheme.primaryContainer,
-            badgeSize = 48.dp,
-            iconSize = 22.dp,
-            cornerRadius = 14.dp
-        )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            HabitIconBadge(
+                icon = Icons.Outlined.GridView,
+                tint = scheme.onPrimaryContainer,
+                containerColor = scheme.primaryContainer,
+                badgeSize = 48.dp,
+                iconSize = 22.dp,
+                cornerRadius = 14.dp
+            )
+            if (installedRules.isNotEmpty()) {
+                IndigoTintPill(
+                    text = "$selectedInstalledCount of ${installedRules.size} active",
+                    modifier = Modifier.testTag("onboarding_selected_count_pill")
+                )
+            }
+        }
 
         Spacer(modifier = Modifier.height(18.dp))
 
         Text(
-            text = "Choose apps to guard",
+            text = stringResource(R.string.onboarding_apps_title),
             style = MaterialTheme.typography.headlineLarge,
             color = scheme.onBackground
         )
@@ -252,7 +293,7 @@ internal fun OnboardingAppsStep(
         Spacer(modifier = Modifier.height(8.dp))
 
         Text(
-            text = "Pick which short-form feeds you want Stillspace to watch out for. You can change these anytime.",
+            text = stringResource(R.string.onboarding_apps_body),
             style = MaterialTheme.typography.bodyLarge,
             color = scheme.onSurfaceVariant
         )
@@ -261,7 +302,7 @@ internal fun OnboardingAppsStep(
 
         if (installedRules.isNotEmpty()) {
             Text(
-                text = "Installed on your phone",
+                text = "Installed",
                 style = MaterialTheme.typography.titleSmall,
                 color = scheme.onSurfaceVariant,
                 modifier = Modifier.testTag("onboarding_installed_section")
@@ -279,7 +320,7 @@ internal fun OnboardingAppsStep(
 
         if (notInstalledRules.isNotEmpty()) {
             Text(
-                text = "Not installed yet",
+                text = "Not installed",
                 style = MaterialTheme.typography.titleSmall,
                 color = scheme.onSurfaceVariant,
                 modifier = Modifier.testTag("onboarding_not_installed_section")
@@ -293,7 +334,7 @@ internal fun OnboardingAppsStep(
                 gridTag = null
             )
         }
-        Spacer(modifier = Modifier.height(12.dp))
+        Spacer(modifier = Modifier.height(16.dp))
     }
 }
 
@@ -382,7 +423,7 @@ private fun OnboardingAppRuleRowContent(
             )
             Spacer(modifier = Modifier.height(2.dp))
             Text(
-                text = "Block ${rule.feedLabel}",
+                text = "Pause ${rule.feedLabel}",
                 style = MaterialTheme.typography.bodyMedium,
                 color = if (isDimmed) neu.textMuted else scheme.onSurfaceVariant
             )
@@ -440,7 +481,7 @@ internal fun OnboardingAccessibilityStep(
                 showRestrictedTip = showRestrictedTip,
                 onToggleRestrictedTip = onToggleRestrictedTip
             )
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(16.dp))
         }
     }
 }
@@ -465,7 +506,7 @@ private fun AccessibilityStatusColumn(
     Spacer(modifier = Modifier.height(18.dp))
 
     Text(
-        text = "Turn on protection",
+        text = stringResource(R.string.onboarding_step2_title),
         style = MaterialTheme.typography.headlineLarge,
         color = scheme.onBackground
     )
@@ -473,80 +514,87 @@ private fun AccessibilityStatusColumn(
     Spacer(modifier = Modifier.height(8.dp))
 
     Text(
-        text = "Android asks you to turn on Stillspace in Accessibility Settings so it can spot when a short-form feed opens.",
+        text = stringResource(R.string.onboarding_step2_body),
         style = MaterialTheme.typography.bodyLarge,
         color = scheme.onSurfaceVariant
     )
 
-    Spacer(modifier = Modifier.height(18.dp))
+    Spacer(modifier = Modifier.height(16.dp))
 
-    SurgeonCard(
-        containerColor = if (isAccessibilityEnabled) neu.statusActiveBg else neu.statusWarningBg,
-        borderColor = if (isAccessibilityEnabled) neu.statusActiveBorder else neu.statusWarningBorder,
-        elevation = 2.dp,
-        contentPadding = PaddingValues(16.dp)
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
+    AnimatedContent(
+        targetState = isAccessibilityEnabled,
+        transitionSpec = { fadeIn(tween(220)) togetherWith fadeOut(tween(160)) },
+        label = "accessibility_permission_status"
+    ) { enabled ->
+        SurgeonCard(
+            containerColor = if (enabled) neu.statusActiveBg else scheme.surface,
+            borderColor = if (enabled) neu.statusActiveBorder else neu.indigoTintBorder,
+            elevation = if (enabled) 2.dp else 4.dp,
+            contentPadding = PaddingValues(16.dp),
+            modifier = Modifier.testTag("onboarding_accessibility_status_card")
         ) {
-            Box(
-                modifier = Modifier
-                    .size(40.dp)
-                    .clip(CircleShape)
-                    .background(if (isAccessibilityEnabled) neu.statusActive else neu.statusWarning),
-                contentAlignment = Alignment.Center
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Icon(
-                    imageVector = if (isAccessibilityEnabled) Icons.Rounded.Check else Icons.Rounded.HourglassTop,
-                    contentDescription = null,
-                    tint = Color.White,
-                    modifier = Modifier.size(20.dp)
-                )
-            }
-            Spacer(modifier = Modifier.width(14.dp))
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = if (isAccessibilityEnabled) {
-                        "Protection is turned on"
-                    } else {
-                        "Waiting for permission"
-                    },
-                    style = MaterialTheme.typography.titleMedium,
-                    color = if (isAccessibilityEnabled) neu.statusActiveText else neu.statusWarningText
-                )
-                Spacer(modifier = Modifier.height(2.dp))
-                Text(
-                    text = if (isAccessibilityEnabled) {
-                        "You\u2019re ready to continue to the final step."
-                    } else {
-                        "Follow these quick steps, then come back to this screen."
-                    },
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = if (isAccessibilityEnabled) {
-                        neu.statusActiveText.copy(alpha = 0.85f)
-                    } else {
-                        neu.statusWarningText.copy(alpha = 0.85f)
-                    }
-                )
+                Box(
+                    modifier = Modifier
+                        .size(40.dp)
+                        .clip(CircleShape)
+                        .background(if (enabled) neu.statusActive else scheme.primaryContainer),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = if (enabled) Icons.Rounded.Check else Icons.Outlined.Shield,
+                        contentDescription = null,
+                        tint = if (enabled) Color.White else scheme.onPrimaryContainer,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+                Spacer(modifier = Modifier.width(14.dp))
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = if (enabled) {
+                            "Focus Guard active"
+                        } else {
+                            "Waiting for Accessibility"
+                        },
+                        style = MaterialTheme.typography.titleMedium,
+                        color = if (enabled) neu.statusActiveText else scheme.onSurface
+                    )
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        text = if (enabled) {
+                            "Tap Continue below to finish setup."
+                        } else {
+                            "Enable Stillspace in Settings to unlock Continue."
+                        },
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = if (enabled) {
+                            neu.statusActiveText.copy(alpha = 0.88f)
+                        } else {
+                            scheme.onSurfaceVariant
+                        }
+                    )
+                }
             }
         }
     }
 
     if (openedSystemSettings && !isAccessibilityEnabled) {
-        Spacer(modifier = Modifier.height(14.dp))
+        Spacer(modifier = Modifier.height(12.dp))
         SurgeonCard(
             borderColor = neu.statusWarningBorder,
             modifier = Modifier.testTag("onboarding_step2_recovery_card")
         ) {
             Text(
-                text = "Still turned off?",
+                text = "Still off?",
                 style = MaterialTheme.typography.titleMedium,
                 color = neu.statusWarningText
             )
             Spacer(modifier = Modifier.height(4.dp))
             Text(
-                text = "Tap Open Settings again, open Downloaded apps \u2192 Stillspace, and switch it on. If it is grayed out, expand the restricted settings tip below.",
+                text = "Open Settings \u2192 Downloaded apps \u2192 Stillspace, then switch it on.",
                 style = MaterialTheme.typography.bodyMedium,
                 color = scheme.onSurfaceVariant
             )
@@ -562,32 +610,28 @@ private fun AccessibilityGuideColumn(
     val scheme = MaterialTheme.colorScheme
 
     SurgeonCard(contentPadding = PaddingValues(18.dp)) {
-        Text(
-            text = "How to turn it on",
-            style = MaterialTheme.typography.titleMedium,
-            color = scheme.onSurface
-        )
+        SectionLabel(text = "3 QUICK STEPS")
         Spacer(modifier = Modifier.height(14.dp))
         VisualGuideStep(
             number = "1",
             title = "Tap Open Settings",
-            detail = "Takes you straight to Android's Accessibility page"
+            detail = "Opens Android Accessibility"
         )
         GroupedListDivider(
             modifier = Modifier.padding(start = 46.dp, top = 12.dp, bottom = 12.dp)
         )
         VisualGuideStep(
             number = "2",
-            title = "Tap Downloaded apps",
-            detail = "Usually near the middle of the list"
+            title = "Choose Stillspace",
+            detail = "Under Downloaded apps"
         )
         GroupedListDivider(
             modifier = Modifier.padding(start = 46.dp, top = 12.dp, bottom = 12.dp)
         )
         VisualGuideStep(
             number = "3",
-            title = "Select Stillspace",
-            detail = "Switch it ON and tap Allow"
+            title = "Switch on & Allow",
+            detail = "Return here to continue"
         )
     }
 
@@ -595,7 +639,8 @@ private fun AccessibilityGuideColumn(
 
     SurgeonCard(
         contentPadding = PaddingValues(16.dp),
-        onClick = onToggleRestrictedTip
+        onClick = onToggleRestrictedTip,
+        modifier = Modifier.testTag("onboarding_restricted_tip_card")
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -603,9 +648,10 @@ private fun AccessibilityGuideColumn(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = "Switch grayed out or blocked?",
+                text = "Switch grayed out?",
                 style = MaterialTheme.typography.titleMedium,
-                color = scheme.onSurface
+                color = scheme.onSurface,
+                modifier = Modifier.weight(1f)
             )
             Icon(
                 imageVector = if (showRestrictedTip) {
@@ -623,7 +669,7 @@ private fun AccessibilityGuideColumn(
             exit = fadeOut(tween(140)) + shrinkVertically()
         ) {
             Text(
-                text = "On newer Android phones, open phone Settings \u2192 Apps \u2192 Stillspace \u2192 tap the \u22EE menu in the top corner \u2192 Allow restricted settings, then return here.",
+                text = "Settings \u2192 Apps \u2192 Stillspace \u2192 \u22EE menu \u2192 Allow restricted settings.",
                 style = MaterialTheme.typography.bodyMedium,
                 color = scheme.onSurfaceVariant,
                 modifier = Modifier.padding(top = 10.dp)
@@ -687,7 +733,7 @@ internal fun OnboardingReadyStep(
         ) {
             Spacer(modifier = Modifier.height(10.dp))
             ReadyHeaderBlock()
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(22.dp))
             ReadySummaryBlock(
                 guardedCount = guardedCount,
                 isBatteryOptimizationIgnored = isBatteryOptimizationIgnored,
@@ -701,7 +747,7 @@ internal fun OnboardingReadyStep(
                     }
                 }
             )
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(16.dp))
         }
     }
 }
@@ -715,7 +761,7 @@ private fun ReadyHeaderBlock() {
     Spacer(modifier = Modifier.height(16.dp))
 
     Text(
-        text = "You\u2019re all set",
+        text = stringResource(R.string.onboarding_step3_title),
         style = MaterialTheme.typography.headlineLarge,
         color = scheme.onBackground,
         textAlign = TextAlign.Center
@@ -724,7 +770,7 @@ private fun ReadyHeaderBlock() {
     Spacer(modifier = Modifier.height(8.dp))
 
     Text(
-        text = "Stillspace runs quietly on your phone, uses minimal battery, and can be paused anytime with one tap.",
+        text = stringResource(R.string.onboarding_step3_body),
         style = MaterialTheme.typography.bodyLarge,
         color = scheme.onSurfaceVariant,
         textAlign = TextAlign.Center
@@ -753,7 +799,7 @@ private fun ReadySummaryBlock(
         val appsSummary = if (guardedCount > 0) {
             "Guarding $guardedCount installed app${if (guardedCount == 1) "" else "s"}"
         } else {
-            "Ready whenever you enable supported apps"
+            "Enable apps anytime from Home"
         }
         ReadyNextRow(
             icon = Icons.Outlined.Shield,
@@ -768,7 +814,7 @@ private fun ReadySummaryBlock(
             icon = Icons.Outlined.Schedule,
             tint = scheme.onPrimaryContainer,
             containerColor = scheme.primaryContainer,
-            label = "Take a 5, 15 or 60-minute break anytime"
+            label = "Take 5, 15, or 60-min breaks anytime"
         )
         GroupedListDivider(
             modifier = Modifier.padding(start = 52.dp, top = 12.dp, bottom = 12.dp)
@@ -777,61 +823,77 @@ private fun ReadySummaryBlock(
             icon = Icons.Outlined.Lock,
             tint = neu.statusActiveText,
             containerColor = neu.statusActiveBg,
-            label = "All stats stay private on your device"
+            label = "All stats stay on your device"
         )
     }
 
-    if (!isBatteryOptimizationIgnored) {
+    val needsBattery = !isBatteryOptimizationIgnored
+    val needsNotif = Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && !isNotificationPermissionGranted
+    if (needsBattery || needsNotif) {
         Spacer(modifier = Modifier.height(14.dp))
-        OutlinedButton(
-            onClick = onRequestBatteryOptimization,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(48.dp)
-                .testTag("onboarding_battery_optimization_button"),
-            shape = RoundedCornerShape(16.dp),
-            contentPadding = PaddingValues(horizontal = 16.dp),
-            border = BorderStroke(1.dp, neu.secondaryButtonBorder),
-            colors = ButtonDefaults.outlinedButtonColors(
-                containerColor = neu.secondaryButtonBg,
-                contentColor = scheme.primary
-            )
+        SurgeonCard(
+            contentPadding = PaddingValues(16.dp),
+            modifier = Modifier.testTag("onboarding_optional_reliability_card")
         ) {
+            SectionLabel(text = "OPTIONAL BOOST")
+            Spacer(modifier = Modifier.height(4.dp))
             Text(
-                text = "Keep active in background",
-                style = MaterialTheme.typography.labelLarge,
-                fontWeight = FontWeight.SemiBold,
-                maxLines = 1,
-                softWrap = false,
-                overflow = TextOverflow.Ellipsis
+                text = "Keep Stillspace reliable in the background.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = scheme.onSurfaceVariant
             )
-        }
-    }
-
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && !isNotificationPermissionGranted) {
-        Spacer(modifier = Modifier.height(10.dp))
-        OutlinedButton(
-            onClick = onRequestNotificationPermission,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(48.dp)
-                .testTag("onboarding_notification_permission_button"),
-            shape = RoundedCornerShape(16.dp),
-            contentPadding = PaddingValues(horizontal = 16.dp),
-            border = BorderStroke(1.dp, neu.secondaryButtonBorder),
-            colors = ButtonDefaults.outlinedButtonColors(
-                containerColor = neu.secondaryButtonBg,
-                contentColor = scheme.onSurface
-            )
-        ) {
-            Text(
-                text = "Enable notifications",
-                style = MaterialTheme.typography.labelLarge,
-                fontWeight = FontWeight.SemiBold,
-                maxLines = 1,
-                softWrap = false,
-                overflow = TextOverflow.Ellipsis
-            )
+            if (needsBattery) {
+                Spacer(modifier = Modifier.height(12.dp))
+                OutlinedButton(
+                    onClick = onRequestBatteryOptimization,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(48.dp)
+                        .testTag("onboarding_battery_optimization_button"),
+                    shape = RoundedCornerShape(16.dp),
+                    contentPadding = PaddingValues(horizontal = 16.dp),
+                    border = BorderStroke(1.dp, neu.secondaryButtonBorder),
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        containerColor = neu.secondaryButtonBg,
+                        contentColor = scheme.primary
+                    )
+                ) {
+                    Text(
+                        text = "Keep active in background",
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.SemiBold,
+                        maxLines = 1,
+                        softWrap = false,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+            }
+            if (needsNotif) {
+                Spacer(modifier = Modifier.height(10.dp))
+                OutlinedButton(
+                    onClick = onRequestNotificationPermission,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(48.dp)
+                        .testTag("onboarding_notification_permission_button"),
+                    shape = RoundedCornerShape(16.dp),
+                    contentPadding = PaddingValues(horizontal = 16.dp),
+                    border = BorderStroke(1.dp, neu.secondaryButtonBorder),
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        containerColor = neu.secondaryButtonBg,
+                        contentColor = scheme.onSurface
+                    )
+                ) {
+                    Text(
+                        text = "Enable notifications",
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.SemiBold,
+                        maxLines = 1,
+                        softWrap = false,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+            }
         }
     }
 }

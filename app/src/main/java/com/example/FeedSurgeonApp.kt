@@ -6,6 +6,7 @@ import com.example.data.local.SettingsDataStore
 import com.example.data.repository.InterventionRepository
 import com.example.data.repository.RulesetRepository
 import com.example.service.AccessibilityEventLogger
+import com.example.service.InstalledAppDetector
 import com.example.worker.RulesetSyncWorker
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -43,7 +44,12 @@ class FeedSurgeonApp : Application() {
     override fun onCreate() {
         super.onCreate()
         initializationJob = appScope.launch {
-            interventionRepository.ensureDefaultRulesSeeded()
+            val installed = InstalledAppDetector.getInstalledPackages(
+                this@FeedSurgeonApp,
+                FeedSurgeonDatabase.BUILT_IN_PACKAGE_NAMES
+            )
+            interventionRepository.ensureDefaultRulesSeeded(installed)
+            interventionRepository.syncInitialUninstalledRulesOff(installed)
             rulesetRepository.ensureLocalCacheSeeded()
             val prefs = settingsDataStore.preferencesFlow.first()
             if (prefs.autoUpdateRules) {

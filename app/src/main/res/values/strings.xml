@@ -11,25 +11,24 @@
 
     <!-- Onboarding & Prominent Disclosure -->
     <string name="onboarding_title_lead">Break the endless loop.</string>
-    <string name="onboarding_title_accent">Stay present in your day.</string>
-    <string name="onboarding_title">Break the endless loop.\nStay present in your day.</string>
-    <string name="onboarding_subtitle">Stillspace gently pauses Shorts, Reels, and Spotlight feeds the moment they pull you in \u2014 100% on-device.</string>
+    <string name="onboarding_title_accent">Reclaim your focus.</string>
+    <string name="onboarding_title">Break the endless loop.\nReclaim your focus.</string>
+    <string name="onboarding_subtitle">Calm on-device pauses when short-form feeds pull you in.</string>
     <string name="onboarding_consent_prefix">By tapping Get started, you agree to our </string>
     <string name="onboarding_what_we_read_title">WHAT IT CHECKS</string>
-    <string name="onboarding_what_we_read_body">Whether a Shorts, Reels, or Spotlight loop is currently open in the apps you pick</string>
+    <string name="onboarding_what_we_read_body">Only detects Shorts, Reels, Spotlight, or Watch screens locally.</string>
     <string name="onboarding_what_we_never_send_title">WHAT STAYS PRIVATE</string>
-    <string name="onboarding_what_we_never_send_body">Your messages, passwords, and videos are never read or sent off your phone</string>
+    <string name="onboarding_what_we_never_send_body">Messages, passwords, and history stay private on your phone.</string>
     <string name="onboarding_decline">Not now</string>
     <string name="onboarding_agree">Get started</string>
-    <string name="onboarding_apps_title">Choose your focus boundaries</string>
-    <string name="onboarding_apps_body">Pick which short-form feeds you want Stillspace to gently interrupt. You can adjust these anytime.</string>
+    <string name="onboarding_apps_title">Choose focus apps</string>
+    <string name="onboarding_apps_body">Select which short-form feeds to pause.</string>
     <string name="onboarding_step2_title">Turn on Focus Guard</string>
-    <string name="onboarding_step2_body">Android asks you to turn on Stillspace in Accessibility Settings so it can recognize when an endless video loop opens.</string>
+    <string name="onboarding_step2_body">Accessibility lets Stillspace detect short-form feeds locally.</string>
     <string name="onboarding_open_settings">Open Settings</string>
-    <string name="onboarding_continue_without">Skip</string>
-    <string name="onboarding_step3_title">Your space is ready</string>
-    <string name="onboarding_step3_body">Stillspace runs quietly on your phone, uses minimal battery, and lets you take an intentional break anytime.</string>
-    <string name="onboarding_preview_action">Preview</string>
+    <string name="onboarding_continue_without">Continue</string>
+    <string name="onboarding_step3_title">You\u2019re all set</string>
+    <string name="onboarding_step3_body">Stillspace runs quietly on-device with minimal battery.</string>
     <string name="onboarding_finish">Go to Home</string>
 
     <!-- Home -->

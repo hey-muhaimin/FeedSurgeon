@@ -1,5 +1,5 @@
-App: Feed Surgeon
+App: Stillspace
 Version Name: 1.0.0
 Version Code: 1
 Build Mode: debug
-Timestamp (UTC): 2026-11-19T01:37:12Z
+Timestamp (UTC): 2026-11-19T18:42:46Z

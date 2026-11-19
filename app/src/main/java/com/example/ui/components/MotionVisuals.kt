@@ -91,8 +91,8 @@ fun OnboardingPhoneIllustration(
         floatOffset = anim
     }
 
-    val containerBg = if (neu.isDark) Color(0xFF171B36) else Color(0xFFF1F3FD)
-    val blobColor = if (neu.isDark) Color(0xFF232854) else Color(0xFFE3E6FC)
+    val containerBg = if (neu.isDark) Color(0xFF171B36) else scheme.surface
+    val blobColor = if (neu.isDark) Color(0xFF232854) else Color(0xFFE8EBFC)
     val phoneBody = if (neu.isDark) Color(0xFF1E2340) else Color(0xFFFFFFFF)
     val phoneStroke = if (neu.isDark) Color(0xFF8E95B8) else Color(0xFF13162B)
     val screenTint = scheme.primary

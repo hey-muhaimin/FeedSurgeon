@@ -274,24 +274,6 @@ fun SettingsScreen(
                 }
             }
 
-            // Appearance ThemeMode Card
-            item {
-                Text(
-                    text = "Appearance",
-                    style = MaterialTheme.typography.titleSmall,
-                    color = scheme.onSurfaceVariant
-                )
-            }
-
-            item {
-                StaggeredReveal(index = 3) {
-                    AppearanceCard(
-                        selectedMode = prefs.themeMode,
-                        onSelectMode = onSetThemeMode
-                    )
-                }
-            }
-
             // Collapsible Advanced & Diagnostics Section
             item {
                 StaggeredReveal(index = 4) {
@@ -863,36 +845,6 @@ private fun ActionRowItem(
                 tint = scheme.onSurfaceVariant
             )
         }
-    }
-}
-
-@Composable
-private fun AppearanceCard(
-    selectedMode: ThemeMode,
-    onSelectMode: (ThemeMode) -> Unit,
-    modifier: Modifier = Modifier
-) {
-    val scheme = MaterialTheme.colorScheme
-    SurgeonCard(modifier = modifier.testTag("settings_appearance_card")) {
-        Text(
-            text = "Appearance",
-            style = MaterialTheme.typography.titleMedium,
-            color = scheme.onSurface
-        )
-        Spacer(modifier = Modifier.height(2.dp))
-        Text(
-            text = "Choose Light, Midnight Indigo Dark, or match system",
-            style = MaterialTheme.typography.bodyMedium,
-            color = scheme.onSurfaceVariant
-        )
-        Spacer(modifier = Modifier.height(12.dp))
-        NeumorphicSegmentedTrack(
-            items = ThemeMode.entries,
-            selectedItem = selectedMode,
-            labelProvider = { it.label },
-            testTagProvider = { "theme_mode_${it.name.lowercase()}" },
-            onSelect = onSelectMode
-        )
     }
 }
 
