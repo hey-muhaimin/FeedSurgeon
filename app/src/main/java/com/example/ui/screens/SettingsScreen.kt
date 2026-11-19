@@ -23,10 +23,13 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -64,6 +67,7 @@ import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.example.R
 import com.example.data.model.ProtectionStatus
@@ -76,6 +80,7 @@ import com.example.ui.components.MindfulPausePreviewDialog
 import com.example.ui.components.SectionLabel
 import com.example.ui.components.StatusBadgePill
 import com.example.ui.components.SurgeonCard
+import com.example.ui.components.SurgeonScreenHeader
 import com.example.ui.components.SurgeonSwitch
 import com.example.ui.components.SurgicalSyncLoadingBar
 import com.example.ui.components.rememberCountdownLabel
@@ -105,10 +110,12 @@ fun SettingsScreen(
     onSetReclaimedSeconds: (Int) -> Unit,
     onSetShowBanner: (Boolean) -> Unit,
     onClearHistory: () -> Unit,
-    onRefreshProtectionHealth: () -> Unit = {}
+    onRefreshProtectionHealth: () -> Unit = {},
+    bottomContentPadding: Dp = 112.dp
 ) {
     val context = LocalContext.current
     val haptics = LocalHapticFeedback.current
+    val navBarBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
     val uriHandler = LocalUriHandler.current
     val privacyPolicyUrl = stringResource(R.string.privacy_policy_url)
     val prefs = uiState.preferences
@@ -129,6 +136,9 @@ fun SettingsScreen(
     val sortedRules = remember(uiState.rules, uiState.installedPackages) {
         uiState.rules.sortedByDescending { it.packageName in uiState.installedPackages }
     }
+    val hasReliabilityAttention = uiState.staleRulesCount > 0 ||
+        !uiState.isBatteryOptimizationIgnored ||
+        !uiState.isNotificationPermissionGranted
 
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -136,15 +146,20 @@ fun SettingsScreen(
             start = 20.dp,
             end = 20.dp,
             top = 18.dp,
-            bottom = 170.dp
+            bottom = bottomContentPadding + navBarBottom
         ),
         verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
         item {
-            Text(
-                text = stringResource(R.string.settings_title),
-                style = MaterialTheme.typography.headlineLarge,
-                color = TextPrimary
+            SurgeonScreenHeader(
+                title = stringResource(R.string.settings_title),
+                subtitle = "Local rules & privacy controls",
+                trailingContent = {
+                    StatusBadgePill(
+                        text = if (hasReliabilityAttention) "Attention" else prefs.rulesetVersion,
+                        isWarning = hasReliabilityAttention
+                    )
+                }
             )
         }
 

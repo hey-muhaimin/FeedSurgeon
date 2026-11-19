@@ -6,6 +6,7 @@ import androidx.compose.ui.test.hasScrollToNodeAction
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performScrollToNode
@@ -15,6 +16,9 @@ import com.example.data.model.InterventionMode
 import com.example.data.model.ProtectionStatus
 import com.example.ui.DayBarStat
 import com.example.ui.MainUiState
+import com.example.ui.components.BottomTab
+import com.example.ui.components.FloatingPillNavBar
+import com.example.ui.components.ObsidianSideRail
 import com.example.ui.screens.AppDetailScreen
 import com.example.ui.screens.HomeScreen
 import com.example.ui.screens.InsightsScreen
@@ -315,5 +319,81 @@ class FeedSurgeonUiRobolectricTest {
         composeRule.onNode(hasScrollToNodeAction())
             .performScrollToNode(hasTestTag("view_event_log_button"))
         composeRule.onNodeWithTag("view_event_log_button").assertIsDisplayed()
+    }
+
+    @Test
+    fun `compact floating dock always shows all labels, sliding pill, and contextual alert dots`() {
+        var selected = BottomTab.HOME
+        composeRule.setContent {
+            FeedSurgeonTheme {
+                FloatingPillNavBar(
+                    selectedTab = selected,
+                    onTabSelected = { selected = it },
+                    alertTabs = setOf(BottomTab.HOME, BottomTab.SETTINGS)
+                )
+            }
+        }
+        composeRule.waitForIdle()
+
+        composeRule.onNodeWithTag("compact_floating_dock").assertIsDisplayed()
+        composeRule.onNodeWithTag("nav_sliding_pill").assertIsDisplayed()
+        composeRule.onNodeWithText("Home").assertIsDisplayed()
+        composeRule.onNodeWithText("Insights").assertIsDisplayed()
+        composeRule.onNodeWithText("Settings").assertIsDisplayed()
+        composeRule.onNodeWithTag("nav_alert_home", useUnmergedTree = true).assertIsDisplayed()
+        composeRule.onNodeWithTag("nav_alert_settings", useUnmergedTree = true).assertIsDisplayed()
+        composeRule.onNodeWithTag("nav_alert_insights", useUnmergedTree = true).assertDoesNotExist()
+
+        composeRule.onNodeWithTag("nav_tab_insights").performClick()
+        assertEquals(BottomTab.INSIGHTS, selected)
+    }
+
+    @Test
+    fun `obsidian side rail displays labels, sliding pill, and alert indicators`() {
+        var selected = BottomTab.INSIGHTS
+        composeRule.setContent {
+            FeedSurgeonTheme {
+                ObsidianSideRail(
+                    selectedTab = selected,
+                    onTabSelected = { selected = it },
+                    alertTabs = setOf(BottomTab.SETTINGS)
+                )
+            }
+        }
+        composeRule.waitForIdle()
+
+        composeRule.onNodeWithTag("obsidian_side_rail").assertIsDisplayed()
+        composeRule.onNodeWithTag("rail_sliding_pill").assertIsDisplayed()
+        composeRule.onNodeWithText("Home").assertIsDisplayed()
+        composeRule.onNodeWithText("Insights").assertIsDisplayed()
+        composeRule.onNodeWithText("Settings").assertIsDisplayed()
+        composeRule.onNodeWithTag("nav_alert_settings", useUnmergedTree = true).assertIsDisplayed()
+        composeRule.onNodeWithTag("nav_alert_home", useUnmergedTree = true).assertDoesNotExist()
+
+        composeRule.onNodeWithTag("nav_tab_settings").performClick()
+        assertEquals(BottomTab.SETTINGS, selected)
+    }
+
+    @Test
+    fun `computeNavAlertTabs flags home and settings only when attention is needed`() {
+        val healthy = computeNavAlertTabs(
+            MainUiState(
+                protectionStatus = ProtectionStatus.OPERATIONAL,
+                staleRulesCount = 0,
+                isBatteryOptimizationIgnored = true,
+                isNotificationPermissionGranted = true
+            )
+        )
+        assertEquals(emptySet<BottomTab>(), healthy)
+
+        val attention = computeNavAlertTabs(
+            MainUiState(
+                protectionStatus = ProtectionStatus.SERVICE_DISCONNECTED,
+                staleRulesCount = 1,
+                isBatteryOptimizationIgnored = true,
+                isNotificationPermissionGranted = true
+            )
+        )
+        assertEquals(setOf(BottomTab.HOME, BottomTab.SETTINGS), attention)
     }
 }

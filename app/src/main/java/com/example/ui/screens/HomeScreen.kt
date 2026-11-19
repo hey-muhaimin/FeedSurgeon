@@ -19,9 +19,12 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -54,6 +57,7 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.example.R
 import com.example.data.local.TargetAppRuleEntity
@@ -65,6 +69,7 @@ import com.example.ui.components.MindfulPausePreviewDialog
 import com.example.ui.components.SectionLabel
 import com.example.ui.components.StatusBadgePill
 import com.example.ui.components.SurgeonCard
+import com.example.ui.components.SurgeonScreenHeader
 import com.example.ui.components.SurgeonSkeletonCard
 import com.example.ui.components.SurgeonSwitch
 import com.example.ui.components.rememberCountdownLabel
@@ -92,10 +97,12 @@ fun HomeScreen(
     onAppSnoozeExpired: (String) -> Unit,
     onRefreshBlockersClick: () -> Unit,
     onAppClick: (String) -> Unit,
-    onToggleApp: (String, Boolean) -> Unit
+    onToggleApp: (String, Boolean) -> Unit,
+    bottomContentPadding: Dp = 112.dp
 ) {
     val context = LocalContext.current
     val haptics = LocalHapticFeedback.current
+    val navBarBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
     val installedRules = remember(uiState.rules, uiState.installedPackages) {
         uiState.rules.filter { it.packageName in uiState.installedPackages }
     }
@@ -125,6 +132,16 @@ fun HomeScreen(
         ProtectionStatus.PAUSED -> stringResource(R.string.status_paused)
         ProtectionStatus.OPERATIONAL -> stringResource(R.string.status_running)
     }
+    val headerSubtitle = when (effectiveStatus) {
+        ProtectionStatus.PERMISSION_NEEDED -> "Finish setup to guard short feeds"
+        ProtectionStatus.SERVICE_DISCONNECTED -> "Accessibility service needs reconnect"
+        ProtectionStatus.NO_APPS_ACTIVE -> "Enable an installed app below"
+        ProtectionStatus.PAUSED -> "Protection paused temporarily"
+        ProtectionStatus.OPERATIONAL -> {
+            val count = uiState.activeInstalledCount
+            "Guarding $count installed app${if (count == 1) "" else "s"}"
+        }
+    }
     val statusColor = if (effectiveStatus == ProtectionStatus.OPERATIONAL) MintTeal else AmberWarning
 
     LazyColumn(
@@ -133,44 +150,38 @@ fun HomeScreen(
             start = 20.dp,
             end = 20.dp,
             top = 18.dp,
-            bottom = 170.dp
+            bottom = bottomContentPadding + navBarBottom
         ),
         verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
         item {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = stringResource(R.string.app_name),
-                    style = MaterialTheme.typography.headlineLarge,
-                    color = TextPrimary
-                )
-
-                Row(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(100.dp))
-                        .clickable(onClick = onStatusClick)
-                        .padding(horizontal = 10.dp, vertical = 8.dp)
-                        .testTag("service_status_pill"),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Box(
+            SurgeonScreenHeader(
+                title = stringResource(R.string.app_name),
+                subtitle = headerSubtitle,
+                trailingContent = {
+                    Row(
                         modifier = Modifier
-                            .size(8.dp)
-                            .clip(CircleShape)
-                            .background(statusColor)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = statusLabel,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = TextSecondary
-                    )
+                            .clip(RoundedCornerShape(100.dp))
+                            .clickable(onClick = onStatusClick)
+                            .padding(horizontal = 10.dp, vertical = 8.dp)
+                            .testTag("service_status_pill"),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(8.dp)
+                                .clip(CircleShape)
+                                .background(statusColor)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = statusLabel,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = TextSecondary
+                        )
+                    }
                 }
-            }
+            )
         }
 
         // Actionable status card matching the 5 explicit protection states

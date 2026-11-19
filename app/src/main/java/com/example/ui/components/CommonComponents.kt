@@ -11,34 +11,39 @@ import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.expandHorizontally
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.shrinkHorizontally
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.displayCutout
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -55,6 +60,7 @@ import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material.icons.outlined.Apps
 import androidx.compose.material.icons.outlined.BarChart
 import androidx.compose.material.icons.outlined.Home
+import androidx.compose.material.icons.outlined.Shield
 import androidx.compose.material.icons.outlined.Tune
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -91,6 +97,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import com.example.data.model.InterventionToastState
 import kotlinx.coroutines.delay
@@ -535,98 +542,333 @@ fun InterventionBanner(
 }
 
 @Composable
+fun SurgeonScreenHeader(
+    title: String,
+    subtitle: String? = null,
+    modifier: Modifier = Modifier,
+    trailingContent: (@Composable () -> Unit)? = null
+) {
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(top = 4.dp, bottom = 2.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.headlineLarge,
+                color = TextPrimary,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+            if (!subtitle.isNullOrBlank()) {
+                Spacer(modifier = Modifier.height(3.dp))
+                Text(
+                    text = subtitle,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = TextSecondary,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+        }
+        if (trailingContent != null) {
+            Spacer(modifier = Modifier.width(12.dp))
+            trailingContent()
+        }
+    }
+}
+
+@Composable
 fun FloatingPillNavBar(
     selectedTab: BottomTab,
     onTabSelected: (BottomTab) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    alertTabs: Set<BottomTab> = emptySet()
 ) {
+    val haptics = LocalHapticFeedback.current
+    val tabs = BottomTab.entries
+    val selectedIndex = tabs.indexOf(selectedTab).coerceAtLeast(0)
+
     Box(
         modifier = modifier
             .fillMaxWidth()
             .windowInsetsPadding(WindowInsets.navigationBars)
-            .padding(horizontal = 20.dp, vertical = 12.dp),
+            .padding(horizontal = 24.dp, vertical = 12.dp),
         contentAlignment = Alignment.Center
     ) {
         Surface(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(32.dp),
+            modifier = Modifier
+                .widthIn(min = 276.dp, max = 352.dp)
+                .fillMaxWidth()
+                .testTag("compact_floating_dock"),
+            shape = RoundedCornerShape(30.dp),
             color = NavPillSurface,
             border = BorderStroke(1.dp, NavPillBorder)
         ) {
-            Row(
+            BoxWithConstraints(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 8.dp, vertical = 8.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                    .padding(6.dp)
             ) {
-                BottomTab.entries.forEach { tab ->
-                    val isSelected = tab == selectedTab
-                    val icon = when (tab) {
-                        BottomTab.HOME -> if (isSelected) Icons.Filled.Home else Icons.Outlined.Home
-                        BottomTab.INSIGHTS -> if (isSelected) Icons.Filled.BarChart else Icons.Outlined.BarChart
-                        BottomTab.SETTINGS -> if (isSelected) Icons.Filled.Tune else Icons.Outlined.Tune
+                val tabWidth = maxWidth / tabs.size
+                val indicatorOffset by animateDpAsState(
+                    targetValue = tabWidth * selectedIndex,
+                    animationSpec = spring(
+                        dampingRatio = Spring.DampingRatioNoBouncy,
+                        stiffness = Spring.StiffnessMediumLow
+                    ),
+                    label = "compact_dock_sliding_pill"
+                )
+
+                // Continuous sliding active pill behind the tab slots
+                Box(
+                    modifier = Modifier
+                        .offset(x = indicatorOffset)
+                        .width(tabWidth)
+                        .height(54.dp)
+                        .clip(RoundedCornerShape(24.dp))
+                        .background(MintTealDark)
+                        .border(1.dp, MintTealBorder, RoundedCornerShape(24.dp))
+                        .testTag("nav_sliding_pill")
+                )
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    tabs.forEach { tab ->
+                        val isSelected = tab == selectedTab
+                        val hasAlert = tab in alertTabs
+                        val icon = when (tab) {
+                            BottomTab.HOME -> if (isSelected) Icons.Filled.Home else Icons.Outlined.Home
+                            BottomTab.INSIGHTS -> if (isSelected) Icons.Filled.BarChart else Icons.Outlined.BarChart
+                            BottomTab.SETTINGS -> if (isSelected) Icons.Filled.Tune else Icons.Outlined.Tune
+                        }
+                        val tint by animateColorAsState(
+                            targetValue = if (isSelected) MintTeal else TextSecondary,
+                            animationSpec = tween(durationMillis = 200),
+                            label = "dock_tint_${tab.name}"
+                        )
+                        val iconScale by animateFloatAsState(
+                            targetValue = if (isSelected) 1.08f else 1f,
+                            animationSpec = spring(
+                                dampingRatio = Spring.DampingRatioMediumBouncy,
+                                stiffness = Spring.StiffnessMedium
+                            ),
+                            label = "dock_scale_${tab.name}"
+                        )
+
+                        Column(
+                            modifier = Modifier
+                                .width(tabWidth)
+                                .height(54.dp)
+                                .minimumInteractiveComponentSize()
+                                .clip(RoundedCornerShape(24.dp))
+                                .clickable {
+                                    if (!isSelected) {
+                                        haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                    }
+                                    onTabSelected(tab)
+                                }
+                                .padding(horizontal = 6.dp, vertical = 6.dp)
+                                .testTag("nav_tab_${tab.name.lowercase()}"),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.Center
+                        ) {
+                            Box(contentAlignment = Alignment.TopEnd) {
+                                Icon(
+                                    imageVector = icon,
+                                    contentDescription = tab.label,
+                                    tint = tint,
+                                    modifier = Modifier
+                                        .size(20.dp)
+                                        .scale(iconScale)
+                                )
+                                if (hasAlert) {
+                                    Box(
+                                        modifier = Modifier
+                                            .offset(x = 4.dp, y = (-2).dp)
+                                            .size(8.dp)
+                                            .clip(CircleShape)
+                                            .background(AmberWarning)
+                                            .border(1.5.dp, NavPillSurface, CircleShape)
+                                            .testTag("nav_alert_${tab.name.lowercase()}")
+                                    )
+                                }
+                            }
+                            Spacer(modifier = Modifier.height(3.dp))
+                            Text(
+                                text = tab.label,
+                                style = MaterialTheme.typography.labelMedium.copy(
+                                    letterSpacing = 0.2.sp
+                                ),
+                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                color = tint,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
                     }
-                    val pillBgColor by animateColorAsState(
-                        targetValue = if (isSelected) MintTealDark else Color.Transparent,
-                        animationSpec = tween(durationMillis = 220, easing = FastOutSlowInEasing),
-                        label = "nav_pill_bg"
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun ObsidianSideRail(
+    selectedTab: BottomTab,
+    onTabSelected: (BottomTab) -> Unit,
+    modifier: Modifier = Modifier,
+    alertTabs: Set<BottomTab> = emptySet()
+) {
+    val haptics = LocalHapticFeedback.current
+    val tabs = BottomTab.entries
+    val selectedIndex = tabs.indexOf(selectedTab).coerceAtLeast(0)
+    val itemHeight = 68.dp
+    val itemGap = 8.dp
+
+    Box(
+        modifier = modifier
+            .fillMaxHeight()
+            .windowInsetsPadding(WindowInsets.statusBars)
+            .windowInsetsPadding(WindowInsets.navigationBars)
+            .windowInsetsPadding(WindowInsets.displayCutout)
+            .padding(start = 16.dp, top = 16.dp, bottom = 16.dp),
+        contentAlignment = Alignment.TopCenter
+    ) {
+        Surface(
+            modifier = Modifier
+                .width(88.dp)
+                .fillMaxHeight()
+                .testTag("obsidian_side_rail"),
+            shape = RoundedCornerShape(28.dp),
+            color = NavPillSurface,
+            border = BorderStroke(1.dp, NavPillBorder)
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 8.dp, vertical = 16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                // Brand shield emblem
+                Box(
+                    modifier = Modifier
+                        .size(44.dp)
+                        .clip(RoundedCornerShape(14.dp))
+                        .background(MintTealDark.copy(alpha = 0.7f))
+                        .border(1.dp, MintTealBorder, RoundedCornerShape(14.dp)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Outlined.Shield,
+                        contentDescription = "Feed Surgeon",
+                        tint = MintTeal,
+                        modifier = Modifier.size(22.dp)
                     )
-                    val iconTint by animateColorAsState(
-                        targetValue = if (isSelected) MintTeal else TextSecondary,
-                        animationSpec = tween(durationMillis = 200),
-                        label = "nav_icon_tint"
-                    )
-                    val iconScale by animateFloatAsState(
-                        targetValue = if (isSelected) 1.08f else 1f,
+                }
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                Box(modifier = Modifier.fillMaxWidth()) {
+                    val indicatorOffset by animateDpAsState(
+                        targetValue = (itemHeight + itemGap) * selectedIndex,
                         animationSpec = spring(
-                            dampingRatio = Spring.DampingRatioMediumBouncy,
-                            stiffness = Spring.StiffnessMedium
+                            dampingRatio = Spring.DampingRatioNoBouncy,
+                            stiffness = Spring.StiffnessMediumLow
                         ),
-                        label = "nav_icon_scale"
+                        label = "rail_sliding_pill"
                     )
 
-                    Row(
+                    Box(
                         modifier = Modifier
-                            .minimumInteractiveComponentSize()
-                            .animateContentSize(
-                                animationSpec = spring(
-                                    dampingRatio = Spring.DampingRatioNoBouncy,
-                                    stiffness = Spring.StiffnessMediumLow
-                                )
-                            )
-                            .clip(RoundedCornerShape(24.dp))
-                            .background(pillBgColor)
-                            .clickable { onTabSelected(tab) }
-                            .padding(horizontal = if (isSelected) 18.dp else 16.dp, vertical = 10.dp)
-                            .testTag("nav_tab_${tab.name.lowercase()}"),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.Center
+                            .offset(y = indicatorOffset)
+                            .fillMaxWidth()
+                            .height(itemHeight)
+                            .clip(RoundedCornerShape(20.dp))
+                            .background(MintTealDark)
+                            .border(1.dp, MintTealBorder, RoundedCornerShape(20.dp))
+                            .testTag("rail_sliding_pill")
+                    )
+
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalArrangement = Arrangement.spacedBy(itemGap)
                     ) {
-                        Icon(
-                            imageVector = icon,
-                            contentDescription = tab.label,
-                            tint = iconTint,
-                            modifier = Modifier
-                                .size(20.dp)
-                                .scale(iconScale)
-                        )
-                        AnimatedVisibility(
-                            visible = isSelected,
-                            enter = fadeIn(tween(180)) + expandHorizontally(
-                                animationSpec = tween(220, easing = FastOutSlowInEasing)
-                            ),
-                            exit = fadeOut(tween(120)) + shrinkHorizontally(
-                                animationSpec = tween(180, easing = FastOutSlowInEasing)
+                        tabs.forEach { tab ->
+                            val isSelected = tab == selectedTab
+                            val hasAlert = tab in alertTabs
+                            val icon = when (tab) {
+                                BottomTab.HOME -> if (isSelected) Icons.Filled.Home else Icons.Outlined.Home
+                                BottomTab.INSIGHTS -> if (isSelected) Icons.Filled.BarChart else Icons.Outlined.BarChart
+                                BottomTab.SETTINGS -> if (isSelected) Icons.Filled.Tune else Icons.Outlined.Tune
+                            }
+                            val tint by animateColorAsState(
+                                targetValue = if (isSelected) MintTeal else TextSecondary,
+                                animationSpec = tween(durationMillis = 200),
+                                label = "rail_tint_${tab.name}"
                             )
-                        ) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Spacer(modifier = Modifier.width(6.dp))
+                            val iconScale by animateFloatAsState(
+                                targetValue = if (isSelected) 1.08f else 1f,
+                                animationSpec = spring(
+                                    dampingRatio = Spring.DampingRatioMediumBouncy,
+                                    stiffness = Spring.StiffnessMedium
+                                ),
+                                label = "rail_scale_${tab.name}"
+                            )
+
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(itemHeight)
+                                    .minimumInteractiveComponentSize()
+                                    .clip(RoundedCornerShape(20.dp))
+                                    .clickable {
+                                        if (!isSelected) {
+                                            haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                        }
+                                        onTabSelected(tab)
+                                    }
+                                    .padding(horizontal = 4.dp, vertical = 8.dp)
+                                    .testTag("nav_tab_${tab.name.lowercase()}"),
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.Center
+                            ) {
+                                Box(contentAlignment = Alignment.TopEnd) {
+                                    Icon(
+                                        imageVector = icon,
+                                        contentDescription = tab.label,
+                                        tint = tint,
+                                        modifier = Modifier
+                                            .size(22.dp)
+                                            .scale(iconScale)
+                                    )
+                                    if (hasAlert) {
+                                        Box(
+                                            modifier = Modifier
+                                                .offset(x = 4.dp, y = (-2).dp)
+                                                .size(8.dp)
+                                                .clip(CircleShape)
+                                                .background(AmberWarning)
+                                                .border(1.5.dp, NavPillSurface, CircleShape)
+                                                .testTag("nav_alert_${tab.name.lowercase()}")
+                                        )
+                                    }
+                                }
+                                Spacer(modifier = Modifier.height(4.dp))
                                 Text(
                                     text = tab.label,
-                                    style = MaterialTheme.typography.labelLarge,
-                                    color = MintTeal,
-                                    maxLines = 1
+                                    style = MaterialTheme.typography.labelMedium.copy(
+                                        letterSpacing = 0.2.sp
+                                    ),
+                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                    color = tint,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
                                 )
                             }
                         }

@@ -15,9 +15,12 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
@@ -113,6 +116,7 @@ fun AppDetailScreen(
     }
 
     val haptics = LocalHapticFeedback.current
+    val navBarBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
     val snoozeCountdown = rememberCountdownLabel(
         untilMs = rule.snoozeUntilMs,
         onExpired = onResumeSnooze
@@ -126,22 +130,31 @@ fun AppDetailScreen(
             start = 20.dp,
             end = 20.dp,
             top = 18.dp,
-            bottom = 40.dp
+            bottom = 28.dp + navBarBottom
         ),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         item {
             Row(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 4.dp, bottom = 2.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 CircularBackButton(onClick = onBack)
                 Spacer(modifier = Modifier.width(14.dp))
-                Text(
-                    text = rule.displayName,
-                    style = MaterialTheme.typography.headlineMedium,
-                    color = TextPrimary
-                )
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = rule.displayName,
+                        style = MaterialTheme.typography.headlineMedium,
+                        color = TextPrimary
+                    )
+                    Text(
+                        text = "${rule.feedLabel} \u00B7 ${rule.interventionMode.shortLabel}",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = TextSecondary
+                    )
+                }
             }
         }
 

@@ -18,9 +18,12 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -48,13 +51,16 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.example.R
 import com.example.ui.MainUiState
 import com.example.ui.components.AppBadgeIcon
 import com.example.ui.components.MindfulPausePreviewDialog
 import com.example.ui.components.SectionLabel
+import com.example.ui.components.StatusBadgePill
 import com.example.ui.components.SurgeonCard
+import com.example.ui.components.SurgeonScreenHeader
 import com.example.ui.theme.BarInactive
 import com.example.ui.theme.CardBorder
 import com.example.ui.theme.CardSurfaceElevated
@@ -66,9 +72,11 @@ import com.example.ui.theme.TextSecondary
 
 @Composable
 fun InsightsScreen(
-    uiState: MainUiState
+    uiState: MainUiState,
+    bottomContentPadding: Dp = 112.dp
 ) {
     val haptics = LocalHapticFeedback.current
+    val navBarBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
     val dayBars = uiState.weeklyDayBars
     var selectedDayIndex by remember(dayBars.size) {
         mutableIntStateOf((dayBars.lastIndex).coerceAtLeast(0))
@@ -83,15 +91,25 @@ fun InsightsScreen(
             start = 20.dp,
             end = 20.dp,
             top = 18.dp,
-            bottom = 170.dp
+            bottom = bottomContentPadding + navBarBottom
         ),
         verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
         item {
-            Text(
-                text = stringResource(R.string.insights_title),
-                style = MaterialTheme.typography.headlineLarge,
-                color = TextPrimary
+            val badgeText = if (uiState.streakDays > 0) {
+                "${uiState.streakDays}d streak"
+            } else {
+                "7-day view"
+            }
+            SurgeonScreenHeader(
+                title = stringResource(R.string.insights_title),
+                subtitle = "Last 7 days \u00B7 100% on-device",
+                trailingContent = {
+                    StatusBadgePill(
+                        text = badgeText,
+                        isWarning = false
+                    )
+                }
             )
         }
 
