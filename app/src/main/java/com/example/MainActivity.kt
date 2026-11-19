@@ -10,6 +10,12 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionLayout
 import androidx.compose.animation.core.CubicBezierEasing
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -17,30 +23,56 @@ import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.slideOutVertically
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.ArrowForward
+import androidx.compose.material.icons.outlined.Lock
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -60,6 +92,7 @@ import com.example.ui.components.BottomTab
 import com.example.ui.components.InterventionBanner
 import com.example.ui.components.LocalAnimatedVisibilityScope
 import com.example.ui.components.LocalSharedTransitionScope
+import com.example.ui.components.OutloopEmblemMark
 import com.example.ui.components.StillspaceBottomNavBar
 import com.example.ui.components.StillspaceNavigationRail
 import com.example.ui.screens.AppDetailScreen
@@ -68,7 +101,15 @@ import com.example.ui.screens.InsightsScreen
 import com.example.ui.screens.OnboardingScreen
 import com.example.ui.screens.SettingsScreen
 import com.example.ui.theme.FeedSurgeonTheme
-import com.example.ui.theme.resolveDarkTheme
+import com.example.ui.theme.HabitAmberGlow
+import com.example.ui.theme.HabitBg
+import com.example.ui.theme.HabitForest
+import com.example.ui.theme.HabitForestInk
+import com.example.ui.theme.HabitLine
+import com.example.ui.theme.HabitMuted
+import com.example.ui.theme.HabitSageSoft
+import com.example.ui.theme.HabitSurfaceSunken
+import com.example.ui.theme.rememberReducedMotionEnabled
 import kotlinx.coroutines.delay
 
 object Routes {
@@ -137,12 +178,25 @@ fun FeedSurgeonRoot(
         }
     }
 
+    val reducedMotion = rememberReducedMotionEnabled()
+    var showLaunchSplash by remember { mutableStateOf(!reducedMotion) }
+
+    LaunchedEffect(uiState.isInitialLoading, reducedMotion) {
+        if (reducedMotion) {
+            showLaunchSplash = false
+        } else if (!uiState.isInitialLoading && showLaunchSplash) {
+            delay(750L)
+            showLaunchSplash = false
+        }
+    }
+
     // Wait for Room/DataStore initial emission before building NavHost so startDestination
     // accurately reflects persisted onboardingCompleted instead of resetting to Onboarding on cold launch.
     if (uiState.isInitialLoading) {
-        AtmosphericBackground {
-            Box(modifier = Modifier.fillMaxSize())
-        }
+        OutloopLaunchTransition(
+            isLoading = true,
+            onEnterApp = { showLaunchSplash = false }
+        )
         return
     }
 
@@ -210,7 +264,7 @@ fun FeedSurgeonRoot(
                     val dynamicBottomPadding = when {
                         !showTopLevelNav -> 28.dp
                         isWideLayout -> if (hasBanner) 96.dp else 24.dp
-                        else -> if (hasBanner) 168.dp else 96.dp
+                        else -> if (hasBanner) 184.dp else 112.dp
                     }
 
                     Row(modifier = Modifier.fillMaxSize()) {
@@ -326,6 +380,9 @@ fun FeedSurgeonRoot(
                                             onToggleApp = { pkg, enabled ->
                                                 viewModel.setRuleEnabled(pkg, enabled)
                                             },
+                                            onSetBreathingPauseSeconds = { secs ->
+                                                viewModel.setBreathingPauseSeconds(secs)
+                                            },
                                             bottomContentPadding = dynamicBottomPadding
                                         )
                                     }
@@ -335,6 +392,9 @@ fun FeedSurgeonRoot(
                                     CompositionLocalProvider(LocalAnimatedVisibilityScope provides this) {
                                         InsightsScreen(
                                             uiState = uiState,
+                                            onSetBreathingPauseSeconds = { secs ->
+                                                viewModel.setBreathingPauseSeconds(secs)
+                                            },
                                             bottomContentPadding = dynamicBottomPadding
                                         )
                                     }
@@ -372,6 +432,9 @@ fun FeedSurgeonRoot(
                                             },
                                             onSetReclaimedSeconds = { sec -> viewModel.setReclaimedSecondsPerCut(sec) },
                                             onSetShowBanner = { show -> viewModel.setShowInterventionBanner(show) },
+                                            onSetBreathingPauseSeconds = { secs ->
+                                                viewModel.setBreathingPauseSeconds(secs)
+                                            },
                                             onClearHistory = { viewModel.clearHistory() },
                                             onRefreshProtectionHealth = {
                                                 viewModel.refreshProtectionHealth(context)
@@ -444,8 +507,214 @@ fun FeedSurgeonRoot(
                             }
                         }
                     }
+
+                    AnimatedVisibility(
+                        visible = showLaunchSplash,
+                        enter = fadeIn(tween(120)),
+                        exit = fadeOut(tween(340, easing = FastOutSlowInEasing))
+                    ) {
+                        OutloopLaunchTransition(
+                            isLoading = false,
+                            onEnterApp = { showLaunchSplash = false }
+                        )
+                    }
                 }
             }
         }
     }
 }
+
+@Composable
+fun OutloopLaunchTransition(
+    isLoading: Boolean,
+    onEnterApp: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val reducedMotion = rememberReducedMotionEnabled()
+    val pulseScale: Float
+    val progressFraction: Float
+    if (reducedMotion) {
+        pulseScale = 1f
+        progressFraction = if (isLoading) 0.72f else 1f
+    } else {
+        val transition = rememberInfiniteTransition(label = "outloop_launch_pulse")
+        val animScale by transition.animateFloat(
+            initialValue = 0.985f,
+            targetValue = 1.025f,
+            animationSpec = infiniteRepeatable(
+                animation = tween(durationMillis = 1600, easing = FastOutSlowInEasing),
+                repeatMode = RepeatMode.Reverse
+            ),
+            label = "launch_emblem_scale"
+        )
+        val animProgress by transition.animateFloat(
+            initialValue = 0.28f,
+            targetValue = 0.92f,
+            animationSpec = infiniteRepeatable(
+                animation = tween(durationMillis = 1100, easing = LinearEasing),
+                repeatMode = RepeatMode.Reverse
+            ),
+            label = "launch_progress"
+        )
+        pulseScale = animScale
+        progressFraction = if (isLoading) animProgress else 1f
+    }
+
+    Box(
+        modifier = modifier
+            .fillMaxSize()
+            .background(
+                Brush.verticalGradient(
+                    colors = listOf(Color(0xFFFFFFFF), HabitBg, Color(0xFFF3F0E8))
+                )
+            )
+            .windowInsetsPadding(WindowInsets.statusBars)
+            .windowInsetsPadding(WindowInsets.navigationBars)
+            .padding(horizontal = 28.dp, vertical = 28.dp)
+            .testTag("outloop_launch_transition")
+    ) {
+        Box(
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+                .padding(top = 60.dp)
+                .size(260.dp)
+                .clip(CircleShape)
+                .background(
+                    Brush.radialGradient(
+                        colors = listOf(
+                            HabitSageSoft.copy(alpha = 0.35f),
+                            Color.Transparent
+                        )
+                    )
+                )
+        )
+
+        Column(
+            modifier = Modifier.align(Alignment.Center),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Box(
+                modifier = Modifier
+                    .scale(pulseScale)
+                    .clickable(onClick = onEnterApp)
+                    .testTag("launch_emblem_trigger"),
+                contentAlignment = Alignment.Center
+            ) {
+                OutloopEmblemMark(
+                    boxSize = 88.dp,
+                    cornerRadius = 24.dp
+                )
+            }
+
+            Spacer(modifier = Modifier.height(14.dp))
+
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(6.dp)
+                        .clip(CircleShape)
+                        .background(HabitAmberGlow)
+                )
+                Text(
+                    text = "TAP LOOP TO ENTER",
+                    style = MaterialTheme.typography.labelSmall.copy(
+                        fontWeight = FontWeight.SemiBold,
+                        letterSpacing = 1.4.sp
+                    ),
+                    color = HabitForestInk.copy(alpha = 0.55f)
+                )
+            }
+
+            Spacer(modifier = Modifier.height(22.dp))
+
+            Text(
+                text = "outloop",
+                style = MaterialTheme.typography.displayMedium.copy(
+                    fontWeight = FontWeight.ExtraBold,
+                    letterSpacing = (-1).sp
+                ),
+                color = HabitForestInk
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = "Mindful digital focus",
+                style = MaterialTheme.typography.bodyMedium,
+                color = HabitMuted
+            )
+
+            Spacer(modifier = Modifier.height(22.dp))
+
+            Box(
+                modifier = Modifier
+                    .width(184.dp)
+                    .height(6.dp)
+                    .clip(CircleShape)
+                    .background(HabitSurfaceSunken)
+                    .border(1.dp, HabitLine, CircleShape)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth(progressFraction)
+                        .fillMaxHeight()
+                        .clip(CircleShape)
+                        .background(HabitForest)
+                )
+            }
+        }
+
+        Column(
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .fillMaxWidth()
+                .widthIn(max = 360.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Button(
+                onClick = onEnterApp,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(52.dp)
+                    .testTag("launch_open_dashboard_button"),
+                shape = RoundedCornerShape(16.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = HabitForest,
+                    contentColor = HabitBg
+                )
+            ) {
+                Text(
+                    text = "Open Dashboard",
+                    style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Icon(
+                    imageVector = Icons.AutoMirrored.Rounded.ArrowForward,
+                    contentDescription = null,
+                    modifier = Modifier.size(16.dp),
+                    tint = HabitAmberGlow
+                )
+            }
+
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Outlined.Lock,
+                    contentDescription = null,
+                    modifier = Modifier.size(13.dp),
+                    tint = HabitMuted
+                )
+                Text(
+                    text = "100% on-device & private · Zero network egress",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = HabitMuted
+                )
+            }
+        }
+    }
+}
+

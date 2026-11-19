@@ -64,7 +64,7 @@ class ExampleRobolectricTest {
     @Test
     fun `read app name and privacy url from context`() {
         val context = ApplicationProvider.getApplicationContext<Context>()
-        assertEquals("Stillspace", context.getString(R.string.app_name))
+        assertEquals("Outloop", context.getString(R.string.app_name))
         assertEquals("https://suprbuild.com/privacy", context.getString(R.string.privacy_policy_url))
     }
 
@@ -210,7 +210,7 @@ class ExampleRobolectricTest {
         val notification = ForegroundProtectionNotifier.buildNotification(context, 3)
         assertTrue((notification.flags and Notification.FLAG_ONGOING_EVENT) != 0)
         assertEquals(
-            "Stillspace active",
+            "Outloop active",
             notification.extras.getCharSequence(Notification.EXTRA_TITLE)?.toString()
         )
         assertEquals(
@@ -586,6 +586,7 @@ class ExampleRobolectricTest {
         val settings = SettingsDataStore(context)
         val repo = InterventionRepository(db.feedSurgeonDao(), settings)
         repo.ensureDefaultRulesSeeded()
+        db.feedSurgeonDao().upsertRules(FeedSurgeonDatabase.defaultBuiltInRules())
 
         val installed = setOf("com.google.android.youtube")
         settings.setInitialUninstalledSynced(false)
@@ -601,5 +602,18 @@ class ExampleRobolectricTest {
         repo.setRuleEnabled("com.instagram.android", true)
         repo.syncInitialUninstalledRulesOff(installed)
         assertTrue(db.feedSurgeonDao().getRuleByPackage("com.instagram.android")!!.enabled)
+    }
+
+    @Test
+    fun `breathing pause pace preference defaults to 4s and persists 2s toggle`() = runTest {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val settings = SettingsDataStore(context)
+        assertEquals(4, settings.preferencesFlow.first().breathingPauseSeconds)
+
+        settings.setBreathingPauseSeconds(2)
+        assertEquals(2, settings.preferencesFlow.first().breathingPauseSeconds)
+
+        settings.setBreathingPauseSeconds(4)
+        assertEquals(4, settings.preferencesFlow.first().breathingPauseSeconds)
     }
 }

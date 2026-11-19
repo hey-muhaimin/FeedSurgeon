@@ -14,13 +14,10 @@ import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -39,8 +36,6 @@ import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.outlined.GridView
 import androidx.compose.material.icons.outlined.Lock
-import androidx.compose.material.icons.outlined.PauseCircle
-import androidx.compose.material.icons.outlined.PhoneAndroid
 import androidx.compose.material.icons.outlined.Schedule
 import androidx.compose.material.icons.outlined.SettingsAccessibility
 import androidx.compose.material.icons.outlined.Shield
@@ -62,7 +57,6 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
@@ -83,6 +77,17 @@ import com.example.ui.components.OnboardingReadyCelebrationBadge
 import com.example.ui.components.SectionLabel
 import com.example.ui.components.SurgeonCard
 import com.example.ui.components.SurgeonSwitch
+import com.example.ui.theme.HabitAmberBorder
+import com.example.ui.theme.HabitForest
+import com.example.ui.theme.HabitForestInk
+import com.example.ui.theme.HabitLine
+import com.example.ui.theme.HabitMuted
+import com.example.ui.theme.HabitReadyBg
+import com.example.ui.theme.HabitReadyBorder
+import com.example.ui.theme.HabitReadyText
+import com.example.ui.theme.HabitSageTint
+import com.example.ui.theme.HabitSubtle
+import com.example.ui.theme.HabitSurface
 import com.example.ui.theme.StillspaceTheme
 
 @Composable
@@ -133,7 +138,7 @@ private fun WelcomeHeroBlock() {
         text = buildAnnotatedString {
             append(leadLine)
             append("\n")
-            withStyle(SpanStyle(color = scheme.primary)) {
+            withStyle(SpanStyle(color = HabitForest)) {
                 append(accentLine)
             }
         },
@@ -151,14 +156,13 @@ private fun WelcomeHeroBlock() {
     Text(
         text = stringResource(R.string.onboarding_subtitle),
         style = MaterialTheme.typography.bodyLarge,
-        color = scheme.onSurfaceVariant
+        color = HabitMuted
     )
 }
 
 @Composable
 private fun WelcomeDisclosureBlock() {
     val scheme = MaterialTheme.colorScheme
-    val neu = StillspaceTheme.colors
 
     SurgeonCard(
         contentPadding = PaddingValues(18.dp),
@@ -173,8 +177,8 @@ private fun WelcomeDisclosureBlock() {
         ) {
             HabitIconBadge(
                 icon = Icons.Outlined.Visibility,
-                tint = scheme.onPrimaryContainer,
-                containerColor = scheme.primaryContainer,
+                tint = HabitForestInk,
+                containerColor = HabitSageTint,
                 badgeSize = 42.dp,
                 iconSize = 20.dp,
                 cornerRadius = 13.dp
@@ -190,7 +194,7 @@ private fun WelcomeDisclosureBlock() {
                 Text(
                     text = stringResource(R.string.onboarding_what_we_read_body),
                     style = MaterialTheme.typography.bodyMedium,
-                    color = scheme.onSurfaceVariant
+                    color = HabitMuted
                 )
             }
         }
@@ -205,8 +209,8 @@ private fun WelcomeDisclosureBlock() {
         ) {
             HabitIconBadge(
                 icon = Icons.Outlined.Lock,
-                tint = neu.statusActiveText,
-                containerColor = neu.statusActiveBg,
+                tint = HabitReadyText,
+                containerColor = HabitReadyBg,
                 badgeSize = 42.dp,
                 iconSize = 20.dp,
                 cornerRadius = 13.dp
@@ -222,13 +226,13 @@ private fun WelcomeDisclosureBlock() {
                 Text(
                     text = stringResource(R.string.onboarding_what_we_never_send_body),
                     style = MaterialTheme.typography.bodyMedium,
-                    color = scheme.onSurfaceVariant
+                    color = HabitMuted
                 )
                 Spacer(modifier = Modifier.height(6.dp))
                 Text(
                     text = "Optional debug logs are off by default.",
                     style = MaterialTheme.typography.bodySmall,
-                    color = neu.textMuted,
+                    color = HabitSubtle,
                     modifier = Modifier.testTag("onboarding_diagnostic_disclosure_note")
                 )
             }
@@ -268,8 +272,8 @@ internal fun OnboardingAppsStep(
         ) {
             HabitIconBadge(
                 icon = Icons.Outlined.GridView,
-                tint = scheme.onPrimaryContainer,
-                containerColor = scheme.primaryContainer,
+                tint = HabitForestInk,
+                containerColor = HabitSageTint,
                 badgeSize = 48.dp,
                 iconSize = 22.dp,
                 cornerRadius = 14.dp
@@ -295,7 +299,7 @@ internal fun OnboardingAppsStep(
         Text(
             text = stringResource(R.string.onboarding_apps_body),
             style = MaterialTheme.typography.bodyLarge,
-            color = scheme.onSurfaceVariant
+            color = HabitMuted
         )
 
         Spacer(modifier = Modifier.height(22.dp))
@@ -304,7 +308,7 @@ internal fun OnboardingAppsStep(
             Text(
                 text = "Installed",
                 style = MaterialTheme.typography.titleSmall,
-                color = scheme.onSurfaceVariant,
+                color = HabitMuted,
                 modifier = Modifier.testTag("onboarding_installed_section")
             )
             Spacer(modifier = Modifier.height(10.dp))
@@ -322,7 +326,7 @@ internal fun OnboardingAppsStep(
             Text(
                 text = "Not installed",
                 style = MaterialTheme.typography.titleSmall,
-                color = scheme.onSurfaceVariant,
+                color = HabitSubtle,
                 modifier = Modifier.testTag("onboarding_not_installed_section")
             )
             Spacer(modifier = Modifier.height(10.dp))
@@ -403,13 +407,12 @@ private fun OnboardingAppRuleRowContent(
     onToggleApp: (String, Boolean) -> Unit
 ) {
     val scheme = MaterialTheme.colorScheme
-    val neu = StillspaceTheme.colors
 
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .clickable { onToggleApp(rule.packageName, !rule.enabled) }
-            .then(if (isDimmed) Modifier.alpha(0.78f) else Modifier)
+            .then(if (isDimmed) Modifier.alpha(0.76f) else Modifier)
             .padding(horizontal = 16.dp, vertical = 14.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -425,7 +428,7 @@ private fun OnboardingAppRuleRowContent(
             Text(
                 text = "Pause ${rule.feedLabel}",
                 style = MaterialTheme.typography.bodyMedium,
-                color = if (isDimmed) neu.textMuted else scheme.onSurfaceVariant
+                color = if (isDimmed) HabitSubtle else HabitMuted
             )
         }
         SurgeonSwitch(
@@ -496,8 +499,8 @@ private fun AccessibilityStatusColumn(
 
     HabitIconBadge(
         icon = Icons.Outlined.SettingsAccessibility,
-        tint = scheme.onPrimaryContainer,
-        containerColor = scheme.primaryContainer,
+        tint = HabitForestInk,
+        containerColor = HabitSageTint,
         badgeSize = 48.dp,
         iconSize = 22.dp,
         cornerRadius = 14.dp
@@ -516,7 +519,7 @@ private fun AccessibilityStatusColumn(
     Text(
         text = stringResource(R.string.onboarding_step2_body),
         style = MaterialTheme.typography.bodyLarge,
-        color = scheme.onSurfaceVariant
+        color = HabitMuted
     )
 
     Spacer(modifier = Modifier.height(16.dp))
@@ -527,9 +530,8 @@ private fun AccessibilityStatusColumn(
         label = "accessibility_permission_status"
     ) { enabled ->
         SurgeonCard(
-            containerColor = if (enabled) neu.statusActiveBg else scheme.surface,
-            borderColor = if (enabled) neu.statusActiveBorder else neu.indigoTintBorder,
-            elevation = if (enabled) 2.dp else 4.dp,
+            containerColor = if (enabled) HabitReadyBg else HabitSurface,
+            borderColor = if (enabled) HabitReadyBorder else HabitLine,
             contentPadding = PaddingValues(16.dp),
             modifier = Modifier.testTag("onboarding_accessibility_status_card")
         ) {
@@ -541,13 +543,13 @@ private fun AccessibilityStatusColumn(
                     modifier = Modifier
                         .size(40.dp)
                         .clip(CircleShape)
-                        .background(if (enabled) neu.statusActive else scheme.primaryContainer),
+                        .background(if (enabled) HabitForest else HabitSageTint),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
                         imageVector = if (enabled) Icons.Rounded.Check else Icons.Outlined.Shield,
                         contentDescription = null,
-                        tint = if (enabled) Color.White else scheme.onPrimaryContainer,
+                        tint = if (enabled) Color(0xFFA8D3B0) else HabitForestInk,
                         modifier = Modifier.size(20.dp)
                     )
                 }
@@ -560,21 +562,17 @@ private fun AccessibilityStatusColumn(
                             "Waiting for Accessibility"
                         },
                         style = MaterialTheme.typography.titleMedium,
-                        color = if (enabled) neu.statusActiveText else scheme.onSurface
+                        color = if (enabled) HabitReadyText else scheme.onSurface
                     )
                     Spacer(modifier = Modifier.height(2.dp))
                     Text(
                         text = if (enabled) {
                             "Tap Continue below to finish setup."
                         } else {
-                            "Enable Stillspace in Settings to unlock Continue."
+                            "Enable Outloop in Settings to unlock Continue."
                         },
                         style = MaterialTheme.typography.bodyMedium,
-                        color = if (enabled) {
-                            neu.statusActiveText.copy(alpha = 0.88f)
-                        } else {
-                            scheme.onSurfaceVariant
-                        }
+                        color = if (enabled) HabitReadyText.copy(alpha = 0.88f) else HabitMuted
                     )
                 }
             }
@@ -584,7 +582,7 @@ private fun AccessibilityStatusColumn(
     if (openedSystemSettings && !isAccessibilityEnabled) {
         Spacer(modifier = Modifier.height(12.dp))
         SurgeonCard(
-            borderColor = neu.statusWarningBorder,
+            borderColor = HabitAmberBorder,
             modifier = Modifier.testTag("onboarding_step2_recovery_card")
         ) {
             Text(
@@ -594,9 +592,9 @@ private fun AccessibilityStatusColumn(
             )
             Spacer(modifier = Modifier.height(4.dp))
             Text(
-                text = "Open Settings \u2192 Downloaded apps \u2192 Stillspace, then switch it on.",
+                text = "Open Settings \u2192 Downloaded apps \u2192 Outloop, then switch it on.",
                 style = MaterialTheme.typography.bodyMedium,
-                color = scheme.onSurfaceVariant
+                color = HabitMuted
             )
         }
     }
@@ -622,7 +620,7 @@ private fun AccessibilityGuideColumn(
         )
         VisualGuideStep(
             number = "2",
-            title = "Choose Stillspace",
+            title = "Choose Outloop",
             detail = "Under Downloaded apps"
         )
         GroupedListDivider(
@@ -660,7 +658,7 @@ private fun AccessibilityGuideColumn(
                     Icons.Filled.KeyboardArrowDown
                 },
                 contentDescription = "Toggle restricted settings help",
-                tint = scheme.onSurfaceVariant
+                tint = HabitSubtle
             )
         }
         AnimatedVisibility(
@@ -669,9 +667,9 @@ private fun AccessibilityGuideColumn(
             exit = fadeOut(tween(140)) + shrinkVertically()
         ) {
             Text(
-                text = "Settings \u2192 Apps \u2192 Stillspace \u2192 \u22EE menu \u2192 Allow restricted settings.",
+                text = "Settings \u2192 Apps \u2192 Outloop \u2192 \u22EE menu \u2192 Allow restricted settings.",
                 style = MaterialTheme.typography.bodyMedium,
-                color = scheme.onSurfaceVariant,
+                color = HabitMuted,
                 modifier = Modifier.padding(top = 10.dp)
             )
         }
@@ -772,7 +770,7 @@ private fun ReadyHeaderBlock() {
     Text(
         text = stringResource(R.string.onboarding_step3_body),
         style = MaterialTheme.typography.bodyLarge,
-        color = scheme.onSurfaceVariant,
+        color = HabitMuted,
         textAlign = TextAlign.Center
     )
 }
@@ -786,7 +784,6 @@ private fun ReadySummaryBlock(
     onRequestNotificationPermission: () -> Unit
 ) {
     val scheme = MaterialTheme.colorScheme
-    val neu = StillspaceTheme.colors
 
     SurgeonCard(contentPadding = PaddingValues(18.dp)) {
         Text(
@@ -803,8 +800,8 @@ private fun ReadySummaryBlock(
         }
         ReadyNextRow(
             icon = Icons.Outlined.Shield,
-            tint = neu.statusActiveText,
-            containerColor = neu.statusActiveBg,
+            tint = HabitReadyText,
+            containerColor = HabitReadyBg,
             label = appsSummary
         )
         GroupedListDivider(
@@ -812,8 +809,8 @@ private fun ReadySummaryBlock(
         )
         ReadyNextRow(
             icon = Icons.Outlined.Schedule,
-            tint = scheme.onPrimaryContainer,
-            containerColor = scheme.primaryContainer,
+            tint = HabitForestInk,
+            containerColor = HabitSageTint,
             label = "Take 5, 15, or 60-min breaks anytime"
         )
         GroupedListDivider(
@@ -821,8 +818,8 @@ private fun ReadySummaryBlock(
         )
         ReadyNextRow(
             icon = Icons.Outlined.Lock,
-            tint = neu.statusActiveText,
-            containerColor = neu.statusActiveBg,
+            tint = HabitReadyText,
+            containerColor = HabitReadyBg,
             label = "All stats stay on your device"
         )
     }
@@ -838,9 +835,9 @@ private fun ReadySummaryBlock(
             SectionLabel(text = "OPTIONAL BOOST")
             Spacer(modifier = Modifier.height(4.dp))
             Text(
-                text = "Keep Stillspace reliable in the background.",
+                text = "Keep Outloop reliable in the background.",
                 style = MaterialTheme.typography.bodyMedium,
-                color = scheme.onSurfaceVariant
+                color = HabitMuted
             )
             if (needsBattery) {
                 Spacer(modifier = Modifier.height(12.dp))
@@ -852,10 +849,10 @@ private fun ReadySummaryBlock(
                         .testTag("onboarding_battery_optimization_button"),
                     shape = RoundedCornerShape(16.dp),
                     contentPadding = PaddingValues(horizontal = 16.dp),
-                    border = BorderStroke(1.dp, neu.secondaryButtonBorder),
+                    border = BorderStroke(1.dp, HabitLine),
                     colors = ButtonDefaults.outlinedButtonColors(
-                        containerColor = neu.secondaryButtonBg,
-                        contentColor = scheme.primary
+                        containerColor = HabitSurface,
+                        contentColor = HabitForest
                     )
                 ) {
                     Text(
@@ -878,9 +875,9 @@ private fun ReadySummaryBlock(
                         .testTag("onboarding_notification_permission_button"),
                     shape = RoundedCornerShape(16.dp),
                     contentPadding = PaddingValues(horizontal = 16.dp),
-                    border = BorderStroke(1.dp, neu.secondaryButtonBorder),
+                    border = BorderStroke(1.dp, HabitLine),
                     colors = ButtonDefaults.outlinedButtonColors(
-                        containerColor = neu.secondaryButtonBg,
+                        containerColor = HabitSurface,
                         contentColor = scheme.onSurface
                     )
                 ) {
@@ -942,13 +939,13 @@ private fun VisualGuideStep(
             modifier = Modifier
                 .size(32.dp)
                 .clip(CircleShape)
-                .background(scheme.primaryContainer),
+                .background(HabitSageTint),
             contentAlignment = Alignment.Center
         ) {
             Text(
                 text = number,
                 style = MaterialTheme.typography.labelLarge,
-                color = scheme.onPrimaryContainer,
+                color = HabitForestInk,
                 fontWeight = FontWeight.Bold
             )
         }
@@ -963,7 +960,7 @@ private fun VisualGuideStep(
             Text(
                 text = detail,
                 style = MaterialTheme.typography.bodyMedium,
-                color = scheme.onSurfaceVariant
+                color = HabitMuted
             )
         }
     }

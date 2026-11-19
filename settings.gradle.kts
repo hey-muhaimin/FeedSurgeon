@@ -22,6 +22,6 @@ dependencyResolutionManagement {
   }
 }
 
-rootProject.name = "Stillspace"
+rootProject.name = "Outloop"
 
 include(":app")

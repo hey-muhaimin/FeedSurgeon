@@ -27,10 +27,13 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material.icons.outlined.PauseCircle
 import androidx.compose.material.icons.outlined.Schedule
 import androidx.compose.material.icons.outlined.Shield
@@ -39,6 +42,7 @@ import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.LocalFireDepartment
 import androidx.compose.material.icons.rounded.Pause
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
@@ -77,6 +81,22 @@ import com.example.ui.components.StillspaceEmptyFocusArtwork
 import com.example.ui.components.StreakBadgePill
 import com.example.ui.components.SurgeonCard
 import com.example.ui.components.SurgeonScreenHeader
+import com.example.ui.theme.HabitAmberGlow
+import com.example.ui.theme.HabitAmberWarmBg
+import com.example.ui.theme.HabitForest
+import com.example.ui.theme.HabitForestInk
+import com.example.ui.theme.HabitLine
+import com.example.ui.theme.HabitMuted
+import com.example.ui.theme.HabitReadyBg
+import com.example.ui.theme.HabitReadyText
+import com.example.ui.theme.HabitSageBar
+import com.example.ui.theme.HabitSageSoft
+import com.example.ui.theme.HabitSageText
+import com.example.ui.theme.HabitSageTint
+import com.example.ui.theme.HabitSubtle
+import com.example.ui.theme.HabitSurface
+import com.example.ui.theme.HabitSurfaceLow
+import com.example.ui.theme.HabitSurfaceSunken
 import com.example.ui.theme.StaggeredReveal
 import com.example.ui.theme.StillspaceTheme
 import java.util.Locale
@@ -84,10 +104,10 @@ import java.util.Locale
 @Composable
 fun InsightsScreen(
     uiState: MainUiState,
-    bottomContentPadding: Dp = 96.dp
+    onSetBreathingPauseSeconds: (Int) -> Unit = {},
+    bottomContentPadding: Dp = 112.dp
 ) {
     val scheme = MaterialTheme.colorScheme
-    val neu = StillspaceTheme.colors
     val navBarBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
     val dayBars = uiState.weeklyDayBars
     var selectedDayIndex by remember(dayBars.size) {
@@ -199,7 +219,7 @@ fun InsightsScreen(
                     }
                 }
 
-                // 3-Column Bento Stat Cards
+                // 3-Column Stat Trio
                 item {
                     StaggeredReveal(index = 2) {
                         StatTripletRow(
@@ -244,9 +264,9 @@ fun InsightsScreen(
                                         )
                                         Spacer(modifier = Modifier.height(4.dp))
                                         Text(
-                                            text = "Everything stays private on your phone. Once Stillspace steps in on Shorts or Reels, your focus wins, streak, and time reclaimed appear here.",
+                                            text = "Everything stays private on your phone. Once Outloop steps in on Shorts or Reels, your focus wins, streak, and time reclaimed appear here.",
                                             style = MaterialTheme.typography.bodyMedium,
-                                            color = scheme.onSurfaceVariant
+                                            color = HabitMuted
                                         )
                                         Spacer(modifier = Modifier.height(14.dp))
                                         OutlinedButton(
@@ -257,10 +277,10 @@ fun InsightsScreen(
                                                 .testTag("insights_preview_pause_button"),
                                             shape = RoundedCornerShape(16.dp),
                                             contentPadding = PaddingValues(horizontal = 14.dp),
-                                            border = BorderStroke(1.dp, neu.secondaryButtonBorder),
+                                            border = BorderStroke(1.dp, HabitLine),
                                             colors = ButtonDefaults.outlinedButtonColors(
-                                                containerColor = neu.secondaryButtonBg,
-                                                contentColor = scheme.primary
+                                                containerColor = HabitSurface,
+                                                contentColor = HabitForest
                                             )
                                         ) {
                                             Text(
@@ -288,9 +308,9 @@ fun InsightsScreen(
                                 )
                                 Spacer(modifier = Modifier.height(4.dp))
                                 Text(
-                                    text = "Everything stays private on your phone. Once Stillspace steps in on Shorts or Reels, your focus wins, streak, and time reclaimed appear here.",
+                                    text = "Everything stays private on your phone. Once Outloop steps in on Shorts or Reels, your focus wins, streak, and time reclaimed appear here.",
                                     style = MaterialTheme.typography.bodyMedium,
-                                    color = scheme.onSurfaceVariant
+                                    color = HabitMuted
                                 )
                                 Spacer(modifier = Modifier.height(14.dp))
                                 OutlinedButton(
@@ -301,10 +321,10 @@ fun InsightsScreen(
                                         .testTag("insights_preview_pause_button"),
                                     shape = RoundedCornerShape(16.dp),
                                     contentPadding = PaddingValues(horizontal = 14.dp),
-                                    border = BorderStroke(1.dp, neu.secondaryButtonBorder),
+                                    border = BorderStroke(1.dp, HabitLine),
                                     colors = ButtonDefaults.outlinedButtonColors(
-                                        containerColor = neu.secondaryButtonBg,
-                                        contentColor = scheme.primary
+                                        containerColor = HabitSurface,
+                                        contentColor = HabitForest
                                     )
                                 ) {
                                     Text(
@@ -324,7 +344,7 @@ fun InsightsScreen(
 
             item {
                 Text(
-                    text = "By app",
+                    text = "Breakdown by app",
                     style = MaterialTheme.typography.titleLarge,
                     color = scheme.onBackground
                 )
@@ -335,9 +355,9 @@ fun InsightsScreen(
                     SurgeonCard(contentPadding = PaddingValues(0.dp)) {
                         if (uiState.byAppBreakdown.isEmpty()) {
                             Text(
-                                text = "Your avoided distractions by app will appear here once Stillspace steps in.",
+                                text = "Your avoided distractions by app will appear here once Outloop steps in.",
                                 style = MaterialTheme.typography.bodyMedium,
-                                color = scheme.onSurfaceVariant,
+                                color = HabitMuted,
                                 modifier = Modifier.padding(18.dp)
                             )
                         } else if (isMosaic) {
@@ -345,14 +365,15 @@ fun InsightsScreen(
                                 modifier = Modifier.padding(18.dp),
                                 verticalArrangement = Arrangement.spacedBy(18.dp)
                             ) {
-                                uiState.byAppBreakdown.chunked(2).forEach { pair ->
+                                uiState.byAppBreakdown.chunked(2).forEachIndexed { chunkIdx, pair ->
                                     Row(
                                         modifier = Modifier.fillMaxWidth(),
                                         horizontalArrangement = Arrangement.spacedBy(20.dp)
                                     ) {
-                                        pair.forEach { stat ->
+                                        pair.forEachIndexed { innerIdx, stat ->
                                             AppBreakdownRow(
                                                 stat = stat,
+                                                barColor = breakdownColorForIndex(chunkIdx * 2 + innerIdx),
                                                 modifier = Modifier.weight(1f)
                                             )
                                         }
@@ -367,6 +388,7 @@ fun InsightsScreen(
                                 uiState.byAppBreakdown.forEachIndexed { index, stat ->
                                     AppBreakdownRow(
                                         stat = stat,
+                                        barColor = breakdownColorForIndex(index),
                                         modifier = Modifier
                                             .fillMaxWidth()
                                             .padding(horizontal = 16.dp, vertical = 14.dp)
@@ -382,6 +404,30 @@ fun InsightsScreen(
                     }
                 }
             }
+
+            // Calm on-device privacy footer matching Quiet Intent Insights mockup (Android adapted)
+            item {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 4.dp),
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = Icons.Outlined.Lock,
+                        contentDescription = null,
+                        tint = HabitSubtle,
+                        modifier = Modifier.size(14.dp)
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = "All insights are calculated locally on your phone.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = HabitSubtle
+                    )
+                }
+            }
         }
     }
 
@@ -389,9 +435,17 @@ fun InsightsScreen(
         MindfulPausePreviewDialog(
             appName = "YouTube",
             feedLabel = "Shorts",
+            breathingPauseSeconds = uiState.preferences.breathingPauseSeconds,
+            onBreathingPauseChange = onSetBreathingPauseSeconds,
             onDismiss = { showPausePreview = false }
         )
     }
+}
+
+private fun breakdownColorForIndex(index: Int): Color = when (index % 3) {
+    0 -> HabitForest
+    1 -> HabitSageText
+    else -> HabitSageSoft
 }
 
 @Composable
@@ -405,7 +459,6 @@ private fun WeeklyChartCard(
 ) {
     val haptics = LocalHapticFeedback.current
     val scheme = MaterialTheme.colorScheme
-    val neu = StillspaceTheme.colors
 
     SurgeonCard(modifier = modifier, contentPadding = PaddingValues(18.dp)) {
         Row(
@@ -416,18 +469,18 @@ private fun WeeklyChartCard(
             Text(
                 text = stringResource(R.string.this_week),
                 style = MaterialTheme.typography.bodyMedium,
-                color = scheme.onSurfaceVariant
+                color = HabitMuted
             )
             Text(
                 text = "Tap a day",
                 style = MaterialTheme.typography.labelMedium,
-                color = scheme.primary
+                color = HabitForest
             )
         }
         Spacer(modifier = Modifier.height(4.dp))
         AnimatedIntCounter(
             target = weeklyCutsCount,
-            suffix = " distractions avoided",
+            suffix = " loops paused",
             style = MaterialTheme.typography.headlineMedium,
             color = scheme.onSurface,
             modifier = Modifier.testTag("weekly_cuts_count")
@@ -437,7 +490,7 @@ private fun WeeklyChartCard(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(132.dp),
+                .height(136.dp),
             horizontalArrangement = Arrangement.spacedBy(10.dp),
             verticalAlignment = Alignment.Bottom
         ) {
@@ -464,7 +517,7 @@ private fun WeeklyChartCard(
                     Text(
                         text = if (isSelected && day.count > 0) day.count.toString() else " ",
                         style = MaterialTheme.typography.labelMedium,
-                        color = scheme.primary,
+                        color = HabitForest,
                         fontWeight = FontWeight.Bold
                     )
                     Spacer(modifier = Modifier.height(4.dp))
@@ -473,14 +526,7 @@ private fun WeeklyChartCard(
                             .fillMaxWidth()
                             .height(82.dp)
                             .clip(RoundedCornerShape(12.dp))
-                            .background(neu.trackInactive)
-                            .then(
-                                if (neu.isDark) {
-                                    Modifier.border(1.dp, neu.trackInactiveBorder, RoundedCornerShape(12.dp))
-                                } else {
-                                    Modifier
-                                }
-                            ),
+                            .background(HabitSurfaceSunken),
                         contentAlignment = Alignment.BottomCenter
                     ) {
                         if (day.count > 0) {
@@ -490,12 +536,20 @@ private fun WeeklyChartCard(
                                     .height((82f * animatedBar).dp)
                                     .clip(RoundedCornerShape(12.dp))
                                     .background(
-                                        when {
-                                            isSelected || day.isToday -> scheme.primary
-                                            else -> scheme.primary.copy(alpha = 0.45f)
-                                        }
+                                        if (isSelected || day.isToday) HabitForest else HabitSageBar
+                                    ),
+                                contentAlignment = Alignment.TopCenter
+                            ) {
+                                if (isSelected || day.isToday) {
+                                    Box(
+                                        modifier = Modifier
+                                            .padding(top = 5.dp)
+                                            .size(5.dp)
+                                            .clip(CircleShape)
+                                            .background(if (day.isToday) HabitAmberGlow else HabitSageTint)
                                     )
-                            )
+                                }
+                            }
                         }
                     }
                     Spacer(modifier = Modifier.height(8.dp))
@@ -503,7 +557,7 @@ private fun WeeklyChartCard(
                         text = day.dayLetter,
                         style = MaterialTheme.typography.labelMedium,
                         fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                        color = if (isSelected) scheme.primary else scheme.onSurfaceVariant
+                        color = if (isSelected) HabitForest else HabitSubtle
                     )
                 }
             }
@@ -521,8 +575,8 @@ private fun WeeklyChartCard(
                         .fillMaxWidth()
                         .semantics(mergeDescendants = true) {}
                         .clip(RoundedCornerShape(14.dp))
-                        .background(scheme.primaryContainer)
-                        .border(1.dp, neu.indigoTintBorder, RoundedCornerShape(14.dp))
+                        .background(Color(0xFFF5F4EE))
+                        .border(1.dp, HabitLine, RoundedCornerShape(14.dp))
                         .padding(horizontal = 14.dp, vertical = 12.dp)
                         .testTag("selected_day_summary"),
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -536,9 +590,9 @@ private fun WeeklyChartCard(
                         )
                         Spacer(modifier = Modifier.height(2.dp))
                         Text(
-                            text = "${day.count} avoided",
+                            text = "${day.count} paused",
                             style = MaterialTheme.typography.bodyMedium,
-                            color = scheme.onSurfaceVariant
+                            color = HabitMuted
                         )
                     }
                     AnimatedIntCounter(
@@ -546,7 +600,7 @@ private fun WeeklyChartCard(
                         prefix = "~",
                         suffix = " min saved",
                         style = MaterialTheme.typography.labelLarge,
-                        color = scheme.onPrimaryContainer
+                        color = HabitForestInk
                     )
                 }
             }
@@ -579,7 +633,7 @@ private fun StatTripletRow(
             HabitIconBadge(
                 icon = Icons.Rounded.LocalFireDepartment,
                 tint = neu.statusWarningText,
-                containerColor = neu.statusWarningBg,
+                containerColor = HabitAmberWarmBg,
                 badgeSize = 36.dp,
                 iconSize = 18.dp,
                 cornerRadius = 11.dp
@@ -596,7 +650,7 @@ private fun StatTripletRow(
             Text(
                 text = "Streak",
                 style = MaterialTheme.typography.bodySmall,
-                color = scheme.onSurfaceVariant,
+                color = HabitMuted,
                 maxLines = 1,
                 softWrap = false,
                 overflow = TextOverflow.Ellipsis
@@ -611,8 +665,8 @@ private fun StatTripletRow(
         ) {
             HabitIconBadge(
                 icon = Icons.Outlined.Schedule,
-                tint = neu.statusActiveText,
-                containerColor = neu.statusActiveBg,
+                tint = HabitReadyText,
+                containerColor = HabitReadyBg,
                 badgeSize = 36.dp,
                 iconSize = 18.dp,
                 cornerRadius = 11.dp
@@ -633,7 +687,7 @@ private fun StatTripletRow(
             Text(
                 text = "Reclaimed",
                 style = MaterialTheme.typography.bodySmall,
-                color = scheme.onSurfaceVariant,
+                color = HabitMuted,
                 maxLines = 1,
                 softWrap = false,
                 overflow = TextOverflow.Ellipsis
@@ -648,8 +702,8 @@ private fun StatTripletRow(
         ) {
             HabitIconBadge(
                 icon = Icons.Rounded.Pause,
-                tint = scheme.onSurface,
-                containerColor = neu.trackInactive,
+                tint = HabitForest,
+                containerColor = HabitSurfaceLow,
                 badgeSize = 36.dp,
                 iconSize = 18.dp,
                 cornerRadius = 11.dp
@@ -664,7 +718,7 @@ private fun StatTripletRow(
             Text(
                 text = "Passes",
                 style = MaterialTheme.typography.bodySmall,
-                color = scheme.onSurfaceVariant,
+                color = HabitMuted,
                 maxLines = 1,
                 softWrap = false,
                 overflow = TextOverflow.Ellipsis
@@ -699,7 +753,7 @@ private fun ActivityFunnelCard(
             Text(
                 text = "Last 7 days",
                 style = MaterialTheme.typography.labelMedium,
-                color = scheme.onSurfaceVariant
+                color = HabitSubtle
             )
         }
         Spacer(modifier = Modifier.height(14.dp))
@@ -711,9 +765,9 @@ private fun ActivityFunnelCard(
                 subtitle = "Matched short-form feed opened",
                 count = funnel.detectedCount,
                 icon = Icons.Outlined.Visibility,
-                tint = scheme.primary,
-                containerColor = scheme.primaryContainer,
-                barColor = scheme.primary.copy(alpha = 0.65f)
+                tint = HabitForestInk,
+                containerColor = HabitSageTint,
+                barColor = HabitSageText
             ),
             FunnelStageItem(
                 tag = "funnel_stage_attempted",
@@ -721,9 +775,9 @@ private fun ActivityFunnelCard(
                 subtitle = "Reminder shown or exit triggered",
                 count = funnel.attemptedCount,
                 icon = Icons.Outlined.Shield,
-                tint = scheme.primary,
-                containerColor = scheme.primaryContainer,
-                barColor = scheme.primary.copy(alpha = 0.85f)
+                tint = HabitForestInk,
+                containerColor = HabitSageTint,
+                barColor = HabitForest
             ),
             FunnelStageItem(
                 tag = "funnel_stage_completed",
@@ -731,9 +785,9 @@ private fun ActivityFunnelCard(
                 subtitle = "Verified that the feed closed",
                 count = funnel.completedCount,
                 icon = Icons.Rounded.CheckCircle,
-                tint = neu.statusActiveText,
-                containerColor = neu.statusActiveBg,
-                barColor = neu.statusActiveText
+                tint = HabitReadyText,
+                containerColor = HabitReadyBg,
+                barColor = HabitReadyText
             ),
             FunnelStageItem(
                 tag = "funnel_stage_continued",
@@ -742,8 +796,8 @@ private fun ActivityFunnelCard(
                 count = funnel.continuedCount,
                 icon = Icons.Outlined.PauseCircle,
                 tint = neu.statusWarningText,
-                containerColor = neu.statusWarningBg,
-                barColor = neu.statusWarningText
+                containerColor = HabitAmberWarmBg,
+                barColor = neu.statusWarning
             )
         )
 
@@ -791,7 +845,7 @@ private fun ActivityFunnelCard(
                         Text(
                             text = stage.subtitle,
                             style = MaterialTheme.typography.bodySmall,
-                            color = scheme.onSurfaceVariant,
+                            color = HabitMuted,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
                         )
@@ -811,7 +865,7 @@ private fun ActivityFunnelCard(
                         .fillMaxWidth()
                         .height(5.dp)
                         .clip(RoundedCornerShape(100.dp))
-                        .background(neu.trackInactive)
+                        .background(HabitSurfaceSunken)
                 ) {
                     Box(
                         modifier = Modifier
@@ -860,7 +914,7 @@ private fun EstimateNoteText(
     Text(
         text = "Estimated from verified exits \u00D7 your $perVisitLabel per-visit estimate in Settings, not measured screen time. Unverified attempts, passes, and failed exits are excluded.",
         style = MaterialTheme.typography.bodySmall,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        color = HabitMuted,
         modifier = modifier.testTag("insights_estimate_note")
     )
 }
@@ -868,10 +922,10 @@ private fun EstimateNoteText(
 @Composable
 private fun AppBreakdownRow(
     stat: AppBreakdownStat,
+    barColor: Color,
     modifier: Modifier = Modifier
 ) {
     val scheme = MaterialTheme.colorScheme
-    val neu = StillspaceTheme.colors
     Row(
         modifier = modifier,
         verticalAlignment = Alignment.CenterVertically
@@ -895,7 +949,7 @@ private fun AppBreakdownRow(
                 AnimatedIntCounter(
                     target = stat.count,
                     style = MaterialTheme.typography.bodyMedium,
-                    color = scheme.onSurfaceVariant
+                    color = HabitMuted
                 )
             }
             val animatedWidth by animateFloatAsState(
@@ -908,14 +962,14 @@ private fun AppBreakdownRow(
                     .fillMaxWidth()
                     .height(6.dp)
                     .clip(RoundedCornerShape(100.dp))
-                    .background(neu.trackInactive)
+                    .background(HabitSurfaceSunken)
             ) {
                 Box(
                     modifier = Modifier
                         .fillMaxWidth(animatedWidth)
                         .height(6.dp)
                         .clip(RoundedCornerShape(100.dp))
-                        .background(scheme.primary)
+                        .background(barColor)
                 )
             }
         }

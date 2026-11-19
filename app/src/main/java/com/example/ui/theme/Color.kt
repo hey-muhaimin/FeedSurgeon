@@ -5,80 +5,65 @@ import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
 
 // ============================================================================
-// Focus Habit Design System — Light Palette (Airy Indigo, Emerald & Amber)
-// Verified WCAG AA contrast ratios (>= 4.5:1 text, >= 3:1 UI borders/controls)
+// Outloop — Quiet Intent Linen & Forest Palette (Light Sanctuary)
+// Grounded warm ivory linen, crisp white porcelain cards, deep forest anchors,
+// misty sage accents, and warm amber streak highlights.
 // ============================================================================
-val HabitBg = Color(0xFFF2F4FA)
-val HabitBloomPrimary = Color(0xFFE7E9FD)
-val HabitBloomSecondary = Color(0xFFE8F7F0)
+val HabitBg = Color(0xFFFAF9F5)
+val HabitLinen = Color(0xFFEAE8DF)
 val HabitSurface = Color(0xFFFFFFFF)
-val HabitSurfaceLow = Color(0xFFE8ECF5)
-val HabitSurfaceHigh = Color(0xFFFFFFFF)
+val HabitSurfaceLow = Color(0xFFF4F4F0)
+val HabitSurfaceSunken = Color(0xFFF3F1EA)
+val HabitSurfaceHigh = Color(0xFFE9E8E4)
 val HabitSurfaceVariant = Color(0xFFFFFFFF)
-val HabitLine = Color(0xFFE4E8F2)
-val HabitOutline = Color(0xFFCED4E4)
+val HabitLine = Color(0xFFE1DED5)
+val HabitLineSoft = Color(0xFFEAE7DF)
+val HabitOutline = Color(0xFFC3C8C2)
 
-val HabitIndigo = Color(0xFF4F46E5)
-val HabitIndigoDeep = Color(0xFF4338CA)
-val HabitIndigoBright = Color(0xFF5D54F2)
-val HabitIndigoTint = Color(0xFFEEF0FF)
-val HabitIndigoTintBorder = Color(0xFFDCE0FC)
-val HabitOnIndigoContainer = Color(0xFF3F37C9)
+val HabitForest = Color(0xFF29362E)
+val HabitForestInk = Color(0xFF142119)
+val HabitForestHover = Color(0xFF35463B)
+val HabitSageTint = Color(0xFFD8E3CF)
+val HabitSageSoft = Color(0xFFADC4AA)
+val HabitSageBar = Color(0xFFD4DDD0)
+val HabitSageText = Color(0xFF576151)
 
-val HabitProtected = Color(0xFF1FA971)
-val HabitProtectedTint = Color(0xFFE6F7EE)
-val HabitProtectedBorder = Color(0xFFB5E4CC)
-val HabitProtectedText = Color(0xFF0D684A)
+val HabitReadyBg = Color(0xFFEBF3ED)
+val HabitReadyBorder = Color(0xFFC5DDD0)
+val HabitReadyText = Color(0xFF1E3E2B)
 
-val HabitStreak = Color(0xFFFF8A3D)
-val HabitStreakTint = Color(0xFFFFF1E6)
-val HabitStreakBorder = Color(0xFFFFD4B5)
-val HabitStreakText = Color(0xFFB93B08)
+val HabitAmber = Color(0xFFC58B41)
+val HabitAmberGlow = Color(0xFFE5A93C)
+val HabitAmberContainer = Color(0xFF472E04)
+val HabitAmberText = Color(0xFFFFDDB3)
+val HabitAmberWarmBg = Color(0xFFFFECD1)
+val HabitAmberBorder = Color(0xFFE9C089)
 
-val HabitDanger = Color(0xFFCC2643)
-val HabitDangerTint = Color(0xFFFEECEE)
+val HabitDanger = Color(0xFFBA1A1A)
+val HabitDangerTint = Color(0xFFFFDAD6)
+val HabitDangerBorder = Color(0xFFF0C7C3)
 
-val HabitInk = Color(0xFF13162B)
-val HabitMuted = Color(0xFF5F6784)
-val HabitSubtle = Color(0xFF5E6682)
+val HabitInk = Color(0xFF1B1C1A)
+val HabitMuted = Color(0xFF434844)
+val HabitSubtle = Color(0xFF737874)
 
-// ============================================================================
-// Focus Habit Design System — Dark Counterpart (Midnight Indigo)
-// ============================================================================
-val DarkHabitBg = Color(0xFF0B0E1D)
-val DarkHabitBloomPrimary = Color(0xFF1A2044)
-val DarkHabitBloomSecondary = Color(0xFF0E2926)
-val DarkHabitSurface = Color(0xFF15192E)
-val DarkHabitSurfaceLow = Color(0xFF0F1324)
-val DarkHabitSurfaceHigh = Color(0xFF1E2440)
-val DarkHabitSurfaceVariant = Color(0xFF191F38)
-val DarkHabitLine = Color(0xFF2B3357)
-val DarkHabitOutline = Color(0xFF3D4773)
-
-val DarkHabitIndigo = Color(0xFF969BFF)
-val DarkHabitOnIndigo = Color(0xFF0E102E)
-val DarkHabitIndigoAction = Color(0xFF5B54F2)
-val DarkHabitIndigoDeep = Color(0xFF3E35C4)
-val DarkHabitIndigoTint = Color(0xFF222754)
-val DarkHabitIndigoTintBorder = Color(0xFF323975)
-val DarkHabitOnIndigoContainer = Color(0xFFC8CDFF)
-
-val DarkHabitProtected = Color(0xFF34D399)
-val DarkHabitProtectedTint = Color(0xFF102E27)
-val DarkHabitProtectedBorder = Color(0xFF1E5948)
-val DarkHabitProtectedText = Color(0xFF6EE7B7)
-
-val DarkHabitStreak = Color(0xFFFB923C)
-val DarkHabitStreakTint = Color(0xFF332012)
-val DarkHabitStreakBorder = Color(0xFF663B1B)
-val DarkHabitStreakText = Color(0xFFFDBA74)
-
-val DarkHabitDanger = Color(0xFFFB7185)
-val DarkHabitDangerTint = Color(0xFF33151E)
-
-val DarkHabitInk = Color(0xFFF3F5FC)
-val DarkHabitMuted = Color(0xFFA6AED0)
-val DarkHabitSubtle = Color(0xFF939CBE)
+// Compatibility aliases mapped cleanly to Quiet Intent Linen & Forest tokens
+val HabitBloomPrimary = HabitSageTint
+val HabitBloomSecondary = HabitReadyBg
+val HabitIndigo = HabitForest
+val HabitIndigoDeep = HabitForestInk
+val HabitIndigoBright = HabitForestHover
+val HabitIndigoTint = HabitSageTint
+val HabitIndigoTintBorder = Color(0xFFC6D4BC)
+val HabitOnIndigoContainer = HabitForestInk
+val HabitProtected = HabitReadyText
+val HabitProtectedTint = HabitReadyBg
+val HabitProtectedBorder = HabitReadyBorder
+val HabitProtectedText = HabitReadyText
+val HabitStreak = HabitAmber
+val HabitStreakTint = HabitAmberWarmBg
+val HabitStreakBorder = HabitAmberBorder
+val HabitStreakText = Color(0xFF6B4409)
 
 @Immutable
 data class StillspaceSemanticColors(
@@ -117,85 +102,65 @@ data class StillspaceSemanticColors(
     val heroGradientEnd: Color,
     val dividerLine: Color,
     val switchInactiveTrack: Color,
-    val switchThumb: Color
+    val switchThumb: Color,
+    // Extended Quiet Intent semantic tokens
+    val forestSurface: Color,
+    val forestInk: Color,
+    val sageTint: Color,
+    val sageText: Color,
+    val amberGlow: Color,
+    val amberContainer: Color,
+    val amberBadgeText: Color,
+    val linenSurface: Color
 )
 
 val LightSemanticColors = StillspaceSemanticColors(
     isDark = false,
-    bgBloomPrimary = HabitBloomPrimary,
-    bgBloomSecondary = HabitBloomSecondary,
-    neuHighlight = Color.White,
-    neuShadow = Color(0x1413162B),
-    neuInsetShadow = Color(0x1213162B),
-    neuInsetHighlight = Color(0xE6FFFFFF),
-    specularRimTop = Color.White,
+    bgBloomPrimary = HabitSageTint,
+    bgBloomSecondary = HabitReadyBg,
+    neuHighlight = HabitSurface,
+    neuShadow = Color(0x0D1B1C1A),
+    neuInsetShadow = Color(0x0A1B1C1A),
+    neuInsetHighlight = Color(0xD9FFFFFF),
+    specularRimTop = HabitSurface,
     specularRimBottom = HabitLine,
-    primaryActionBg = HabitIndigo,
-    primaryActionText = Color.White,
+    primaryActionBg = HabitForest,
+    primaryActionText = HabitBg,
     indigoTintBorder = HabitIndigoTintBorder,
     secondaryButtonBg = HabitSurface,
     secondaryButtonBorder = HabitLine,
-    statusActive = HabitProtected,
-    statusActiveBg = HabitProtectedTint,
-    statusActiveBorder = HabitProtectedBorder,
-    statusActiveText = HabitProtectedText,
-    statusWarning = HabitStreak,
-    statusWarningBg = HabitStreakTint,
-    statusWarningBorder = HabitStreakBorder,
-    statusWarningText = HabitStreakText,
+    statusActive = HabitReadyText,
+    statusActiveBg = HabitReadyBg,
+    statusActiveBorder = HabitReadyBorder,
+    statusActiveText = HabitReadyText,
+    statusWarning = HabitAmber,
+    statusWarningBg = HabitAmberWarmBg,
+    statusWarningBorder = HabitAmberBorder,
+    statusWarningText = Color(0xFF6B4409),
     statusDanger = HabitDanger,
     statusDangerBg = HabitDangerTint,
     textMuted = HabitSubtle,
     trackInactive = HabitSurfaceLow,
-    trackInactiveBorder = Color(0xFFE2E6F2),
-    dockSurface = HabitSurface,
-    orbCoreHighlight = Color(0xFFEEF0FF),
-    orbCoreMid = HabitIndigo,
-    orbCoreDeep = HabitIndigoDeep,
-    heroGradientStart = HabitIndigoBright,
-    heroGradientEnd = HabitIndigoDeep,
-    dividerLine = Color(0xFFECEEF6),
-    switchInactiveTrack = Color(0xFFCFD4E4),
-    switchThumb = Color.White
+    trackInactiveBorder = HabitLineSoft,
+    dockSurface = HabitBg.copy(alpha = 0.94f),
+    orbCoreHighlight = HabitSageTint,
+    orbCoreMid = HabitForest,
+    orbCoreDeep = HabitForestInk,
+    heroGradientStart = HabitForest,
+    heroGradientEnd = HabitForestInk,
+    dividerLine = Color(0xFFF0EEE7),
+    switchInactiveTrack = Color(0xFFE3E2DF),
+    switchThumb = HabitSurface,
+    forestSurface = HabitForest,
+    forestInk = HabitForestInk,
+    sageTint = HabitSageTint,
+    sageText = HabitSageText,
+    amberGlow = HabitAmberGlow,
+    amberContainer = HabitAmberContainer,
+    amberBadgeText = HabitAmberText,
+    linenSurface = HabitLinen
 )
 
-val DarkSemanticColors = StillspaceSemanticColors(
-    isDark = true,
-    bgBloomPrimary = DarkHabitBloomPrimary,
-    bgBloomSecondary = DarkHabitBloomSecondary,
-    neuHighlight = Color(0x303B4578),
-    neuShadow = Color(0xA6030510),
-    neuInsetShadow = Color(0x88030510),
-    neuInsetHighlight = Color(0x28343D66),
-    specularRimTop = Color(0x458A92FF),
-    specularRimBottom = Color(0x2B040612),
-    primaryActionBg = DarkHabitIndigoAction,
-    primaryActionText = Color.White,
-    indigoTintBorder = DarkHabitIndigoTintBorder,
-    secondaryButtonBg = DarkHabitSurfaceHigh,
-    secondaryButtonBorder = DarkHabitOutline,
-    statusActive = DarkHabitProtected,
-    statusActiveBg = DarkHabitProtectedTint,
-    statusActiveBorder = DarkHabitProtectedBorder,
-    statusActiveText = DarkHabitProtectedText,
-    statusWarning = DarkHabitStreak,
-    statusWarningBg = DarkHabitStreakTint,
-    statusWarningBorder = DarkHabitStreakBorder,
-    statusWarningText = DarkHabitStreakText,
-    statusDanger = DarkHabitDanger,
-    statusDangerBg = DarkHabitDangerTint,
-    textMuted = DarkHabitSubtle,
-    trackInactive = Color(0xFF1D2340),
-    trackInactiveBorder = Color(0xFF2B3357),
-    dockSurface = Color(0xFA15192E),
-    orbCoreHighlight = Color(0xFFE0E2FF),
-    orbCoreMid = DarkHabitIndigoAction,
-    orbCoreDeep = DarkHabitIndigoDeep,
-    heroGradientStart = DarkHabitIndigoAction,
-    heroGradientEnd = Color(0xFF332BA8),
-    dividerLine = Color(0xFF252C4C),
-    switchInactiveTrack = Color(0xFF2E355C),
-    switchThumb = Color(0xFFF3F5FC)
-)
+val DarkSemanticColors = LightSemanticColors
 
 val LocalStillspaceColors = staticCompositionLocalOf { LightSemanticColors }

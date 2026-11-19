@@ -301,13 +301,6 @@ private fun OnboardingBottomActionBar(
                     modifier = Modifier
                         .weight(1.35f)
                         .height(52.dp)
-                        .neumorphicExtruded(
-                            cornerRadius = 16.dp,
-                            elevation = 5.dp,
-                            containerColor = neu.primaryActionBg,
-                            borderColor = Color.Transparent,
-                            shadowTint = neu.primaryActionBg.copy(alpha = 0.28f)
-                        )
                         .testTag("onboarding_agree_button"),
                     shape = RoundedCornerShape(16.dp),
                     contentPadding = PaddingValues(horizontal = 14.dp),
@@ -334,13 +327,6 @@ private fun OnboardingBottomActionBar(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(52.dp)
-                    .neumorphicExtruded(
-                        cornerRadius = 16.dp,
-                        elevation = 5.dp,
-                        containerColor = neu.primaryActionBg,
-                        borderColor = Color.Transparent,
-                        shadowTint = neu.primaryActionBg.copy(alpha = 0.28f)
-                    )
                     .testTag("onboarding_apps_continue_button"),
                 shape = RoundedCornerShape(16.dp),
                 contentPadding = PaddingValues(horizontal = 16.dp),
@@ -405,19 +391,6 @@ private fun OnboardingBottomActionBar(
                     modifier = Modifier
                         .weight(if (isAccessibilityEnabled) 1f else 1.35f)
                         .height(52.dp)
-                        .then(
-                            if (!isAccessibilityEnabled) {
-                                Modifier.neumorphicExtruded(
-                                    cornerRadius = 16.dp,
-                                    elevation = 5.dp,
-                                    containerColor = openSettingsBg,
-                                    borderColor = Color.Transparent,
-                                    shadowTint = neu.primaryActionBg.copy(alpha = 0.28f)
-                                )
-                            } else {
-                                Modifier
-                            }
-                        )
                         .testTag("open_accessibility_settings_button"),
                     shape = RoundedCornerShape(16.dp),
                     border = BorderStroke(1.dp, openSettingsBorder),
@@ -443,19 +416,6 @@ private fun OnboardingBottomActionBar(
                     modifier = Modifier
                         .weight(if (isAccessibilityEnabled) 1.35f else 1f)
                         .height(52.dp)
-                        .then(
-                            if (isAccessibilityEnabled) {
-                                Modifier.neumorphicExtruded(
-                                    cornerRadius = 16.dp,
-                                    elevation = 5.dp,
-                                    containerColor = continueBg,
-                                    borderColor = Color.Transparent,
-                                    shadowTint = neu.primaryActionBg.copy(alpha = 0.28f)
-                                )
-                            } else {
-                                Modifier
-                            }
-                        )
                         .testTag("onboarding_continue_step2"),
                     shape = RoundedCornerShape(16.dp),
                     border = if (isAccessibilityEnabled) null else BorderStroke(1.dp, continueBorder),
@@ -485,13 +445,6 @@ private fun OnboardingBottomActionBar(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(52.dp)
-                    .neumorphicExtruded(
-                        cornerRadius = 16.dp,
-                        elevation = 5.dp,
-                        containerColor = neu.primaryActionBg,
-                        borderColor = Color.Transparent,
-                        shadowTint = neu.primaryActionBg.copy(alpha = 0.28f)
-                    )
                     .testTag("onboarding_finish_button"),
                 shape = RoundedCornerShape(16.dp),
                 contentPadding = PaddingValues(horizontal = 16.dp),

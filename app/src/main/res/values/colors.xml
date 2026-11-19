@@ -7,6 +7,6 @@
     <color name="teal_700">#FF018786</color>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
-    <color name="stillspace_background">#FFF2F4FA</color>
+    <color name="stillspace_background">#FFFAF9F5</color>
     <color name="stillspace_surface">#FFFFFFFF</color>
 </resources>

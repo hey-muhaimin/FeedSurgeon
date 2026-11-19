@@ -65,7 +65,7 @@ BUNDLED_DIR="$ROOT_DIR/bundled-apk"
 mkdir -p "$BUNDLED_DIR"
 
 cat > "$BUNDLED_DIR/RELEASE_INFO.txt" <<EOF
-App: Stillspace
+App: Outloop
 Version Name: $VERSION_NAME
 Version Code: $VERSION_CODE
 Build Mode: $MODE

@@ -25,7 +25,7 @@ if [[ -z "${STORE_PASSWORD:-}" || -z "${KEY_PASSWORD:-}" ]]; then
   exit 1
 fi
 
-echo "Building Stillspace Release artifacts (v${VERSION_NAME} / ${VERSION_CODE})..."
+echo "Building Outloop Release artifacts (v${VERSION_NAME} / ${VERSION_CODE})..."
 TASKS=(":app:assembleRelease")
 if [[ "$BUILD_AAB" == true ]]; then
   TASKS+=(":app:bundleRelease")
@@ -38,9 +38,9 @@ mkdir -p "$BUNDLED_DIR"
 
 APK_SRC="$ROOT_DIR/app/build/outputs/apk/release/app-release.apk"
 if [[ -f "$APK_SRC" ]]; then
-  APK_DST="$BUNDLED_DIR/stillspace-v${VERSION_NAME}-${VERSION_CODE}-release.apk"
+  APK_DST="$BUNDLED_DIR/outloop-v${VERSION_NAME}-${VERSION_CODE}-release.apk"
   cp "$APK_SRC" "$APK_DST"
-  cp "$APK_SRC" "$BUNDLED_DIR/stillspace-latest-release.apk"
+  cp "$APK_SRC" "$BUNDLED_DIR/outloop-latest-release.apk"
   echo "$(compute_sha256 "$APK_DST")  $(basename "$APK_DST")" > "${APK_DST}.sha256"
   echo "Release APK bundled: $APK_DST"
 fi
@@ -48,7 +48,7 @@ fi
 if [[ "$BUILD_AAB" == true ]]; then
   AAB_SRC="$ROOT_DIR/app/build/outputs/bundle/release/app-release.aab"
   if [[ -f "$AAB_SRC" ]]; then
-    AAB_DST="$BUNDLED_DIR/stillspace-v${VERSION_NAME}-${VERSION_CODE}-release.aab"
+    AAB_DST="$BUNDLED_DIR/outloop-v${VERSION_NAME}-${VERSION_CODE}-release.aab"
     cp "$AAB_SRC" "$AAB_DST"
     echo "$(compute_sha256 "$AAB_DST")  $(basename "$AAB_DST")" > "${AAB_DST}.sha256"
     echo "Release AAB bundled: $AAB_DST"

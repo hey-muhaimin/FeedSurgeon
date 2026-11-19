@@ -53,9 +53,14 @@ import com.example.ui.components.SurgeonCard
 import com.example.ui.components.SurgeonSwitch
 import com.example.ui.components.rememberCountdownLabel
 import com.example.ui.components.surgeonSharedBounds
+import com.example.ui.theme.HabitBg
+import com.example.ui.theme.HabitForest
+import com.example.ui.theme.HabitForestInk
+import com.example.ui.theme.HabitLine
+import com.example.ui.theme.HabitSageTint
+import com.example.ui.theme.HabitSubtle
 import com.example.ui.theme.StaggeredReveal
 import com.example.ui.theme.StillspaceTheme
-import com.example.ui.theme.neumorphicExtruded
 import com.example.ui.theme.tactilePressPhysics
 
 private enum class ResponseSpeedPreset(
@@ -323,7 +328,7 @@ private fun HowToStepInCard(
 ) {
     val scheme = MaterialTheme.colorScheme
     SurgeonCard {
-        SectionLabel(text = "HOW STILLSPACE STEPS IN")
+        SectionLabel(text = "HOW OUTLOOP STEPS IN")
         Spacer(modifier = Modifier.height(14.dp))
         NeumorphicSegmentedTrack(
             items = InterventionMode.entries,
@@ -416,19 +421,12 @@ private fun TakeABreakCard(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(50.dp)
-                    .neumorphicExtruded(
-                        cornerRadius = 16.dp,
-                        elevation = 4.dp,
-                        containerColor = neu.primaryActionBg,
-                        borderColor = Color.Transparent,
-                        shadowTint = neu.primaryActionBg.copy(alpha = 0.25f)
-                    )
                     .testTag("snooze_button"),
                 shape = RoundedCornerShape(16.dp),
                 contentPadding = PaddingValues(horizontal = 16.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = neu.primaryActionBg,
-                    contentColor = neu.primaryActionText
+                    containerColor = HabitForest,
+                    contentColor = HabitBg
                 )
             ) {
                 Text(
@@ -452,7 +450,7 @@ private fun TakeABreakCard(
                 horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 listOf(5 to "5 min", 15 to "15 min", 60 to "1 hour").forEach { (minutes, label) ->
-                    val pillShape = RoundedCornerShape(14.dp)
+                    val pillShape = RoundedCornerShape(100.dp)
                     Box(
                         modifier = Modifier
                             .weight(1f)
@@ -460,8 +458,8 @@ private fun TakeABreakCard(
                             .height(44.dp)
                             .tactilePressPhysics(pressedScale = 0.96f)
                             .clip(pillShape)
-                            .background(scheme.primaryContainer)
-                            .border(1.dp, neu.indigoTintBorder, pillShape)
+                            .background(HabitSageTint)
+                            .border(1.dp, HabitLine, pillShape)
                             .clickable {
                                 haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                                 onSnoozeMinutes(minutes)
@@ -473,7 +471,7 @@ private fun TakeABreakCard(
                         Text(
                             text = label,
                             style = MaterialTheme.typography.labelLarge,
-                            color = scheme.onPrimaryContainer,
+                            color = HabitForestInk,
                             maxLines = 1,
                             softWrap = false,
                             overflow = TextOverflow.Ellipsis

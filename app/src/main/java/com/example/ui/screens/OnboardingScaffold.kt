@@ -43,7 +43,10 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import com.example.ui.OnboardingStep
 import com.example.ui.components.CircularBackButton
-import com.example.ui.theme.StillspaceTheme
+import com.example.ui.theme.HabitBg
+import com.example.ui.theme.HabitForest
+import com.example.ui.theme.HabitLine
+import com.example.ui.theme.HabitSubtle
 import com.example.ui.theme.rememberReducedMotionEnabled
 
 private fun OnboardingStep.stepLabel(): String = when (this) {
@@ -62,8 +65,6 @@ fun OnboardingScaffold(
     stepContent: @Composable (step: OnboardingStep, isWideLayout: Boolean) -> Unit
 ) {
     val reducedMotion = rememberReducedMotionEnabled()
-    val scheme = MaterialTheme.colorScheme
-    val neu = StillspaceTheme.colors
 
     BackHandler(enabled = currentStep.index > 0) {
         onPreviousStep()
@@ -115,7 +116,7 @@ fun OnboardingScaffold(
                                 repeat(OnboardingStep.entries.size) { index ->
                                     val isActive = index <= currentStep.index
                                     val segmentColor by animateColorAsState(
-                                        targetValue = if (isActive) scheme.primary else neu.trackInactive,
+                                        targetValue = if (isActive) HabitForest else HabitLine,
                                         animationSpec = tween(
                                             durationMillis = if (reducedMotion) 0 else 280,
                                             easing = FastOutSlowInEasing
@@ -136,7 +137,7 @@ fun OnboardingScaffold(
                                 Text(
                                     text = "STEP ${currentStep.index + 1} OF ${OnboardingStep.entries.size} \u00B7 ${currentStep.stepLabel().uppercase()}",
                                     style = MaterialTheme.typography.labelSmall,
-                                    color = neu.textMuted,
+                                    color = HabitSubtle,
                                     maxLines = 1,
                                     softWrap = false,
                                     modifier = Modifier.testTag("onboarding_wide_step_badge")
@@ -145,7 +146,7 @@ fun OnboardingScaffold(
                                 Text(
                                     text = "${currentStep.index + 1}/${OnboardingStep.entries.size} \u00B7 ${currentStep.stepLabel()}",
                                     style = MaterialTheme.typography.labelSmall,
-                                    color = neu.textMuted,
+                                    color = HabitSubtle,
                                     maxLines = 1,
                                     softWrap = false,
                                     modifier = Modifier.testTag("onboarding_compact_step_badge")
@@ -159,11 +160,11 @@ fun OnboardingScaffold(
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .background(neu.dockSurface)
+                        .background(HabitBg)
                 ) {
                     HorizontalDivider(
                         thickness = 1.dp,
-                        color = scheme.outlineVariant
+                        color = HabitLine
                     )
                     Box(
                         modifier = Modifier

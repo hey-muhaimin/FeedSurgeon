@@ -357,7 +357,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         return Intent(Intent.ACTION_SEND).apply {
             type = "text/plain"
             putExtra(Intent.EXTRA_STREAM, uri)
-            putExtra(Intent.EXTRA_SUBJECT, "Stillspace Accessibility Event Log")
+            putExtra(Intent.EXTRA_SUBJECT, "Outloop Accessibility Event Log")
             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
         }
     }
@@ -530,6 +530,12 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun setThemeMode(mode: ThemeMode) {
         viewModelScope.launch {
             settingsDataStore.setThemeMode(mode)
+        }
+    }
+
+    fun setBreathingPauseSeconds(seconds: Int) {
+        viewModelScope.launch {
+            settingsDataStore.setBreathingPauseSeconds(seconds)
         }
     }
 

@@ -42,6 +42,9 @@ class FeedSurgeonService : AccessibilityService() {
     @Volatile
     private var globalPauseUntilMs: Long = 0L
 
+    @Volatile
+    private var breathingPauseSeconds: Int = 4
+
     private var overlayShield: AccessibilityOverlayShield? = null
 
     private val app: FeedSurgeonApp
@@ -97,6 +100,7 @@ class FeedSurgeonService : AccessibilityService() {
             app.settingsDataStore.preferencesFlow.collectLatest { prefs ->
                 isEventCaptureEnabled = prefs.eventCaptureEnabled
                 globalPauseUntilMs = prefs.globalPauseUntilMs
+                breathingPauseSeconds = prefs.breathingPauseSeconds
                 if (prefs.autoUpdateRules) {
                     RulesetSyncWorker.schedulePeriodicSync(this@FeedSurgeonService)
                 } else {
@@ -386,6 +390,13 @@ class FeedSurgeonService : AccessibilityService() {
             shield.show(
                 appName = rule.displayName,
                 feedLabel = rule.feedLabel,
+                breathingHalfCycleSeconds = breathingPauseSeconds,
+                onPaceChanged = { seconds ->
+                    breathingPauseSeconds = seconds
+                    serviceScope.launch {
+                        app.settingsDataStore.setBreathingPauseSeconds(seconds)
+                    }
+                },
                 onOverlayShown = {
                     serviceScope.launch {
                         val eventId = eventIdDeferred.await()
@@ -407,8 +418,20 @@ class FeedSurgeonService : AccessibilityService() {
                         }
                     }
                 },
-                onAllowOnce = {
+                onAllowOnce = { intentionNote ->
                     lastBlockTimestamps[rule.packageName] = SystemClock.elapsedRealtime()
+                    if (isEventCaptureEnabled && !intentionNote.isNullOrBlank()) {
+                        logEventThrottled(
+                            pkg = rule.packageName,
+                            eventType = AccessibilityEvent.TYPE_VIEW_CLICKED,
+                            eventClassName = "IntentionPass",
+                            rootNode = null,
+                            matchedSelector = "intent:${intentionNote.take(64)}",
+                            outcome = "ALLOWED_ONCE",
+                            nowElapsed = SystemClock.elapsedRealtime(),
+                            force = true
+                        )
+                    }
                     serviceScope.launch {
                         try {
                             val eventId = eventIdDeferred.await()

@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">Stillspace</string>
+    <string name="app_name">Outloop</string>
     <string name="accessibility_service_desc">Inspects active screen labels and view IDs in configured apps (YouTube, Instagram, Facebook, Snapchat, Reddit) strictly on-device to gently step back from short-form video loops. No screen content is ever stored off-device or transmitted.</string>
     <string name="privacy_policy_url">https://suprbuild.com/privacy</string>
     <string name="privacy_policy_label">Privacy Policy</string>
@@ -10,10 +10,10 @@
     <string name="nav_settings">Settings</string>
 
     <!-- Onboarding & Prominent Disclosure -->
-    <string name="onboarding_title_lead">Break the endless loop.</string>
-    <string name="onboarding_title_accent">Reclaim your focus.</string>
-    <string name="onboarding_title">Break the endless loop.\nReclaim your focus.</string>
-    <string name="onboarding_subtitle">Calm on-device pauses when short-form feeds pull you in.</string>
+    <string name="onboarding_title_lead">Take back your focus.</string>
+    <string name="onboarding_title_accent">Build calm daily habits.</string>
+    <string name="onboarding_title">Take back your focus.\nBuild calm daily habits.</string>
+    <string name="onboarding_subtitle">Calm, 100% on-device pauses before endless video feeds pull you in.</string>
     <string name="onboarding_consent_prefix">By tapping Get started, you agree to our </string>
     <string name="onboarding_what_we_read_title">WHAT IT CHECKS</string>
     <string name="onboarding_what_we_read_body">Only detects Shorts, Reels, Spotlight, or Watch screens locally.</string>
@@ -21,31 +21,31 @@
     <string name="onboarding_what_we_never_send_body">Messages, passwords, and history stay private on your phone.</string>
     <string name="onboarding_decline">Not now</string>
     <string name="onboarding_agree">Get started</string>
-    <string name="onboarding_apps_title">Choose focus apps</string>
-    <string name="onboarding_apps_body">Select which short-form feeds to pause.</string>
-    <string name="onboarding_step2_title">Turn on Focus Guard</string>
-    <string name="onboarding_step2_body">Accessibility lets Stillspace detect short-form feeds locally.</string>
+    <string name="onboarding_apps_title">Choose apps to guard</string>
+    <string name="onboarding_apps_body">Select which short-form feeds Outloop pauses. Uninstalled apps stay off.</string>
+    <string name="onboarding_step2_title">Turn on protection</string>
+    <string name="onboarding_step2_body">Accessibility lets Outloop detect short-form feeds locally on your phone.</string>
     <string name="onboarding_open_settings">Open Settings</string>
     <string name="onboarding_continue_without">Continue</string>
     <string name="onboarding_step3_title">You\u2019re all set</string>
-    <string name="onboarding_step3_body">Stillspace runs quietly on-device with minimal battery.</string>
+    <string name="onboarding_step3_body">Outloop runs quietly on-device with minimal battery impact.</string>
     <string name="onboarding_finish">Go to Home</string>
 
     <!-- Home -->
-    <string name="status_running">Focus Active</string>
-    <string name="status_paused">On a Break</string>
+    <string name="status_running">Guarded</string>
+    <string name="status_paused">Paused</string>
     <string name="status_service_off">Finish Setup</string>
     <string name="status_disconnected">Reconnect</string>
     <string name="status_no_apps">Pick Apps</string>
-    <string name="feeds_cut_today">Focus Wins today</string>
+    <string name="feeds_cut_today">Loops paused today</string>
     <string name="reclaimed_label">Time Reclaimed</string>
-    <string name="target_apps_header">YOUR FOCUS APPS</string>
-    <string name="allow_once">5-min passes</string>
+    <string name="target_apps_header">GUARDED APPS</string>
+    <string name="allow_once">Mindful passes</string>
     <string name="undo">Undo</string>
 
     <!-- Insights & Settings -->
-    <string name="insights_title">Focus Insights</string>
-    <string name="this_week">This week</string>
-    <string name="by_app_header">FOCUS BY APP</string>
+    <string name="insights_title">Insights</string>
+    <string name="this_week">Weekly activity</string>
+    <string name="by_app_header">BREAKDOWN BY APP</string>
     <string name="settings_title">Settings</string>
 </resources>

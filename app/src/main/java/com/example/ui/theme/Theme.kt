@@ -1,10 +1,8 @@
 package com.example.ui.theme
 
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Shapes
-import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -12,24 +10,24 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.example.data.model.ThemeMode
 
-private val StillspaceLightColorScheme = lightColorScheme(
-    primary = HabitIndigo,
-    onPrimary = Color.White,
-    primaryContainer = HabitIndigoTint,
-    onPrimaryContainer = HabitOnIndigoContainer,
-    secondary = HabitProtected,
+private val OutloopLightColorScheme = lightColorScheme(
+    primary = HabitForest,
+    onPrimary = HabitBg,
+    primaryContainer = HabitSageTint,
+    onPrimaryContainer = HabitForestInk,
+    secondary = HabitSageText,
     onSecondary = Color.White,
-    secondaryContainer = HabitProtectedTint,
-    onSecondaryContainer = HabitProtectedText,
-    tertiary = HabitStreak,
+    secondaryContainer = HabitSageTint,
+    onSecondaryContainer = HabitForestInk,
+    tertiary = HabitAmber,
     onTertiary = Color.White,
-    tertiaryContainer = HabitStreakTint,
-    onTertiaryContainer = HabitStreakText,
+    tertiaryContainer = HabitAmberContainer,
+    onTertiaryContainer = HabitAmberText,
     background = HabitBg,
     onBackground = HabitInk,
-    surface = HabitSurface,
+    surface = HabitBg,
     onSurface = HabitInk,
-    surfaceVariant = HabitSurfaceVariant,
+    surfaceVariant = HabitSurface,
     onSurfaceVariant = HabitMuted,
     surfaceContainer = HabitSurface,
     surfaceContainerLow = HabitSurfaceLow,
@@ -43,43 +41,12 @@ private val StillspaceLightColorScheme = lightColorScheme(
     onErrorContainer = HabitDanger
 )
 
-private val StillspaceDarkColorScheme = darkColorScheme(
-    primary = DarkHabitIndigo,
-    onPrimary = DarkHabitOnIndigo,
-    primaryContainer = DarkHabitIndigoTint,
-    onPrimaryContainer = DarkHabitOnIndigoContainer,
-    secondary = DarkHabitProtected,
-    onSecondary = Color(0xFF04261B),
-    secondaryContainer = DarkHabitProtectedTint,
-    onSecondaryContainer = DarkHabitProtectedText,
-    tertiary = DarkHabitStreak,
-    onTertiary = Color(0xFF2B1404),
-    tertiaryContainer = DarkHabitStreakTint,
-    onTertiaryContainer = DarkHabitStreakText,
-    background = DarkHabitBg,
-    onBackground = DarkHabitInk,
-    surface = DarkHabitSurface,
-    onSurface = DarkHabitInk,
-    surfaceVariant = DarkHabitSurfaceVariant,
-    onSurfaceVariant = DarkHabitMuted,
-    surfaceContainer = DarkHabitSurface,
-    surfaceContainerLow = DarkHabitSurfaceLow,
-    surfaceContainerHigh = DarkHabitSurfaceHigh,
-    surfaceContainerHighest = Color(0xFF252B4D),
-    outline = DarkHabitOutline,
-    outlineVariant = DarkHabitLine,
-    error = DarkHabitDanger,
-    onError = Color(0xFF2B0710),
-    errorContainer = DarkHabitDangerTint,
-    onErrorContainer = DarkHabitDanger
-)
-
 val StillspaceShapes = Shapes(
-    extraSmall = RoundedCornerShape(10.dp),
+    extraSmall = RoundedCornerShape(12.dp),
     small = RoundedCornerShape(14.dp),
     medium = RoundedCornerShape(16.dp),
-    large = RoundedCornerShape(20.dp),
-    extraLarge = RoundedCornerShape(24.dp)
+    large = RoundedCornerShape(24.dp),
+    extraLarge = RoundedCornerShape(26.dp)
 )
 
 object StillspaceTheme {
@@ -98,7 +65,7 @@ fun FeedSurgeonTheme(
 ) {
     CompositionLocalProvider(LocalStillspaceColors provides LightSemanticColors) {
         MaterialTheme(
-            colorScheme = StillspaceLightColorScheme,
+            colorScheme = OutloopLightColorScheme,
             typography = FeedSurgeonTypography,
             shapes = StillspaceShapes,
             content = content

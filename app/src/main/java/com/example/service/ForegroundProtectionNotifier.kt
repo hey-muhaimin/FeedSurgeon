@@ -30,7 +30,7 @@ object ForegroundProtectionNotifier {
             "On-Device Protection",
             NotificationManager.IMPORTANCE_LOW
         ).apply {
-            description = "Keeps Stillspace active in the background to protect your focus on-device even when cleared from recents."
+            description = "Keeps Outloop active in the background to protect your focus on-device even when cleared from recents."
             setShowBadge(false)
             enableLights(false)
             enableVibration(false)
@@ -59,7 +59,7 @@ object ForegroundProtectionNotifier {
 
         return NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_shield_notification)
-            .setContentTitle("Stillspace active")
+            .setContentTitle("Outloop active")
             .setContentText(contentText)
             .setContentIntent(contentIntent)
             .setOngoing(true)

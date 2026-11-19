@@ -25,7 +25,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -43,12 +42,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
-import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.testTag
@@ -58,6 +55,17 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.ui.theme.HabitAmber
+import com.example.ui.theme.HabitAmberGlow
+import com.example.ui.theme.HabitBg
+import com.example.ui.theme.HabitForest
+import com.example.ui.theme.HabitForestInk
+import com.example.ui.theme.HabitLine
+import com.example.ui.theme.HabitReadyBg
+import com.example.ui.theme.HabitReadyText
+import com.example.ui.theme.HabitSageSoft
+import com.example.ui.theme.HabitSageTint
+import com.example.ui.theme.HabitSurface
 import com.example.ui.theme.StillspaceTheme
 import com.example.ui.theme.SurgeonMotion
 import com.example.ui.theme.neumorphicExtruded
@@ -67,12 +75,63 @@ import kotlin.math.cos
 import kotlin.math.sin
 
 @Composable
+fun OutloopEmblemMark(
+    modifier: Modifier = Modifier,
+    boxSize: Dp = 46.dp,
+    cornerRadius: Dp = 14.dp,
+    containerColor: Color = HabitForest,
+    ringColor: Color = HabitBg,
+    dotColor: Color = HabitAmberGlow,
+    innerDotColor: Color = HabitSageSoft.copy(alpha = 0.45f)
+) {
+    Box(
+        modifier = modifier
+            .size(boxSize)
+            .clip(RoundedCornerShape(cornerRadius))
+            .background(containerColor),
+        contentAlignment = Alignment.Center
+    ) {
+        Canvas(modifier = Modifier.fillMaxSize(0.62f)) {
+            val radius = size.minDimension * 0.44f
+            val strokePx = size.minDimension * 0.14f
+            val center = Offset(size.width / 2f, size.height / 2f)
+            val topLeft = Offset(center.x - radius, center.y - radius)
+            val arcSize = Size(radius * 2f, radius * 2f)
+
+            drawArc(
+                color = ringColor,
+                startAngle = -15f,
+                sweepAngle = 298f,
+                useCenter = false,
+                topLeft = topLeft,
+                size = arcSize,
+                style = Stroke(width = strokePx, cap = StrokeCap.Round)
+            )
+            drawCircle(
+                color = innerDotColor,
+                radius = strokePx * 0.7f,
+                center = center
+            )
+            val dotAngleRad = (-48f * (PI / 180.0))
+            val dotCenter = Offset(
+                x = center.x + (radius * cos(dotAngleRad)).toFloat(),
+                y = center.y + (radius * sin(dotAngleRad)).toFloat()
+            )
+            drawCircle(
+                color = dotColor,
+                radius = strokePx * 0.72f,
+                center = dotCenter
+            )
+        }
+    }
+}
+
+@Composable
 fun OnboardingPhoneIllustration(
     modifier: Modifier = Modifier
 ) {
     val reducedMotion = rememberReducedMotionEnabled()
     val scheme = MaterialTheme.colorScheme
-    val neu = StillspaceTheme.colors
 
     val floatOffset: Float
     if (reducedMotion) {
@@ -83,7 +142,7 @@ fun OnboardingPhoneIllustration(
             initialValue = -3f,
             targetValue = 3f,
             animationSpec = infiniteRepeatable(
-                animation = tween(durationMillis = 2600, easing = FastOutSlowInEasing),
+                animation = tween(durationMillis = 2800, easing = FastOutSlowInEasing),
                 repeatMode = RepeatMode.Reverse
             ),
             label = "floating_pills_y"
@@ -91,171 +150,97 @@ fun OnboardingPhoneIllustration(
         floatOffset = anim
     }
 
-    val containerBg = if (neu.isDark) Color(0xFF171B36) else scheme.surface
-    val blobColor = if (neu.isDark) Color(0xFF232854) else Color(0xFFE8EBFC)
-    val phoneBody = if (neu.isDark) Color(0xFF1E2340) else Color(0xFFFFFFFF)
-    val phoneStroke = if (neu.isDark) Color(0xFF8E95B8) else Color(0xFF13162B)
-    val screenTint = scheme.primary
-    val placeholderLine = if (neu.isDark) Color(0xFF39416B) else Color(0xFFD9DCEB)
-
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .height(210.dp)
+            .height(216.dp)
             .clip(RoundedCornerShape(24.dp))
-            .background(containerBg)
-            .border(1.dp, scheme.outlineVariant.copy(alpha = 0.7f), RoundedCornerShape(24.dp))
+            .background(
+                Brush.verticalGradient(
+                    colors = listOf(Color(0xFFF3F0E8), Color(0xFFEAE5DB))
+                )
+            )
+            .border(1.dp, HabitLine, RoundedCornerShape(24.dp))
             .testTag("onboarding_hero_illustration"),
         contentAlignment = Alignment.Center
     ) {
-        // Pastel atmospheric background blobs
+        // Warm soft concentric halo arcs
         Canvas(modifier = Modifier.fillMaxSize()) {
+            val center = Offset(size.width * 0.5f, size.height * 0.5f)
             drawCircle(
-                color = blobColor,
-                radius = size.height * 0.42f,
-                center = Offset(size.width * 0.14f, size.height * 0.24f)
+                color = Color.White.copy(alpha = 0.45f),
+                radius = size.minDimension * 0.44f,
+                center = center
             )
             drawCircle(
-                color = blobColor,
-                radius = size.height * 0.36f,
-                center = Offset(size.width * 0.88f, size.height * 0.82f)
+                color = HabitSageTint.copy(alpha = 0.48f),
+                radius = size.minDimension * 0.36f,
+                center = center,
+                style = Stroke(width = 1.25.dp.toPx())
             )
         }
 
-        // Stylized Smartphone Frame + Indigo Screen with Pause Bars
-        Box(
-            modifier = Modifier.size(width = 122.dp, height = 186.dp),
-            contentAlignment = Alignment.Center
-        ) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(vertical = 2.dp)
-                    .clip(RoundedCornerShape(22.dp))
-                    .background(phoneBody)
-                    .border(2.5.dp, phoneStroke, RoundedCornerShape(22.dp))
-                    .padding(10.dp)
-            ) {
-                Column(
-                    modifier = Modifier.fillMaxSize(),
-                    verticalArrangement = Arrangement.SpaceBetween
-                ) {
-                    // Indigo video feed paused tile
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .weight(1f)
-                            .clip(RoundedCornerShape(14.dp))
-                            .background(
-                                Brush.verticalGradient(
-                                    listOf(neu.heroGradientStart, neu.heroGradientEnd)
-                                )
-                            ),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Row(
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Box(
-                                modifier = Modifier
-                                    .width(5.dp)
-                                    .height(28.dp)
-                                    .clip(RoundedCornerShape(3.dp))
-                                    .background(Color.White)
-                            )
-                            Box(
-                                modifier = Modifier
-                                    .width(5.dp)
-                                    .height(28.dp)
-                                    .clip(RoundedCornerShape(3.dp))
-                                    .background(Color.White)
-                            )
-                        }
-                    }
-
-                    // Bottom feed skeleton lines
-                    Column(
-                        modifier = Modifier.padding(top = 8.dp),
-                        verticalArrangement = Arrangement.spacedBy(5.dp)
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth(0.55f)
-                                .height(4.dp)
-                                .clip(RoundedCornerShape(2.dp))
-                                .background(placeholderLine)
-                        )
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth(0.38f)
-                                .height(4.dp)
-                                .clip(RoundedCornerShape(2.dp))
-                                .background(placeholderLine)
-                        )
-                    }
-                }
-            }
-
-            // Green check badge overlapping bottom-right of phone frame
-            Box(
-                modifier = Modifier
-                    .align(Alignment.BottomEnd)
-                    .offset(x = 12.dp, y = (-8).dp)
-                    .size(44.dp)
-                    .clip(CircleShape)
-                    .background(phoneBody)
-                    .padding(3.dp)
-                    .clip(CircleShape)
-                    .background(neu.statusActive),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = Icons.Rounded.Check,
-                    contentDescription = null,
-                    tint = Color.White,
-                    modifier = Modifier.size(22.dp)
-                )
-            }
-        }
+        // Centered Deep Forest Open Loop ceramic badge
+        OutloopEmblemMark(
+            boxSize = 96.dp,
+            cornerRadius = 26.dp,
+            containerColor = HabitForest,
+            ringColor = HabitBg,
+            dotColor = HabitAmberGlow,
+            innerDotColor = HabitSageSoft.copy(alpha = 0.55f)
+        )
 
         // Top-left floating pill: "Reels paused"
-        Box(
+        Row(
             modifier = Modifier
                 .align(Alignment.TopStart)
-                .offset(x = 18.dp, y = (54f + floatOffset).dp)
+                .offset(x = 18.dp, y = (26f + floatOffset).dp)
                 .neumorphicExtruded(
                     cornerRadius = 100.dp,
-                    elevation = 5.dp,
-                    containerColor = scheme.surface,
-                    borderColor = scheme.outlineVariant.copy(alpha = 0.7f)
+                    containerColor = HabitSurface,
+                    borderColor = HabitLine
                 )
-                .padding(horizontal = 14.dp, vertical = 8.dp)
+                .padding(horizontal = 13.dp, vertical = 7.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(7.dp)
         ) {
+            Box(
+                modifier = Modifier
+                    .size(7.dp)
+                    .clip(CircleShape)
+                    .background(HabitReadyText)
+            )
             Text(
                 text = "Reels paused",
                 style = MaterialTheme.typography.labelMedium,
-                color = screenTint
+                color = scheme.onSurface
             )
         }
 
         // Bottom-right floating pill: "Shorts paused"
-        Box(
+        Row(
             modifier = Modifier
                 .align(Alignment.BottomEnd)
-                .offset(x = (-16).dp, y = (-56f - floatOffset).dp)
+                .offset(x = (-18).dp, y = (-24f - floatOffset).dp)
                 .neumorphicExtruded(
                     cornerRadius = 100.dp,
-                    elevation = 5.dp,
-                    containerColor = scheme.surface,
-                    borderColor = scheme.outlineVariant.copy(alpha = 0.7f)
+                    containerColor = HabitSurface,
+                    borderColor = HabitLine
                 )
-                .padding(horizontal = 14.dp, vertical = 8.dp)
+                .padding(horizontal = 13.dp, vertical = 7.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(7.dp)
         ) {
+            Box(
+                modifier = Modifier
+                    .size(7.dp)
+                    .clip(CircleShape)
+                    .background(HabitAmber)
+            )
             Text(
                 text = "Shorts paused",
                 style = MaterialTheme.typography.labelMedium,
-                color = screenTint
+                color = scheme.onSurface
             )
         }
     }
@@ -266,8 +251,6 @@ fun OnboardingReadyCelebrationBadge(
     modifier: Modifier = Modifier
 ) {
     val reducedMotion = rememberReducedMotionEnabled()
-    val scheme = MaterialTheme.colorScheme
-    val neu = StillspaceTheme.colors
 
     var appeared by remember { mutableStateOf(reducedMotion) }
     LaunchedEffect(Unit) {
@@ -275,7 +258,7 @@ fun OnboardingReadyCelebrationBadge(
     }
 
     val badgeScale by animateFloatAsState(
-        targetValue = if (appeared) 1f else 0.76f,
+        targetValue = if (appeared) 1f else 0.78f,
         animationSpec = if (reducedMotion) snap() else spring(
             dampingRatio = Spring.DampingRatioMediumBouncy,
             stiffness = Spring.StiffnessMediumLow
@@ -292,7 +275,7 @@ fun OnboardingReadyCelebrationBadge(
             initialValue = -2f,
             targetValue = 2f,
             animationSpec = infiniteRepeatable(
-                animation = tween(durationMillis = 2200, easing = FastOutSlowInEasing),
+                animation = tween(durationMillis = 2400, easing = FastOutSlowInEasing),
                 repeatMode = RepeatMode.Reverse
             ),
             label = "ready_dots_float"
@@ -306,62 +289,60 @@ fun OnboardingReadyCelebrationBadge(
             .scale(badgeScale),
         contentAlignment = Alignment.Center
     ) {
-        // Outer soft emerald halo
         Box(
             modifier = Modifier
-                .size(104.dp)
+                .size(116.dp)
                 .clip(CircleShape)
-                .background(neu.statusActiveBg),
+                .background(Color(0xFFEFECE5)),
             contentAlignment = Alignment.Center
         ) {
             Box(
                 modifier = Modifier
-                    .size(74.dp)
+                    .size(92.dp)
                     .clip(CircleShape)
-                    .background(neu.statusActive),
+                    .background(HabitSageTint),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(
-                    imageVector = Icons.Rounded.Check,
-                    contentDescription = null,
-                    tint = Color.White,
-                    modifier = Modifier.size(38.dp)
-                )
+                Box(
+                    modifier = Modifier
+                        .size(66.dp)
+                        .clip(CircleShape)
+                        .background(HabitForest),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Rounded.Check,
+                        contentDescription = null,
+                        tint = Color(0xFFA8D3B0),
+                        modifier = Modifier.size(34.dp)
+                    )
+                }
             }
         }
 
-        // Playful celebratory accent dots
         Box(
             modifier = Modifier
                 .align(Alignment.TopStart)
                 .offset(x = 18.dp, y = (16f + dotPulse).dp)
                 .size(9.dp)
                 .clip(CircleShape)
-                .background(neu.statusWarning)
+                .background(HabitAmberGlow)
         )
         Box(
             modifier = Modifier
                 .align(Alignment.TopEnd)
-                .offset(x = (-14).dp, y = (10f - dotPulse).dp)
+                .offset(x = (-14).dp, y = (12f - dotPulse).dp)
                 .size(8.dp)
                 .clip(CircleShape)
-                .background(scheme.primary)
-        )
-        Box(
-            modifier = Modifier
-                .align(Alignment.BottomStart)
-                .offset(x = 12.dp, y = (-18f - dotPulse).dp)
-                .size(7.dp)
-                .clip(CircleShape)
-                .background(scheme.primary)
+                .background(HabitSageSoft)
         )
         Box(
             modifier = Modifier
                 .align(Alignment.BottomEnd)
-                .offset(x = (-10).dp, y = (-20f + dotPulse).dp)
-                .size(10.dp)
+                .offset(x = (-14).dp, y = (-16f + dotPulse).dp)
+                .size(7.dp)
                 .clip(CircleShape)
-                .background(Color(0xFFF472B6))
+                .background(HabitReadyText)
         )
     }
 }
@@ -369,41 +350,29 @@ fun OnboardingReadyCelebrationBadge(
 @Composable
 fun LiquidBreathingOrb(
     modifier: Modifier = Modifier,
-    size: Dp = 72.dp,
-    accentColor: Color = MaterialTheme.colorScheme.primary,
+    size: Dp = 92.dp,
+    accentColor: Color = HabitForest,
+    cycleSeconds: Int = 4,
     testTag: String = "liquid_breathing_orb"
 ) {
     val reducedMotion = rememberReducedMotionEnabled()
-    val scheme = MaterialTheme.colorScheme
-    val neu = StillspaceTheme.colors
+    val halfCycleMs = (cycleSeconds.coerceIn(2, 4) * 1000)
 
     val pulse: Float
-    val ripplePhase: Float
     if (reducedMotion) {
         pulse = 0.5f
-        ripplePhase = 0.25f
     } else {
-        val infiniteTransition = rememberInfiniteTransition(label = "liquid_orb_transition")
+        val infiniteTransition = rememberInfiniteTransition(label = "liquid_orb_transition_$cycleSeconds")
         val animatedPulse by infiniteTransition.animateFloat(
             initialValue = 0f,
             targetValue = 1f,
             animationSpec = infiniteRepeatable(
-                animation = tween(durationMillis = 3400, easing = FastOutSlowInEasing),
+                animation = tween(durationMillis = halfCycleMs, easing = FastOutSlowInEasing),
                 repeatMode = RepeatMode.Reverse
             ),
             label = "orb_breath_pulse"
         )
-        val animatedRipple by infiniteTransition.animateFloat(
-            initialValue = 0f,
-            targetValue = 1f,
-            animationSpec = infiniteRepeatable(
-                animation = tween(durationMillis = 4200, easing = LinearEasing),
-                repeatMode = RepeatMode.Restart
-            ),
-            label = "orb_ripple_phase"
-        )
         pulse = animatedPulse
-        ripplePhase = animatedRipple
     }
 
     Box(
@@ -415,67 +384,44 @@ fun LiquidBreathingOrb(
         Canvas(modifier = Modifier.fillMaxSize()) {
             val center = Offset(this.size.width / 2f, this.size.height / 2f)
             val maxRadius = this.size.minDimension / 2f
-            val baseCoreRadius = maxRadius * (0.34f + 0.04f * pulse)
+            val ringRadius = maxRadius * (0.64f + 0.14f * pulse)
 
+            // Outer Sage breath halo
             drawCircle(
-                brush = Brush.radialGradient(
-                    colors = listOf(
-                        accentColor.copy(alpha = 0.26f + 0.08f * pulse),
-                        scheme.secondary.copy(alpha = 0.14f),
-                        Color.Transparent
-                    ),
-                    center = center,
-                    radius = maxRadius * 0.98f
-                ),
-                radius = maxRadius * 0.98f,
+                color = HabitSageTint.copy(alpha = 0.45f + 0.25f * pulse),
+                radius = maxRadius * (0.86f + 0.10f * pulse),
                 center = center
             )
 
-            for (i in 0 until 3) {
-                val progress = (ripplePhase + i / 3f) % 1f
-                val rippleRadius = baseCoreRadius + (maxRadius * 0.92f - baseCoreRadius) * progress
-                val alpha = (1f - progress) * (1f - progress) * 0.45f
-                if (alpha > 0.01f) {
-                    val rippleColor = if (i == 1) scheme.secondary else accentColor
-                    drawCircle(
-                        color = rippleColor.copy(alpha = alpha),
-                        radius = rippleRadius,
-                        center = center,
-                        style = Stroke(width = (1.5.dp.toPx()) * (1f - 0.35f * progress))
-                    )
-                }
-            }
-
+            // Inner porcelain circle
             drawCircle(
-                brush = Brush.radialGradient(
-                    colors = listOf(
-                        neu.orbCoreHighlight,
-                        accentColor,
-                        neu.orbCoreDeep
-                    ),
-                    center = Offset(
-                        center.x - baseCoreRadius * 0.28f,
-                        center.y - baseCoreRadius * 0.28f
-                    ),
-                    radius = baseCoreRadius * 1.45f
-                ),
-                radius = baseCoreRadius,
+                color = HabitSurface,
+                radius = ringRadius,
                 center = center
             )
 
+            // Open Loop arc stroke
+            val strokePx = (size.toPx() * 0.085f).coerceAtLeast(3.dp.toPx())
+            drawArc(
+                color = accentColor,
+                startAngle = -14f,
+                sweepAngle = 298f,
+                useCenter = false,
+                topLeft = Offset(center.x - ringRadius, center.y - ringRadius),
+                size = Size(ringRadius * 2f, ringRadius * 2f),
+                style = Stroke(width = strokePx, cap = StrokeCap.Round)
+            )
+
+            // Warm Amber focal anchor dot at gap entrance
+            val dotRad = (-46f * (PI / 180.0))
+            val dotCenter = Offset(
+                x = center.x + (ringRadius * cos(dotRad)).toFloat(),
+                y = center.y + (ringRadius * sin(dotRad)).toFloat()
+            )
             drawCircle(
-                brush = Brush.linearGradient(
-                    colors = listOf(
-                        Color.White.copy(alpha = 0.72f),
-                        accentColor.copy(alpha = 0.48f),
-                        Color.Transparent
-                    ),
-                    start = Offset(center.x - baseCoreRadius, center.y - baseCoreRadius),
-                    end = Offset(center.x + baseCoreRadius, center.y + baseCoreRadius)
-                ),
-                radius = baseCoreRadius,
-                center = center,
-                style = Stroke(width = 1.25.dp.toPx())
+                color = HabitAmberGlow,
+                radius = strokePx * 0.65f,
+                center = dotCenter
             )
         }
     }
@@ -505,34 +451,28 @@ fun ProtectionRingGauge(
         label = "protection_ring_count"
     )
 
-    val primarySweepColor = if (isOperational) scheme.primary else neu.statusWarning
-    val secondarySweepColor = if (isOperational) neu.statusActive else scheme.tertiary
-    val activeGlow = if (isOperational) {
-        scheme.primary.copy(alpha = if (neu.isDark) 0.30f else 0.18f)
-    } else {
-        neu.statusWarning.copy(alpha = 0.20f)
-    }
+    val primarySweepColor = if (isOperational) HabitForest else HabitAmber
+    val secondarySweepColor = if (isOperational) HabitSageSoft else HabitAmberGlow
 
     Box(
         modifier = modifier
             .size(ringSize)
             .clip(CircleShape)
-            .background(scheme.surfaceContainerLow.copy(alpha = 0.65f))
-            .border(1.dp, scheme.outlineVariant.copy(alpha = 0.7f), CircleShape)
+            .background(scheme.surfaceContainerLow)
+            .border(1.dp, HabitLine, CircleShape)
             .semantics(mergeDescendants = false) {},
         contentAlignment = Alignment.Center
     ) {
         Canvas(modifier = Modifier.fillMaxSize()) {
             val strokePx = 8.dp.toPx()
-            val glowStrokePx = 14.dp.toPx()
-            val inset = glowStrokePx / 2f + 4.dp.toPx()
+            val inset = strokePx / 2f + 6.dp.toPx()
             val arcSize = Size(this.size.width - inset * 2f, this.size.height - inset * 2f)
             val topLeft = Offset(inset, inset)
             val startAngle = 140f
             val totalSweep = 260f
 
             drawArc(
-                color = neu.trackInactive,
+                color = neu.trackInactiveBorder,
                 startAngle = startAngle,
                 sweepAngle = totalSweep,
                 useCenter = false,
@@ -545,16 +485,6 @@ fun ProtectionRingGauge(
             val activeSweep = totalSweep * visualFraction
 
             if (activeSweep > 0.5f) {
-                drawArc(
-                    color = activeGlow,
-                    startAngle = startAngle,
-                    sweepAngle = activeSweep,
-                    useCenter = false,
-                    topLeft = topLeft,
-                    size = arcSize,
-                    style = Stroke(width = glowStrokePx, cap = StrokeCap.Round)
-                )
-
                 drawArc(
                     brush = Brush.linearGradient(
                         colors = listOf(secondarySweepColor, primarySweepColor),
@@ -577,13 +507,8 @@ fun ProtectionRingGauge(
                     y = center.y + (arcRadius * sin(endAngleRad)).toFloat()
                 )
                 drawCircle(
-                    color = primarySweepColor.copy(alpha = 0.35f),
-                    radius = strokePx * 0.9f,
-                    center = tipOffset
-                )
-                drawCircle(
-                    color = Color.White,
-                    radius = strokePx * 0.36f,
+                    color = HabitAmberGlow,
+                    radius = strokePx * 0.45f,
                     center = tipOffset
                 )
             }
@@ -616,75 +541,41 @@ fun ProtectionRingGauge(
 fun StillspaceEmptyFocusArtwork(
     modifier: Modifier = Modifier
 ) {
-    val scheme = MaterialTheme.colorScheme
-    val neu = StillspaceTheme.colors
-
     Box(
         modifier = modifier
-            .clip(RoundedCornerShape(16.dp))
-            .background(scheme.primaryContainer.copy(alpha = 0.55f))
-            .border(1.dp, scheme.outlineVariant, RoundedCornerShape(16.dp))
-            .testTag("insights_empty_artwork")
+            .clip(RoundedCornerShape(18.dp))
+            .background(Color(0xFFF3F0E8))
+            .border(1.dp, HabitLine, RoundedCornerShape(18.dp))
+            .testTag("insights_empty_artwork"),
+        contentAlignment = Alignment.Center
     ) {
         Canvas(modifier = Modifier.fillMaxSize()) {
-            val w = size.width
-            val h = size.height
-            val center = Offset(w * 0.5f, h * 0.52f)
-            val minDim = minOf(w, h)
-
-            drawRect(
-                brush = Brush.radialGradient(
-                    colors = listOf(
-                        neu.bgBloomPrimary,
-                        scheme.surfaceContainerLow
-                    ),
-                    center = center,
-                    radius = maxOf(w, h) * 0.72f
-                )
-            )
-
+            val center = Offset(size.width / 2f, size.height / 2f)
+            val minDim = size.minDimension
             drawCircle(
-                color = scheme.primary.copy(alpha = 0.14f),
-                radius = minDim * 0.44f,
-                center = center,
-                style = Stroke(width = 1.dp.toPx())
+                color = HabitSageTint.copy(alpha = 0.65f),
+                radius = minDim * 0.36f,
+                center = center
             )
-            drawCircle(
-                color = neu.statusActive.copy(alpha = 0.25f),
-                radius = minDim * 0.31f,
-                center = center,
-                style = Stroke(width = 1.25.dp.toPx())
-            )
-
-            val ringRadius = minDim * 0.19f
+            val ringRadius = minDim * 0.22f
             drawArc(
-                color = scheme.primary,
-                startAngle = 32f,
-                sweepAngle = 296f,
+                color = HabitForest,
+                startAngle = -15f,
+                sweepAngle = 298f,
                 useCenter = false,
                 topLeft = Offset(center.x - ringRadius, center.y - ringRadius),
                 size = Size(ringRadius * 2f, ringRadius * 2f),
-                style = Stroke(width = 3.2.dp.toPx(), cap = StrokeCap.Round)
+                style = Stroke(width = 3.5.dp.toPx(), cap = StrokeCap.Round)
             )
-
-            val barX = center.x + ringRadius * 0.96f
-            val barHalfH = ringRadius * 0.34f
-            drawLine(
-                color = scheme.primary,
-                start = Offset(barX, center.y - barHalfH),
-                end = Offset(barX, center.y + barHalfH),
-                strokeWidth = 3.dp.toPx(),
-                cap = StrokeCap.Round
+            val dotAngle = (-46f * (PI / 180.0))
+            drawCircle(
+                color = HabitAmberGlow,
+                radius = 3.dp.toPx(),
+                center = Offset(
+                    center.x + (ringRadius * cos(dotAngle)).toFloat(),
+                    center.y + (ringRadius * sin(dotAngle)).toFloat()
+                )
             )
-
-            val triSize = ringRadius * 0.42f
-            val triangle = Path().apply {
-                moveTo(center.x - triSize * 0.55f, center.y - triSize * 0.65f)
-                lineTo(center.x + triSize * 0.72f, center.y)
-                lineTo(center.x - triSize * 0.55f, center.y + triSize * 0.65f)
-                close()
-            }
-            drawPath(path = triangle, color = neu.statusActive)
         }
     }
 }

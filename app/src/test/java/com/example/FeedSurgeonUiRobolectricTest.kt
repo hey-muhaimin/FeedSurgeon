@@ -23,6 +23,7 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performScrollToNode
+import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.up
 import androidx.test.core.app.ApplicationProvider
@@ -47,11 +48,11 @@ import com.example.ui.screens.HomeScreen
 import com.example.ui.screens.InsightsScreen
 import com.example.ui.screens.OnboardingScreen
 import com.example.ui.screens.SettingsScreen
-import com.example.ui.theme.DarkHabitBg
-import com.example.ui.theme.DarkHabitSurface
 import com.example.ui.theme.FeedSurgeonTheme
 import com.example.ui.theme.HabitBg
 import com.example.ui.theme.HabitSurface
+import com.example.ui.theme.HabitSurfaceHigh
+import com.example.ui.theme.LightSemanticColors
 import com.example.ui.theme.StillspaceTheme
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -552,7 +553,7 @@ class FeedSurgeonUiRobolectricTest {
     }
 
     @Test
-    fun `mindful pause preview dialog displays liquid shield overlay orb and actions`() {
+    fun `mindful pause preview dialog displays glassomorphic orb, inline actions, and expandable intention tray`() {
         composeRule.setContent {
             FeedSurgeonTheme {
                 MindfulPausePreviewDialog(
@@ -567,8 +568,37 @@ class FeedSurgeonUiRobolectricTest {
         composeRule.onNodeWithTag("mindful_pause_preview_dialog").assertIsDisplayed()
         composeRule.onNodeWithTag("liquid_shield_overlay").assertIsDisplayed()
         composeRule.onNodeWithTag("liquid_breathing_orb").assertIsDisplayed()
-        composeRule.onNodeWithTag("preview_leave_feed_button").assertIsDisplayed()
-        composeRule.onNodeWithTag("preview_allow_5m_button").assertIsDisplayed()
+
+        val returnNode = composeRule.onNodeWithTag("preview_leave_feed_button")
+        val intendedNode = composeRule.onNodeWithTag("preview_allow_5m_button")
+        returnNode.assertIsDisplayed().assertTextContains("Return")
+        intendedNode.assertIsDisplayed().assertTextContains("Intended Visit")
+
+        val returnBounds = returnNode.getBoundsInRoot()
+        val intendedBounds = intendedNode.getBoundsInRoot()
+        assertEquals(returnBounds.top.value, intendedBounds.top.value, 2f)
+        assertTrue(returnBounds.right < intendedBounds.left)
+
+        composeRule.onNodeWithTag("preview_intention_tray").assertDoesNotExist()
+        intendedNode.performClick()
+        composeRule.waitForIdle()
+
+        composeRule.onNodeWithTag("preview_intention_tray").assertIsDisplayed()
+        composeRule.onNodeWithTag("preview_intention_chip_dm").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithTag("preview_intention_chip_saved").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithTag("preview_intention_input")
+            .performScrollTo()
+            .assertIsDisplayed()
+            .performTextInput("Check reply from Alex")
+        composeRule.onNodeWithTag("preview_intention_submit_button")
+            .performScrollTo()
+            .assertIsDisplayed()
+            .performClick()
+        composeRule.waitForIdle()
+
+        composeRule.onNodeWithTag("preview_demo_outcome")
+            .performScrollTo()
+            .assertTextContains("Check reply from Alex", substring = true)
     }
 
     @Test
@@ -921,7 +951,7 @@ class FeedSurgeonUiRobolectricTest {
     }
 
     @Test
-    fun `light theme enforces f2f4fa background and ffffff surface cards even when dark mode requested`() {
+    fun `light theme enforces Quiet Intent warm ivory background and white porcelain cards`() {
         var lightBg: Color? = null
         var lightSurface: Color? = null
         var lightSurfaceVariant: Color? = null
@@ -948,14 +978,14 @@ class FeedSurgeonUiRobolectricTest {
         composeRule.waitForIdle()
 
         assertEquals(HabitBg, lightBg)
-        assertEquals(Color(0xFFF2F4FA), lightBg)
-        assertEquals(HabitSurface, lightSurface)
-        assertEquals(Color(0xFFFFFFFF), lightSurface)
+        assertEquals(Color(0xFFFAF9F5), lightBg)
+        assertEquals(HabitBg, lightSurface)
+        assertEquals(HabitSurface, lightSurfaceVariant)
         assertEquals(Color(0xFFFFFFFF), lightSurfaceVariant)
         assertEquals(Color(0xFFFFFFFF), lightCardSurface)
-        assertEquals(Color(0xFFFFFFFF), lightSurfaceHigh)
-        assertEquals(Color(0xFFFFFFFF), lightDock)
-        assertEquals(Color(0xFFF2F4FA), darkRequestedBg)
+        assertEquals(HabitSurfaceHigh, lightSurfaceHigh)
+        assertEquals(LightSemanticColors.dockSurface, lightDock)
+        assertEquals(Color(0xFFFAF9F5), darkRequestedBg)
         assertEquals(Color(0xFFFFFFFF), darkRequestedSurface)
     }
 
@@ -1172,5 +1202,70 @@ class FeedSurgeonUiRobolectricTest {
         composeRule.onNodeWithTag("onboarding_battery_optimization_button")
             .performScrollTo()
             .assertIsDisplayed()
+    }
+
+    @Test
+    fun `settings screen toggles breathing pause duration between 4s and 2s`() {
+        var selectedPace = -1
+        composeRule.setContent {
+            FeedSurgeonTheme {
+                SettingsScreen(
+                    uiState = MainUiState(
+                        isInitialLoading = false,
+                        preferences = AppPreferences(breathingPauseSeconds = 4),
+                        rules = FeedSurgeonDatabase.defaultBuiltInRules(),
+                        installedPackages = setOf("com.google.android.youtube"),
+                        isAccessibilityEnabled = true,
+                        isServiceConnected = true,
+                        protectionStatus = ProtectionStatus.OPERATIONAL,
+                        activeInstalledCount = 1,
+                        installedSupportedCount = 1
+                    ),
+                    onReopenDisclosure = {},
+                    onToggleGlobalPause = {},
+                    onSetAutoUpdateRules = {},
+                    onCheckRulesNow = {},
+                    onSetEventCaptureEnabled = {},
+                    onRefreshEventLog = {},
+                    onClearEventLog = {},
+                    onShareEventLog = {},
+                    onSetReclaimedSeconds = {},
+                    onSetShowBanner = {},
+                    onSetBreathingPauseSeconds = { selectedPace = it },
+                    onClearHistory = {}
+                )
+            }
+        }
+        composeRule.waitForIdle()
+
+        composeRule.onNode(hasScrollToNodeAction())
+            .performScrollToNode(hasTestTag("settings_breathing_pause_pill"))
+        composeRule.onNodeWithTag("settings_breathing_pause_pill")
+            .assertIsDisplayed()
+            .assertTextContains("4s pace")
+            .performClick()
+
+        assertEquals(2, selectedPace)
+    }
+
+    @Test
+    fun `outloop launch transition displays brand mark and invokes enter callback`() {
+        var entered = false
+        composeRule.setContent {
+            FeedSurgeonTheme {
+                OutloopLaunchTransition(
+                    isLoading = false,
+                    onEnterApp = { entered = true }
+                )
+            }
+        }
+        composeRule.waitForIdle()
+
+        composeRule.onNodeWithTag("outloop_launch_transition").assertIsDisplayed()
+        composeRule.onNodeWithText("outloop").assertIsDisplayed()
+        composeRule.onNodeWithText("Mindful digital focus").assertIsDisplayed()
+        composeRule.onNodeWithTag("launch_open_dashboard_button").performClick()
+
+        assertTrue(entered)
     }
 }

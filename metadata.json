@@ -1,6 +1,6 @@
 {
-  "name": "Stillspace",
-  "description": "Calm focus and digital habit companion that gently steps in when short-form video loops open, 100% on-device.",
+  "name": "Outloop",
+  "description": "Mindful focus companion that gently steps in with a quiet pause when short-form video loops open, 100% on-device.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

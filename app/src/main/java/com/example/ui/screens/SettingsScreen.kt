@@ -15,6 +15,8 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -44,6 +46,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
+import androidx.compose.material.icons.outlined.Air
 import androidx.compose.material.icons.outlined.Bolt
 import androidx.compose.material.icons.outlined.DeleteOutline
 import androidx.compose.material.icons.outlined.Lock
@@ -67,6 +70,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
@@ -99,10 +103,22 @@ import com.example.ui.components.SurgeonScreenHeader
 import com.example.ui.components.SurgeonSwitch
 import com.example.ui.components.SurgicalSyncLoadingBar
 import com.example.ui.components.rememberCountdownLabel
+import com.example.ui.theme.HabitAmberWarmBg
+import com.example.ui.theme.HabitBg
+import com.example.ui.theme.HabitDanger
+import com.example.ui.theme.HabitDangerTint
+import com.example.ui.theme.HabitForest
+import com.example.ui.theme.HabitForestInk
+import com.example.ui.theme.HabitLine
+import com.example.ui.theme.HabitMuted
+import com.example.ui.theme.HabitReadyBg
+import com.example.ui.theme.HabitReadyText
+import com.example.ui.theme.HabitSageTint
+import com.example.ui.theme.HabitSubtle
+import com.example.ui.theme.HabitSurface
 import com.example.ui.theme.MonoTypography
 import com.example.ui.theme.StaggeredReveal
 import com.example.ui.theme.StillspaceTheme
-import com.example.ui.theme.neumorphicExtruded
 
 @Composable
 fun SettingsScreen(
@@ -120,7 +136,8 @@ fun SettingsScreen(
     onSetShowBanner: (Boolean) -> Unit,
     onClearHistory: () -> Unit,
     onRefreshProtectionHealth: () -> Unit = {},
-    bottomContentPadding: Dp = 96.dp
+    onSetBreathingPauseSeconds: (Int) -> Unit = {},
+    bottomContentPadding: Dp = 112.dp
 ) {
     val context = LocalContext.current
     val scheme = MaterialTheme.colorScheme
@@ -189,7 +206,7 @@ fun SettingsScreen(
                                 Text(
                                     text = "Protection",
                                     style = MaterialTheme.typography.titleSmall,
-                                    color = scheme.onSurfaceVariant
+                                    color = HabitMuted
                                 )
                                 ProtectionCard(
                                     uiState = uiState,
@@ -208,12 +225,13 @@ fun SettingsScreen(
                                 Text(
                                     text = "Experience",
                                     style = MaterialTheme.typography.titleSmall,
-                                    color = scheme.onSurfaceVariant
+                                    color = HabitMuted
                                 )
                                 ExperienceCard(
                                     prefs = prefs,
                                     onSetShowBanner = onSetShowBanner,
-                                    onSetReclaimedSeconds = onSetReclaimedSeconds
+                                    onSetReclaimedSeconds = onSetReclaimedSeconds,
+                                    onSetBreathingPauseSeconds = onSetBreathingPauseSeconds
                                 )
                                 PrivacyActionsCard(
                                     onShowPausePreview = { showPausePreview = true },
@@ -229,7 +247,7 @@ fun SettingsScreen(
                     Text(
                         text = "Protection",
                         style = MaterialTheme.typography.titleSmall,
-                        color = scheme.onSurfaceVariant
+                        color = HabitMuted
                     )
                 }
 
@@ -249,7 +267,7 @@ fun SettingsScreen(
                     Text(
                         text = "Experience",
                         style = MaterialTheme.typography.titleSmall,
-                        color = scheme.onSurfaceVariant
+                        color = HabitMuted
                     )
                 }
 
@@ -258,9 +276,18 @@ fun SettingsScreen(
                         ExperienceCard(
                             prefs = prefs,
                             onSetShowBanner = onSetShowBanner,
-                            onSetReclaimedSeconds = onSetReclaimedSeconds
+                            onSetReclaimedSeconds = onSetReclaimedSeconds,
+                            onSetBreathingPauseSeconds = onSetBreathingPauseSeconds
                         )
                     }
+                }
+
+                item {
+                    Text(
+                        text = "100% On-Device Protection",
+                        style = MaterialTheme.typography.titleSmall,
+                        color = HabitMuted
+                    )
                 }
 
                 item {
@@ -301,7 +328,7 @@ fun SettingsScreen(
                                 Text(
                                     text = staleNote,
                                     style = MaterialTheme.typography.bodyMedium,
-                                    color = scheme.onSurfaceVariant
+                                    color = HabitMuted
                                 )
                             }
                             Icon(
@@ -311,7 +338,7 @@ fun SettingsScreen(
                                     Icons.Filled.KeyboardArrowDown
                                 },
                                 contentDescription = if (showAdvancedSection) "Hide advanced settings" else "Show advanced settings",
-                                tint = scheme.onSurfaceVariant
+                                tint = HabitSubtle
                             )
                         }
                     }
@@ -406,7 +433,7 @@ fun SettingsScreen(
     if (showClearConfirmDialog) {
         AlertDialog(
             onDismissRequest = { showClearConfirmDialog = false },
-            containerColor = scheme.surface,
+            containerColor = HabitSurface,
             title = {
                 Text(
                     text = "Clear saved stats?",
@@ -418,7 +445,7 @@ fun SettingsScreen(
                 Text(
                     text = "This resets your weekly chart and time-saved counters. Your blocked apps and preferences won\u2019t change.",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = scheme.onSurfaceVariant
+                    color = HabitMuted
                 )
             },
             confirmButton = {
@@ -431,7 +458,7 @@ fun SettingsScreen(
                 ) {
                     Text(
                         text = "Clear stats",
-                        color = neu.statusDanger,
+                        color = HabitDanger,
                         fontWeight = FontWeight.Bold,
                         maxLines = 1,
                         softWrap = false
@@ -457,7 +484,7 @@ fun SettingsScreen(
     if (showLogDialog) {
         AlertDialog(
             onDismissRequest = { showLogDialog = false },
-            containerColor = scheme.surface,
+            containerColor = HabitSurface,
             title = {
                 Text(
                     text = "Local event log",
@@ -479,7 +506,7 @@ fun SettingsScreen(
                     Text(
                         text = logContent,
                         style = MonoTypography.caption,
-                        color = scheme.onSurfaceVariant
+                        color = HabitMuted
                     )
                 }
             },
@@ -490,7 +517,7 @@ fun SettingsScreen(
                             contentPadding = PaddingValues(horizontal = 8.dp),
                             onClick = onShareEventLog
                         ) {
-                            Text("Share file", color = scheme.primary, maxLines = 1, softWrap = false)
+                            Text("Share file", color = HabitForest, maxLines = 1, softWrap = false)
                         }
                     }
                     TextButton(
@@ -503,7 +530,7 @@ fun SettingsScreen(
                         contentPadding = PaddingValues(horizontal = 8.dp),
                         onClick = { showLogDialog = false }
                     ) {
-                        Text("Close", color = scheme.onSurfaceVariant, maxLines = 1, softWrap = false)
+                        Text("Close", color = HabitSubtle, maxLines = 1, softWrap = false)
                     }
                 }
             }
@@ -514,6 +541,8 @@ fun SettingsScreen(
         MindfulPausePreviewDialog(
             appName = "YouTube",
             feedLabel = "Shorts",
+            breathingPauseSeconds = prefs.breathingPauseSeconds,
+            onBreathingPauseChange = onSetBreathingPauseSeconds,
             onDismiss = { showPausePreview = false }
         )
     }
@@ -548,7 +577,7 @@ private fun ProtectionCard(
     }
     val statusSubtitle = when (effectiveStatus) {
         ProtectionStatus.PERMISSION_NEEDED ->
-            "Turn on Stillspace in Android Settings"
+            "Turn on Outloop in Android Settings"
         ProtectionStatus.SERVICE_DISCONNECTED ->
             "Service stopped by Android. Toggle off and on in Settings."
         ProtectionStatus.NO_APPS_ACTIVE ->
@@ -570,8 +599,8 @@ private fun ProtectionCard(
         ) {
             HabitIconBadge(
                 icon = Icons.Outlined.Shield,
-                tint = if (effectiveStatus == ProtectionStatus.OPERATIONAL) neu.statusActiveText else neu.statusWarningText,
-                containerColor = if (effectiveStatus == ProtectionStatus.OPERATIONAL) neu.statusActiveBg else neu.statusWarningBg
+                tint = if (effectiveStatus == ProtectionStatus.OPERATIONAL) HabitReadyText else neu.statusWarningText,
+                containerColor = if (effectiveStatus == ProtectionStatus.OPERATIONAL) HabitReadyBg else HabitAmberWarmBg
             )
             Spacer(modifier = Modifier.width(12.dp))
             Column(modifier = Modifier.weight(1f)) {
@@ -584,7 +613,7 @@ private fun ProtectionCard(
                 Text(
                     text = statusSubtitle,
                     style = MaterialTheme.typography.bodyMedium,
-                    color = scheme.onSurfaceVariant,
+                    color = HabitMuted,
                     modifier = Modifier.testTag("settings_protection_subtitle")
                 )
             }
@@ -608,7 +637,7 @@ private fun ProtectionCard(
                 HabitIconBadge(
                     icon = Icons.Outlined.Pause,
                     tint = neu.statusWarningText,
-                    containerColor = neu.statusWarningBg
+                    containerColor = HabitAmberWarmBg
                 )
                 Spacer(modifier = Modifier.width(12.dp))
                 Column(modifier = Modifier.weight(1f)) {
@@ -624,7 +653,7 @@ private fun ProtectionCard(
                             "Temporarily allow Shorts & Reels everywhere"
                         },
                         style = MaterialTheme.typography.bodyMedium,
-                        color = scheme.onSurfaceVariant
+                        color = HabitMuted
                     )
                 }
                 Spacer(modifier = Modifier.width(10.dp))
@@ -643,19 +672,12 @@ private fun ProtectionCard(
                 modifier = Modifier
                     .weight(1f)
                     .height(48.dp)
-                    .neumorphicExtruded(
-                        cornerRadius = 16.dp,
-                        elevation = 4.dp,
-                        containerColor = neu.primaryActionBg,
-                        borderColor = Color.Transparent,
-                        shadowTint = neu.primaryActionBg.copy(alpha = 0.25f)
-                    )
                     .testTag("settings_accessibility_button"),
                 shape = RoundedCornerShape(16.dp),
                 contentPadding = PaddingValues(horizontal = 10.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = neu.primaryActionBg,
-                    contentColor = neu.primaryActionText
+                    containerColor = HabitForest,
+                    contentColor = HabitBg
                 )
             ) {
                 Text(
@@ -675,9 +697,9 @@ private fun ProtectionCard(
                     .testTag("view_disclosure_button"),
                 shape = RoundedCornerShape(16.dp),
                 contentPadding = PaddingValues(horizontal = 10.dp),
-                border = BorderStroke(1.dp, neu.secondaryButtonBorder),
+                border = BorderStroke(1.dp, HabitLine),
                 colors = ButtonDefaults.outlinedButtonColors(
-                    containerColor = neu.secondaryButtonBg,
+                    containerColor = HabitSurface,
                     contentColor = scheme.onSurface
                 )
             ) {
@@ -699,6 +721,7 @@ private fun ExperienceCard(
     prefs: AppPreferences,
     onSetShowBanner: (Boolean) -> Unit,
     onSetReclaimedSeconds: (Int) -> Unit,
+    onSetBreathingPauseSeconds: (Int) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val scheme = MaterialTheme.colorScheme
@@ -709,8 +732,8 @@ private fun ExperienceCard(
         ) {
             HabitIconBadge(
                 icon = Icons.Outlined.Bolt,
-                tint = scheme.onPrimaryContainer,
-                containerColor = scheme.primaryContainer
+                tint = HabitForestInk,
+                containerColor = HabitSageTint
             )
             Spacer(modifier = Modifier.width(12.dp))
             Column(modifier = Modifier.weight(1f)) {
@@ -722,7 +745,7 @@ private fun ExperienceCard(
                 Text(
                     text = "Show a 5-min pass / Undo bar after stepping in",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = scheme.onSurfaceVariant
+                    color = HabitMuted
                 )
             }
             Spacer(modifier = Modifier.width(10.dp))
@@ -731,6 +754,53 @@ private fun ExperienceCard(
                 onCheckedChange = onSetShowBanner,
                 testTag = "settings_banner_switch"
             )
+        }
+
+        GroupedListDivider(
+            modifier = Modifier.padding(top = 14.dp, bottom = 14.dp)
+        )
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            HabitIconBadge(
+                icon = Icons.Outlined.Air,
+                tint = HabitReadyText,
+                containerColor = HabitReadyBg
+            )
+            Spacer(modifier = Modifier.width(12.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = "Breathing pause",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = scheme.onSurface
+                )
+                Text(
+                    text = "Tap to toggle between 2s reset and 4s calm pace",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = HabitMuted
+                )
+            }
+            Spacer(modifier = Modifier.width(10.dp))
+            val nextPace = if (prefs.breathingPauseSeconds <= 2) 4 else 2
+            Box(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(100.dp))
+                    .background(Color(0xFFF2F1EC))
+                    .border(1.dp, HabitLine, RoundedCornerShape(100.dp))
+                    .clickable { onSetBreathingPauseSeconds(nextPace) }
+                    .padding(horizontal = 12.dp, vertical = 7.dp)
+                    .testTag("settings_breathing_pause_pill")
+            ) {
+                Text(
+                    text = "${prefs.breathingPauseSeconds}s pace",
+                    style = MaterialTheme.typography.labelMedium.copy(
+                        fontFeatureSettings = "tnum"
+                    ),
+                    color = HabitForest
+                )
+            }
         }
 
         GroupedListDivider(
@@ -765,13 +835,12 @@ private fun PrivacyActionsCard(
     modifier: Modifier = Modifier
 ) {
     val scheme = MaterialTheme.colorScheme
-    val neu = StillspaceTheme.colors
 
     SurgeonCard(modifier = modifier, contentPadding = PaddingValues(0.dp)) {
         ActionRowItem(
             icon = Icons.Outlined.Visibility,
-            iconTint = scheme.onPrimaryContainer,
-            iconBg = scheme.primaryContainer,
+            iconTint = HabitForestInk,
+            iconBg = HabitSageTint,
             title = "Preview pause screen",
             textColor = scheme.onSurface,
             showChevron = true,
@@ -781,8 +850,8 @@ private fun PrivacyActionsCard(
         GroupedListDivider(modifier = Modifier.padding(start = 70.dp, end = 16.dp))
         ActionRowItem(
             icon = Icons.Outlined.Lock,
-            iconTint = neu.statusActiveText,
-            iconBg = neu.statusActiveBg,
+            iconTint = HabitReadyText,
+            iconBg = HabitReadyBg,
             title = "Privacy Policy",
             textColor = scheme.onSurface,
             showChevron = true,
@@ -792,10 +861,10 @@ private fun PrivacyActionsCard(
         GroupedListDivider(modifier = Modifier.padding(start = 70.dp, end = 16.dp))
         ActionRowItem(
             icon = Icons.Outlined.DeleteOutline,
-            iconTint = neu.statusDanger,
-            iconBg = neu.statusDangerBg,
+            iconTint = HabitDanger,
+            iconBg = HabitDangerTint,
             title = "Clear my saved stats",
-            textColor = neu.statusDanger,
+            textColor = HabitDanger,
             showChevron = false,
             testTag = "clear_history_button",
             onClick = onRequestClearHistory
@@ -814,7 +883,6 @@ private fun ActionRowItem(
     testTag: String,
     onClick: () -> Unit
 ) {
-    val scheme = MaterialTheme.colorScheme
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -842,7 +910,7 @@ private fun ActionRowItem(
             Icon(
                 imageVector = Icons.AutoMirrored.Rounded.KeyboardArrowRight,
                 contentDescription = null,
-                tint = scheme.onSurfaceVariant
+                tint = HabitSubtle
             )
         }
     }
@@ -858,7 +926,6 @@ private fun BlockerUpdatesCard(
     modifier: Modifier = Modifier
 ) {
     val scheme = MaterialTheme.colorScheme
-    val neu = StillspaceTheme.colors
     val lastCheckedSubtitle = if (prefs.lastRulesetCheckMs == 0L) {
         "Built-in rules \u00B7 ${prefs.rulesetVersion}"
     } else {
@@ -887,7 +954,7 @@ private fun BlockerUpdatesCard(
                 Text(
                     text = lastCheckedSubtitle,
                     style = MonoTypography.caption,
-                    color = scheme.onSurfaceVariant
+                    color = HabitMuted
                 )
             }
             Spacer(modifier = Modifier.width(10.dp))
@@ -909,7 +976,7 @@ private fun BlockerUpdatesCard(
                 Text(
                     text = msg,
                     style = MaterialTheme.typography.bodyMedium,
-                    color = scheme.primary,
+                    color = HabitForest,
                     modifier = Modifier.padding(top = 6.dp)
                 )
             }
@@ -925,16 +992,16 @@ private fun BlockerUpdatesCard(
                 .testTag("settings_check_updates_button"),
             shape = RoundedCornerShape(16.dp),
             contentPadding = PaddingValues(horizontal = 14.dp),
-            border = BorderStroke(1.dp, neu.secondaryButtonBorder),
+            border = BorderStroke(1.dp, HabitLine),
             colors = ButtonDefaults.outlinedButtonColors(
-                containerColor = neu.secondaryButtonBg,
+                containerColor = HabitSurface,
                 contentColor = scheme.onSurface
             )
         ) {
             if (uiState.isSyncingRules) {
                 CircularProgressIndicator(
                     modifier = Modifier.size(16.dp),
-                    color = scheme.primary,
+                    color = HabitForest,
                     strokeWidth = 2.dp
                 )
                 Spacer(modifier = Modifier.width(8.dp))
@@ -970,14 +1037,14 @@ private fun BlockerUpdatesCard(
                         Text(
                             text = rule.feedLabel,
                             style = MaterialTheme.typography.bodyMedium,
-                            color = scheme.onSurfaceVariant
+                            color = HabitMuted
                         )
                     }
                     if (!isInstalled) {
                         Text(
                             text = "Not installed",
                             style = MaterialTheme.typography.labelMedium,
-                            color = neu.textMuted
+                            color = HabitSubtle
                         )
                     } else {
                         StatusBadgePill(
@@ -999,7 +1066,6 @@ private fun BackgroundReliabilityCard(
     modifier: Modifier = Modifier
 ) {
     val scheme = MaterialTheme.colorScheme
-    val neu = StillspaceTheme.colors
     SurgeonCard(modifier = modifier) {
         SectionLabel(text = "BACKGROUND RELIABILITY")
         Spacer(modifier = Modifier.height(12.dp))
@@ -1019,10 +1085,10 @@ private fun BackgroundReliabilityCard(
                     text = if (uiState.isBatteryOptimizationIgnored) {
                         "Unrestricted \u2014 stays running reliably in the background"
                     } else {
-                        "Phone battery saver may pause Stillspace in the background"
+                        "Phone battery saver may pause Outloop in the background"
                     },
                     style = MaterialTheme.typography.bodyMedium,
-                    color = scheme.onSurfaceVariant
+                    color = HabitMuted
                 )
             }
             Spacer(modifier = Modifier.width(10.dp))
@@ -1042,10 +1108,10 @@ private fun BackgroundReliabilityCard(
                     .testTag("settings_battery_optimization_button"),
                 shape = RoundedCornerShape(16.dp),
                 contentPadding = PaddingValues(horizontal = 14.dp),
-                border = BorderStroke(1.dp, neu.secondaryButtonBorder),
+                border = BorderStroke(1.dp, HabitLine),
                 colors = ButtonDefaults.outlinedButtonColors(
-                    containerColor = neu.secondaryButtonBg,
-                    contentColor = scheme.primary
+                    containerColor = HabitSurface,
+                    contentColor = HabitForest
                 )
             ) {
                 Text(
@@ -1080,7 +1146,7 @@ private fun BackgroundReliabilityCard(
                             "Allow notifications so Android keeps protection active"
                         },
                         style = MaterialTheme.typography.bodyMedium,
-                        color = scheme.onSurfaceVariant
+                        color = HabitMuted
                     )
                 }
                 Spacer(modifier = Modifier.width(10.dp))
@@ -1100,9 +1166,9 @@ private fun BackgroundReliabilityCard(
                         .testTag("settings_notification_permission_button"),
                     shape = RoundedCornerShape(16.dp),
                     contentPadding = PaddingValues(horizontal = 14.dp),
-                    border = BorderStroke(1.dp, neu.secondaryButtonBorder),
+                    border = BorderStroke(1.dp, HabitLine),
                     colors = ButtonDefaults.outlinedButtonColors(
-                        containerColor = neu.secondaryButtonBg,
+                        containerColor = HabitSurface,
                         contentColor = scheme.onSurface
                     )
                 ) {
@@ -1130,7 +1196,6 @@ private fun DiagnosticLogCard(
     modifier: Modifier = Modifier
 ) {
     val scheme = MaterialTheme.colorScheme
-    val neu = StillspaceTheme.colors
     val kb = (uiState.eventLogSizeBytes / 1024L).coerceAtLeast(
         if (uiState.eventLogSizeBytes > 0L) 1L else 0L
     )
@@ -1152,7 +1217,7 @@ private fun DiagnosticLogCard(
                 Text(
                     text = "${AccessibilityEventLogger.LOG_FILE_NAME} \u00B7 $kb KB",
                     style = MonoTypography.caption,
-                    color = scheme.onSurfaceVariant
+                    color = HabitMuted
                 )
             }
             Spacer(modifier = Modifier.width(10.dp))
@@ -1172,9 +1237,9 @@ private fun DiagnosticLogCard(
                     .testTag("view_event_log_button"),
                 shape = RoundedCornerShape(16.dp),
                 contentPadding = PaddingValues(horizontal = 10.dp),
-                border = BorderStroke(1.dp, neu.secondaryButtonBorder),
+                border = BorderStroke(1.dp, HabitLine),
                 colors = ButtonDefaults.outlinedButtonColors(
-                    containerColor = neu.secondaryButtonBg,
+                    containerColor = HabitSurface,
                     contentColor = scheme.onSurface
                 )
             ) {
@@ -1196,10 +1261,10 @@ private fun DiagnosticLogCard(
                     .testTag("clear_event_log_button"),
                 shape = RoundedCornerShape(16.dp),
                 contentPadding = PaddingValues(horizontal = 10.dp),
-                border = BorderStroke(1.dp, neu.secondaryButtonBorder),
+                border = BorderStroke(1.dp, HabitLine),
                 colors = ButtonDefaults.outlinedButtonColors(
-                    containerColor = neu.secondaryButtonBg,
-                    contentColor = neu.statusDanger
+                    containerColor = HabitSurface,
+                    contentColor = HabitDanger
                 )
             ) {
                 Text(

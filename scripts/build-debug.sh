@@ -9,7 +9,7 @@ GRADLE="$(resolve_gradle)"
 VERSION_NAME="$(read_version_name)"
 VERSION_CODE="$(read_version_code)"
 
-echo "Building Stillspace Debug APK (v${VERSION_NAME} / ${VERSION_CODE})..."
+echo "Building Outloop Debug APK (v${VERSION_NAME} / ${VERSION_CODE})..."
 (cd "$ROOT_DIR" && "$GRADLE" :app:assembleDebug)
 
 APK_PATH="$ROOT_DIR/app/build/outputs/apk/debug/app-debug.apk"
@@ -21,8 +21,8 @@ fi
 BUNDLED_DIR="$ROOT_DIR/bundled-apk"
 mkdir -p "$BUNDLED_DIR"
 
-VERSIONED_APK="$BUNDLED_DIR/stillspace-v${VERSION_NAME}-${VERSION_CODE}-debug.apk"
-LATEST_APK="$BUNDLED_DIR/stillspace-latest-debug.apk"
+VERSIONED_APK="$BUNDLED_DIR/outloop-v${VERSION_NAME}-${VERSION_CODE}-debug.apk"
+LATEST_APK="$BUNDLED_DIR/outloop-latest-debug.apk"
 
 cp "$APK_PATH" "$VERSIONED_APK"
 cp "$APK_PATH" "$LATEST_APK"

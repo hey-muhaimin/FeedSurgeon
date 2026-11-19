@@ -2,7 +2,6 @@ package com.example.ui.screens
 
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
@@ -43,7 +42,6 @@ import androidx.compose.material.icons.outlined.PauseCircle
 import androidx.compose.material.icons.outlined.Shield
 import androidx.compose.material.icons.outlined.VerifiedUser
 import androidx.compose.material.icons.rounded.Check
-import androidx.compose.material.icons.rounded.LocalFireDepartment
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
@@ -77,7 +75,6 @@ import androidx.compose.ui.unit.sp
 import com.example.data.local.TargetAppRuleEntity
 import com.example.data.model.ProtectionStatus
 import com.example.service.AccessibilityStatusHelper
-import com.example.ui.DayBarStat
 import com.example.ui.MainUiState
 import com.example.ui.components.AnimatedIntCounter
 import com.example.ui.components.AppBadgeIcon
@@ -85,15 +82,29 @@ import com.example.ui.components.GroupedListDivider
 import com.example.ui.components.HabitIconBadge
 import com.example.ui.components.MindfulPausePreviewDialog
 import com.example.ui.components.StatusBadgePill
+import com.example.ui.components.StreakBadgePill
 import com.example.ui.components.SurgeonCard
 import com.example.ui.components.SurgeonScreenHeader
 import com.example.ui.components.SurgeonSkeletonCard
 import com.example.ui.components.SurgeonSwitch
 import com.example.ui.components.rememberCountdownLabel
 import com.example.ui.components.surgeonSharedBounds
+import com.example.ui.theme.HabitAmberBorder
+import com.example.ui.theme.HabitAmberWarmBg
+import com.example.ui.theme.HabitBg
+import com.example.ui.theme.HabitForest
+import com.example.ui.theme.HabitForestInk
+import com.example.ui.theme.HabitLine
+import com.example.ui.theme.HabitMuted
+import com.example.ui.theme.HabitReadyBg
+import com.example.ui.theme.HabitReadyText
+import com.example.ui.theme.HabitSageTint
+import com.example.ui.theme.HabitSubtle
+import com.example.ui.theme.HabitSurface
 import com.example.ui.theme.StaggeredReveal
 import com.example.ui.theme.StillspaceTheme
 import com.example.ui.theme.neumorphicExtruded
+import com.example.ui.theme.neumorphicInset
 import com.example.ui.theme.tactilePressPhysics
 import java.text.SimpleDateFormat
 import java.util.Calendar
@@ -112,7 +123,8 @@ fun HomeScreen(
     onRefreshBlockersClick: () -> Unit,
     onAppClick: (String) -> Unit,
     onToggleApp: (String, Boolean) -> Unit,
-    bottomContentPadding: Dp = 96.dp
+    onSetBreathingPauseSeconds: (Int) -> Unit = {},
+    bottomContentPadding: Dp = 112.dp
 ) {
     val context = LocalContext.current
     val scheme = MaterialTheme.colorScheme
@@ -144,11 +156,11 @@ fun HomeScreen(
         ProtectionStatus.PERMISSION_NEEDED -> "Finish Setup"
         ProtectionStatus.SERVICE_DISCONNECTED -> "Reconnect"
         ProtectionStatus.NO_APPS_ACTIVE -> "Pick Apps"
-        ProtectionStatus.PAUSED -> "On a Break"
-        ProtectionStatus.OPERATIONAL -> "Protected"
+        ProtectionStatus.PAUSED -> "Paused"
+        ProtectionStatus.OPERATIONAL -> "Guarded"
     }
     val todayDateLabel = remember {
-        SimpleDateFormat("EEEE, MMM d", Locale.getDefault()).format(Date())
+        SimpleDateFormat("EEEE, MMM d", Locale.getDefault()).format(Date()).uppercase(Locale.getDefault())
     }
 
     BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
@@ -203,7 +215,7 @@ fun HomeScreen(
                                     modifier = Modifier.weight(1f)
                                 )
                             } else {
-                                TodayIndigoHeroCard(
+                                TodayForestHeroCard(
                                     uiState = uiState,
                                     modifier = Modifier
                                         .weight(1.04f)
@@ -229,7 +241,7 @@ fun HomeScreen(
                     }
                 }
             } else {
-                // Hero Indigo Gradient Summary Card
+                // Hero Deep Forest Summary Card
                 item {
                     StaggeredReveal(index = 0) {
                         AnimatedContent(
@@ -240,13 +252,13 @@ fun HomeScreen(
                             if (loading) {
                                 SurgeonSkeletonCard(heightDp = 212)
                             } else {
-                                TodayIndigoHeroCard(uiState = uiState)
+                                TodayForestHeroCard(uiState = uiState)
                             }
                         }
                     }
                 }
 
-                // Actionable Protection & Quick Break Card
+                // Actionable Protection & Mindful Pass Card
                 if (!uiState.isInitialLoading) {
                     item {
                         StaggeredReveal(index = 1) {
@@ -272,7 +284,7 @@ fun HomeScreen(
                 item {
                     StaggeredReveal(index = 2) {
                         SurgeonCard(
-                            borderColor = neu.statusWarningBorder,
+                            borderColor = HabitAmberBorder,
                             modifier = Modifier.testTag("home_stale_blocker_card")
                         ) {
                             Text(
@@ -282,9 +294,9 @@ fun HomeScreen(
                             )
                             Spacer(modifier = Modifier.height(4.dp))
                             Text(
-                                text = "Refresh focus rules so Stillspace stays accurate after recent app updates.",
+                                text = "Refresh focus rules so Outloop stays accurate after recent app updates.",
                                 style = MaterialTheme.typography.bodyMedium,
-                                color = scheme.onSurfaceVariant
+                                color = HabitMuted
                             )
                             Spacer(modifier = Modifier.height(12.dp))
                             OutlinedButton(
@@ -296,9 +308,9 @@ fun HomeScreen(
                                     .testTag("home_refresh_blockers_button"),
                                 shape = RoundedCornerShape(16.dp),
                                 contentPadding = PaddingValues(horizontal = 16.dp),
-                                border = BorderStroke(1.dp, neu.statusWarningBorder),
+                                border = BorderStroke(1.dp, HabitAmberBorder),
                                 colors = ButtonDefaults.outlinedButtonColors(
-                                    containerColor = neu.statusWarningBg,
+                                    containerColor = HabitAmberWarmBg,
                                     contentColor = neu.statusWarningText
                                 )
                             ) {
@@ -316,7 +328,7 @@ fun HomeScreen(
                 }
             }
 
-            // Your apps section header
+            // Guarded apps section header
             item {
                 Column(
                     modifier = Modifier
@@ -329,14 +341,14 @@ fun HomeScreen(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = "Your apps",
+                            text = "Guarded apps",
                             style = MaterialTheme.typography.titleLarge,
                             color = scheme.onBackground
                         )
                         Text(
                             text = "${installedRules.size} on phone",
                             style = MaterialTheme.typography.bodyMedium,
-                            color = scheme.onSurfaceVariant,
+                            color = HabitSubtle,
                             modifier = Modifier.testTag("installed_apps_count")
                         )
                     }
@@ -344,7 +356,7 @@ fun HomeScreen(
                     Text(
                         text = "Tap any app to customize",
                         style = MaterialTheme.typography.bodySmall,
-                        color = neu.textMuted,
+                        color = HabitSubtle,
                         modifier = Modifier.testTag("home_apps_customize_hint")
                     )
                 }
@@ -367,7 +379,7 @@ fun HomeScreen(
                             Text(
                                 text = "When YouTube, Instagram, Facebook, Snapchat, or Reddit are installed on your phone, they will show up here automatically.",
                                 style = MaterialTheme.typography.bodyMedium,
-                                color = scheme.onSurfaceVariant
+                                color = HabitMuted
                             )
                         }
                     }
@@ -408,30 +420,32 @@ fun HomeScreen(
                     }
                 }
             } else {
-                // Single grouped white card with inset hairline dividers matching Home mockup
+                // Single grouped white card with Warm Ivory inset row items matching Quiet Intent Home mockup
                 item {
                     StaggeredReveal(index = 2) {
-                        SurgeonCard(contentPadding = PaddingValues(0.dp)) {
-                            installedRules.forEachIndexed { index, rule ->
-                                Box(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .surgeonSharedBounds("app_card_${rule.packageName}")
-                                        .clickable { onAppClick(rule.packageName) }
-                                        .testTag("target_app_card_${rule.packageName}")
-                                ) {
-                                    TargetAppRowContent(
-                                        rule = rule,
-                                        isInstalled = true,
-                                        isGloballyPaused = isGloballyPausedNow,
-                                        onAppSnoozeExpired = { onAppSnoozeExpired(rule.packageName) },
-                                        onToggle = { enabled -> onToggleApp(rule.packageName, enabled) }
-                                    )
-                                }
-                                if (index < installedRules.lastIndex) {
-                                    GroupedListDivider(
-                                        modifier = Modifier.padding(start = 74.dp, end = 18.dp)
-                                    )
+                        SurgeonCard(contentPadding = PaddingValues(10.dp)) {
+                            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                installedRules.forEach { rule ->
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .surgeonSharedBounds("app_card_${rule.packageName}")
+                                            .neumorphicExtruded(
+                                                cornerRadius = 18.dp,
+                                                containerColor = HabitBg,
+                                                borderColor = HabitLine.copy(alpha = 0.7f)
+                                            )
+                                            .clickable { onAppClick(rule.packageName) }
+                                            .testTag("target_app_card_${rule.packageName}")
+                                    ) {
+                                        TargetAppRowContent(
+                                            rule = rule,
+                                            isInstalled = true,
+                                            isGloballyPaused = isGloballyPausedNow,
+                                            onAppSnoozeExpired = { onAppSnoozeExpired(rule.packageName) },
+                                            onToggle = { enabled -> onToggleApp(rule.packageName, enabled) }
+                                        )
+                                    }
                                 }
                             }
                         }
@@ -454,7 +468,7 @@ fun HomeScreen(
                         Text(
                             text = "Other supported apps (${notInstalledRules.size})",
                             style = MaterialTheme.typography.bodyMedium,
-                            color = neu.textMuted
+                            color = HabitSubtle
                         )
                         Icon(
                             imageVector = if (showNotInstalled) {
@@ -463,7 +477,7 @@ fun HomeScreen(
                                 Icons.Filled.KeyboardArrowDown
                             },
                             contentDescription = if (showNotInstalled) "Hide other apps" else "Show other apps",
-                            tint = neu.textMuted
+                            tint = HabitSubtle
                         )
                     }
                 }
@@ -482,7 +496,7 @@ fun HomeScreen(
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .clickable { onAppClick(rule.packageName) }
-                                        .alpha(0.78f)
+                                        .alpha(0.76f)
                                         .testTag("target_app_card_${rule.packageName}")
                                 ) {
                                     TargetAppRowContent(
@@ -511,17 +525,18 @@ fun HomeScreen(
         MindfulPausePreviewDialog(
             appName = sampleApp?.displayName ?: "YouTube",
             feedLabel = sampleApp?.feedLabel ?: "Shorts",
+            breathingPauseSeconds = uiState.preferences.breathingPauseSeconds,
+            onBreathingPauseChange = onSetBreathingPauseSeconds,
             onDismiss = { showPausePreview = false }
         )
     }
 }
 
 @Composable
-private fun TodayIndigoHeroCard(
+private fun TodayForestHeroCard(
     uiState: MainUiState,
     modifier: Modifier = Modifier
 ) {
-    val neu = StillspaceTheme.colors
     val weekCircles = remember(uiState.weeklyDayBars, uiState.todayCutsCount) {
         if (uiState.weeklyDayBars.size == 7) {
             uiState.weeklyDayBars.map { day ->
@@ -544,18 +559,11 @@ private fun TodayIndigoHeroCard(
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .neumorphicExtruded(
-                cornerRadius = 24.dp,
-                elevation = 8.dp,
-                containerColor = neu.heroGradientStart,
-                borderColor = Color.Transparent,
-                shadowTint = neu.heroGradientEnd.copy(alpha = 0.34f)
-            )
+            .clip(RoundedCornerShape(26.dp))
             .background(
                 brush = Brush.linearGradient(
-                    colors = listOf(neu.heroGradientStart, neu.heroGradientEnd)
-                ),
-                shape = RoundedCornerShape(24.dp)
+                    colors = listOf(HabitForest, HabitForestInk)
+                )
             )
             .padding(20.dp)
     ) {
@@ -565,45 +573,22 @@ private fun TodayIndigoHeroCard(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = "Distractions avoided today",
+                text = "Loops paused today",
                 style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium),
-                color = Color.White.copy(alpha = 0.90f)
+                color = HabitSageTint
             )
-            Row(
-                modifier = Modifier
-                    .clip(RoundedCornerShape(100.dp))
-                    .background(Color.White.copy(alpha = 0.18f))
-                    .padding(horizontal = 10.dp, vertical = 5.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(4.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Rounded.LocalFireDepartment,
-                    contentDescription = null,
-                    tint = Color.White,
-                    modifier = Modifier.size(14.dp)
-                )
-                Text(
-                    text = if (uiState.streakDays > 0) {
-                        "${uiState.streakDays} day streak"
-                    } else {
-                        "0 day streak"
-                    },
-                    style = MaterialTheme.typography.labelMedium,
-                    color = Color.White
-                )
-            }
+            StreakBadgePill(
+                text = if (uiState.streakDays > 0) "${uiState.streakDays} day streak" else "0 day streak",
+                darkStyle = true
+            )
         }
 
         Spacer(modifier = Modifier.height(8.dp))
 
         AnimatedIntCounter(
             target = uiState.todayCutsCount,
-            style = MaterialTheme.typography.displayLarge.copy(
-                fontSize = 52.sp,
-                lineHeight = 56.sp
-            ),
-            color = Color.White,
+            style = MaterialTheme.typography.displayLarge,
+            color = HabitBg,
             modifier = Modifier.testTag("today_cuts_count")
         )
 
@@ -612,7 +597,7 @@ private fun TodayIndigoHeroCard(
         Text(
             text = "~${uiState.todayReclaimedMinutes} min est. reclaimed today",
             style = MaterialTheme.typography.bodyMedium,
-            color = Color.White.copy(alpha = 0.86f)
+            color = HabitSageTint.copy(alpha = 0.88f)
         )
 
         Spacer(modifier = Modifier.height(18.dp))
@@ -632,14 +617,14 @@ private fun TodayIndigoHeroCard(
                             modifier = Modifier
                                 .size(36.dp)
                                 .clip(CircleShape)
-                                .background(Color.White),
+                                .background(HabitSageTint),
                             contentAlignment = Alignment.Center
                         ) {
                             Icon(
                                 imageVector = Icons.Rounded.Check,
                                 contentDescription = null,
-                                tint = neu.heroGradientEnd,
-                                modifier = Modifier.size(19.dp)
+                                tint = HabitForestInk,
+                                modifier = Modifier.size(18.dp)
                             )
                         }
                     } else {
@@ -649,9 +634,9 @@ private fun TodayIndigoHeroCard(
                         ) {
                             Canvas(modifier = Modifier.fillMaxSize()) {
                                 drawCircle(
-                                    color = Color.White.copy(alpha = 0.55f),
+                                    color = HabitSageTint.copy(alpha = if (isToday) 0.72f else 0.36f),
                                     style = Stroke(
-                                        width = 1.6.dp.toPx(),
+                                        width = 1.5.dp.toPx(),
                                         pathEffect = PathEffect.dashPathEffect(
                                             floatArrayOf(3.dp.toPx(), 3.dp.toPx()),
                                             0f
@@ -665,7 +650,7 @@ private fun TodayIndigoHeroCard(
                         text = letter,
                         style = MaterialTheme.typography.labelSmall,
                         fontWeight = if (isToday) FontWeight.Bold else FontWeight.Medium,
-                        color = if (isToday) Color.White else Color.White.copy(alpha = 0.78f)
+                        color = if (isToday) HabitBg else HabitSageTint.copy(alpha = 0.72f)
                     )
                 }
             }
@@ -692,14 +677,14 @@ private fun ProtectionStatusCard(
     when (effectiveStatus) {
         ProtectionStatus.PERMISSION_NEEDED -> {
             SurgeonCard(
-                borderColor = neu.statusWarningBorder,
+                borderColor = HabitAmberBorder,
                 modifier = modifier.testTag("home_setup_needed_card")
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     HabitIconBadge(
                         icon = Icons.Outlined.Shield,
                         tint = neu.statusWarningText,
-                        containerColor = neu.statusWarningBg
+                        containerColor = HabitAmberWarmBg
                     )
                     Spacer(modifier = Modifier.width(12.dp))
                     Column(modifier = Modifier.weight(1f)) {
@@ -710,9 +695,9 @@ private fun ProtectionStatusCard(
                         )
                         Spacer(modifier = Modifier.height(2.dp))
                         Text(
-                            text = "Turn on Stillspace in Android Settings to pause Shorts and Reels.",
+                            text = "Turn on Outloop in Android Settings to pause Shorts and Reels.",
                             style = MaterialTheme.typography.bodyMedium,
-                            color = scheme.onSurfaceVariant
+                            color = HabitMuted
                         )
                     }
                 }
@@ -722,19 +707,12 @@ private fun ProtectionStatusCard(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(48.dp)
-                        .neumorphicExtruded(
-                            cornerRadius = 16.dp,
-                            elevation = 4.dp,
-                            containerColor = neu.primaryActionBg,
-                            borderColor = Color.Transparent,
-                            shadowTint = neu.primaryActionBg.copy(alpha = 0.25f)
-                        )
                         .testTag("home_turn_on_protection_button"),
                     shape = RoundedCornerShape(16.dp),
                     contentPadding = PaddingValues(horizontal = 16.dp),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = neu.primaryActionBg,
-                        contentColor = neu.primaryActionText
+                        containerColor = HabitForest,
+                        contentColor = HabitBg
                     )
                 ) {
                     Text(
@@ -757,7 +735,7 @@ private fun ProtectionStatusCard(
                     Text(
                         text = "Preview pause",
                         style = MaterialTheme.typography.labelLarge,
-                        color = scheme.primary,
+                        color = HabitForest,
                         maxLines = 1,
                         softWrap = false,
                         overflow = TextOverflow.Ellipsis
@@ -768,7 +746,7 @@ private fun ProtectionStatusCard(
 
         ProtectionStatus.SERVICE_DISCONNECTED -> {
             SurgeonCard(
-                borderColor = neu.statusWarningBorder,
+                borderColor = HabitAmberBorder,
                 modifier = modifier.testTag("home_service_disconnected_card")
             ) {
                 Text(
@@ -778,9 +756,9 @@ private fun ProtectionStatusCard(
                 )
                 Spacer(modifier = Modifier.height(6.dp))
                 Text(
-                    text = "Accessibility permission is enabled, but Android stopped the background service. Open Accessibility Settings and switch Stillspace off and back on.",
+                    text = "Accessibility permission is enabled, but Android stopped the background service. Open Accessibility Settings and switch Outloop off and back on.",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = scheme.onSurfaceVariant
+                    color = HabitMuted
                 )
                 Spacer(modifier = Modifier.height(14.dp))
                 Button(
@@ -788,19 +766,12 @@ private fun ProtectionStatusCard(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(48.dp)
-                        .neumorphicExtruded(
-                            cornerRadius = 16.dp,
-                            elevation = 4.dp,
-                            containerColor = neu.primaryActionBg,
-                            borderColor = Color.Transparent,
-                            shadowTint = neu.primaryActionBg.copy(alpha = 0.25f)
-                        )
                         .testTag("home_reconnect_service_button"),
                     shape = RoundedCornerShape(16.dp),
                     contentPadding = PaddingValues(horizontal = 16.dp),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = neu.primaryActionBg,
-                        contentColor = neu.primaryActionText
+                        containerColor = HabitForest,
+                        contentColor = HabitBg
                     )
                 ) {
                     Text(
@@ -817,7 +788,7 @@ private fun ProtectionStatusCard(
 
         ProtectionStatus.NO_APPS_ACTIVE -> {
             SurgeonCard(
-                borderColor = neu.statusWarningBorder,
+                borderColor = HabitAmberBorder,
                 modifier = modifier.testTag("home_no_apps_active_card")
             ) {
                 Text(
@@ -827,9 +798,9 @@ private fun ProtectionStatusCard(
                 )
                 Spacer(modifier = Modifier.height(6.dp))
                 Text(
-                    text = "Stillspace is ready, but none of your installed apps are switched on below. Turn on at least one app to protect your focus.",
+                    text = "Outloop is ready, but none of your installed apps are switched on below. Turn on at least one app to protect your focus.",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = scheme.onSurfaceVariant
+                    color = HabitMuted
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 TextButton(
@@ -842,7 +813,7 @@ private fun ProtectionStatusCard(
                     Text(
                         text = "Preview pause",
                         style = MaterialTheme.typography.labelLarge,
-                        color = scheme.primary,
+                        color = HabitForest,
                         maxLines = 1,
                         softWrap = false,
                         overflow = TextOverflow.Ellipsis
@@ -864,8 +835,8 @@ private fun ProtectionStatusCard(
                 ) {
                     HabitIconBadge(
                         icon = if (isPausedCard) Icons.Outlined.PauseCircle else Icons.Outlined.VerifiedUser,
-                        tint = if (isPausedCard) neu.statusWarningText else neu.statusActiveText,
-                        containerColor = if (isPausedCard) neu.statusWarningBg else neu.statusActiveBg,
+                        tint = if (isPausedCard) neu.statusWarningText else HabitReadyText,
+                        containerColor = if (isPausedCard) HabitAmberWarmBg else HabitReadyBg,
                         badgeSize = 42.dp,
                         iconSize = 20.dp,
                         cornerRadius = 13.dp
@@ -873,7 +844,7 @@ private fun ProtectionStatusCard(
                     Spacer(modifier = Modifier.width(12.dp))
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = if (isPausedCard) "Protection paused" else "Protection is on",
+                            text = if (isPausedCard) "Protection paused" else "Protection is active",
                             style = MaterialTheme.typography.titleMedium,
                             color = scheme.onSurface
                         )
@@ -892,7 +863,7 @@ private fun ProtectionStatusCard(
                             style = MaterialTheme.typography.bodyMedium.copy(
                                 fontFeatureSettings = "tnum"
                             ),
-                            color = if (isPausedCard) neu.statusWarningText else scheme.onSurfaceVariant
+                            color = if (isPausedCard) neu.statusWarningText else HabitMuted
                         )
                     }
                     Spacer(modifier = Modifier.width(10.dp))
@@ -913,19 +884,12 @@ private fun ProtectionStatusCard(
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(48.dp)
-                            .neumorphicExtruded(
-                                cornerRadius = 16.dp,
-                                elevation = 4.dp,
-                                containerColor = neu.primaryActionBg,
-                                borderColor = Color.Transparent,
-                                shadowTint = neu.primaryActionBg.copy(alpha = 0.25f)
-                            )
                             .testTag("home_resume_protection_button"),
                         shape = RoundedCornerShape(16.dp),
                         contentPadding = PaddingValues(horizontal = 16.dp),
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = neu.primaryActionBg,
-                            contentColor = neu.primaryActionText
+                            containerColor = HabitForest,
+                            contentColor = HabitBg
                         )
                     ) {
                         Text(
@@ -938,43 +902,54 @@ private fun ProtectionStatusCard(
                         )
                     }
                 } else {
-                    Text(
-                        text = "Take a break",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = scheme.onSurfaceVariant
-                    )
-                    Spacer(modifier = Modifier.height(10.dp))
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .neumorphicInset(
+                                cornerRadius = 16.dp,
+                                containerColor = HabitBg,
+                                borderColor = HabitLine
+                            )
+                            .padding(12.dp)
                     ) {
-                        listOf(5 to "5 min", 15 to "15 min", 60 to "1 hour").forEach { (mins, label) ->
-                            val pillShape = RoundedCornerShape(14.dp)
-                            Box(
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .minimumInteractiveComponentSize()
-                                    .height(44.dp)
-                                    .tactilePressPhysics(pressedScale = 0.96f)
-                                    .clip(pillShape)
-                                    .background(scheme.primaryContainer)
-                                    .border(1.dp, neu.indigoTintBorder, pillShape)
-                                    .clickable {
-                                        haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                        onPauseForMinutes(mins)
-                                    }
-                                    .padding(horizontal = 6.dp)
-                                    .testTag("home_break_${mins}m_button"),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text(
-                                    text = label,
-                                    style = MaterialTheme.typography.labelLarge,
-                                    color = scheme.onPrimaryContainer,
-                                    maxLines = 1,
-                                    softWrap = false,
-                                    overflow = TextOverflow.Ellipsis
-                                )
+                        Text(
+                            text = "Take a mindful pass",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = HabitMuted
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            listOf(5 to "5 min", 15 to "15 min", 60 to "1 hour").forEach { (mins, label) ->
+                                val pillShape = RoundedCornerShape(100.dp)
+                                Box(
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .minimumInteractiveComponentSize()
+                                        .height(44.dp)
+                                        .tactilePressPhysics(pressedScale = 0.96f)
+                                        .clip(pillShape)
+                                        .background(HabitSurface)
+                                        .border(1.dp, HabitLine, pillShape)
+                                        .clickable {
+                                            haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                            onPauseForMinutes(mins)
+                                        }
+                                        .padding(horizontal = 6.dp)
+                                        .testTag("home_break_${mins}m_button"),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        text = label,
+                                        style = MaterialTheme.typography.labelLarge,
+                                        color = HabitForest,
+                                        maxLines = 1,
+                                        softWrap = false,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
+                                }
                             }
                         }
                     }
@@ -993,7 +968,6 @@ private fun TargetAppRowContent(
     onToggle: (Boolean) -> Unit
 ) {
     val scheme = MaterialTheme.colorScheme
-    val neu = StillspaceTheme.colors
     val snoozeCountdown = rememberCountdownLabel(
         untilMs = rule.snoozeUntilMs,
         onExpired = onAppSnoozeExpired
@@ -1002,7 +976,7 @@ private fun TargetAppRowContent(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 14.dp),
+            .padding(horizontal = 14.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         AppBadgeIcon(packageName = rule.packageName, badgeSize = 44.dp)
@@ -1018,7 +992,7 @@ private fun TargetAppRowContent(
                 Text(
                     text = "${rule.feedLabel} \u00B7 Not on this phone",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = neu.textMuted
+                    color = HabitSubtle
                 )
             } else if (rule.isOutdated) {
                 StatusBadgePill(
@@ -1039,13 +1013,13 @@ private fun TargetAppRowContent(
                 Text(
                     text = "${rule.feedLabel} \u00B7 Off",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = neu.textMuted
+                    color = HabitSubtle
                 )
             } else {
                 Text(
                     text = "${rule.feedLabel} \u00B7 ${rule.interventionMode.subtitleLabel}",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = scheme.onSurfaceVariant
+                    color = HabitMuted
                 )
             }
         }
@@ -1059,7 +1033,7 @@ private fun TargetAppRowContent(
         Icon(
             imageVector = Icons.AutoMirrored.Rounded.KeyboardArrowRight,
             contentDescription = "Configure ${rule.displayName}",
-            tint = neu.textMuted,
+            tint = HabitSubtle,
             modifier = Modifier
                 .size(20.dp)
                 .testTag("app_detail_chevron_${rule.packageName}")
