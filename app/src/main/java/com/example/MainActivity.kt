@@ -267,7 +267,9 @@ fun FeedSurgeonRoot(
                                     ) { it / 3 }
                                 },
                                 modifier = Modifier
-                                    .widthIn(max = 760.dp)
+                                    .then(
+                                        if (isWideLayout) Modifier else Modifier.widthIn(max = 760.dp)
+                                    )
                                     .fillMaxSize()
                                     .then(
                                         if (currentRoute != Routes.ONBOARDING) {

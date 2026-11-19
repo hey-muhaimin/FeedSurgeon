@@ -7,6 +7,7 @@ import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
@@ -16,14 +17,20 @@ import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.snap
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.hoverable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsHoveredAsState
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -77,6 +84,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -90,11 +98,13 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -109,6 +119,9 @@ import com.example.ui.theme.CardBorder
 import com.example.ui.theme.CardSurface
 import com.example.ui.theme.CardSurfaceElevated
 import com.example.ui.theme.CoralDanger
+import com.example.ui.theme.DockGlassSurface
+import com.example.ui.theme.GlassSurface
+import com.example.ui.theme.GlassSurfaceElevated
 import com.example.ui.theme.MintTeal
 import com.example.ui.theme.MintTealBorder
 import com.example.ui.theme.MintTealDark
@@ -116,9 +129,12 @@ import com.example.ui.theme.NavPillBorder
 import com.example.ui.theme.NavPillSurface
 import com.example.ui.theme.ObsidianBg
 import com.example.ui.theme.ObsidianGlow
+import com.example.ui.theme.SurgeonMotion
 import com.example.ui.theme.TextMuted
 import com.example.ui.theme.TextPrimary
 import com.example.ui.theme.TextSecondary
+import com.example.ui.theme.rememberReducedMotionEnabled
+import com.example.ui.theme.specularRimBrush
 
 enum class BottomTab(val label: String) {
     HOME("Home"),
@@ -196,21 +212,51 @@ fun AtmosphericBackground(
 fun SurgeonCard(
     modifier: Modifier = Modifier,
     borderColor: Color = CardBorder,
-    containerColor: Color = CardSurface,
+    containerColor: Color = GlassSurface,
     onClick: (() -> Unit)? = null,
     content: @Composable ColumnScope.() -> Unit
 ) {
     val shape = RoundedCornerShape(20.dp)
+    val reducedMotion = rememberReducedMotionEnabled()
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
+    val isHovered by interactionSource.collectIsHoveredAsState()
+
+    val pressScale by animateFloatAsState(
+        targetValue = if (onClick != null && isPressed && !reducedMotion) 0.985f else 1f,
+        animationSpec = if (reducedMotion) snap() else SurgeonMotion.TactilePressSpring,
+        label = "surgeon_card_press_scale"
+    )
+    val rimBrush = remember(borderColor, isPressed, isHovered) {
+        specularRimBrush(
+            baseBorder = borderColor,
+            isHighlighted = isPressed || isHovered
+        )
+    }
+
     Surface(
         modifier = modifier
             .fillMaxWidth()
+            .graphicsLayer {
+                scaleX = pressScale
+                scaleY = pressScale
+            }
             .clip(shape)
+            .hoverable(interactionSource = interactionSource)
             .then(
-                if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier
+                if (onClick != null) {
+                    Modifier.clickable(
+                        interactionSource = interactionSource,
+                        indication = LocalIndication.current,
+                        onClick = onClick
+                    )
+                } else {
+                    Modifier
+                }
             ),
         shape = shape,
         color = containerColor,
-        border = BorderStroke(1.dp, borderColor)
+        border = BorderStroke(1.dp, rimBrush)
     ) {
         Column(
             modifier = Modifier.padding(18.dp),
@@ -353,24 +399,38 @@ fun MindfulPausePreviewDialog(
     Dialog(onDismissRequest = onDismiss) {
         SurgeonCard(
             borderColor = MintTealBorder,
+            containerColor = GlassSurfaceElevated,
             modifier = Modifier.testTag("mindful_pause_preview_dialog")
         ) {
+            Box(
+                modifier = Modifier.fillMaxWidth(),
+                contentAlignment = Alignment.Center
+            ) {
+                LiquidBreathingOrb(size = 76.dp)
+            }
+            Spacer(modifier = Modifier.height(10.dp))
             Text(
                 text = "MINDFUL PAUSE · PREVIEW",
                 style = MaterialTheme.typography.labelSmall,
-                color = MintTeal
+                color = MintTeal,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth()
             )
-            Spacer(modifier = Modifier.height(10.dp))
+            Spacer(modifier = Modifier.height(8.dp))
             Text(
                 text = "Take a quick breath",
                 style = MaterialTheme.typography.headlineMedium,
-                color = TextPrimary
+                color = TextPrimary,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth()
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
                 text = "$appName $feedLabel opened. Step back to stay intentional, or allow 5 minutes for this visit.",
                 style = MaterialTheme.typography.bodyMedium,
-                color = TextSecondary
+                color = TextSecondary,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth()
             )
 
             if (demoOutcome != null) {
@@ -491,8 +551,8 @@ fun InterventionBanner(
             .padding(horizontal = 16.dp)
             .testTag("intervention_banner"),
         shape = RoundedCornerShape(18.dp),
-        color = CardSurface,
-        border = BorderStroke(1.dp, CardBorder)
+        color = DockGlassSurface,
+        border = BorderStroke(1.dp, specularRimBrush(CardBorder))
     ) {
         Row(
             modifier = Modifier
@@ -589,8 +649,21 @@ fun FloatingPillNavBar(
     alertTabs: Set<BottomTab> = emptySet()
 ) {
     val haptics = LocalHapticFeedback.current
+    val reducedMotion = rememberReducedMotionEnabled()
     val tabs = BottomTab.entries
     val selectedIndex = tabs.indexOf(selectedTab).coerceAtLeast(0)
+    var previousIndex by remember { mutableIntStateOf(selectedIndex) }
+    val pillStretch = remember { Animatable(0f) }
+
+    LaunchedEffect(selectedIndex, reducedMotion) {
+        if (!reducedMotion && previousIndex != selectedIndex) {
+            pillStretch.animateTo(1f, animationSpec = tween(durationMillis = 85))
+            pillStretch.animateTo(0f, animationSpec = SurgeonMotion.LiquidPillSpring)
+        } else {
+            pillStretch.snapTo(0f)
+        }
+        previousIndex = selectedIndex
+    }
 
     Box(
         modifier = modifier
@@ -605,8 +678,8 @@ fun FloatingPillNavBar(
                 .fillMaxWidth()
                 .testTag("compact_floating_dock"),
             shape = RoundedCornerShape(30.dp),
-            color = NavPillSurface,
-            border = BorderStroke(1.dp, NavPillBorder)
+            color = DockGlassSurface,
+            border = BorderStroke(1.dp, specularRimBrush(NavPillBorder))
         ) {
             BoxWithConstraints(
                 modifier = Modifier
@@ -616,22 +689,34 @@ fun FloatingPillNavBar(
                 val tabWidth = maxWidth / tabs.size
                 val indicatorOffset by animateDpAsState(
                     targetValue = tabWidth * selectedIndex,
-                    animationSpec = spring(
-                        dampingRatio = Spring.DampingRatioNoBouncy,
-                        stiffness = Spring.StiffnessMediumLow
-                    ),
+                    animationSpec = if (reducedMotion) {
+                        snap()
+                    } else {
+                        spring(
+                            dampingRatio = 0.78f,
+                            stiffness = Spring.StiffnessMediumLow
+                        )
+                    },
                     label = "compact_dock_sliding_pill"
                 )
 
-                // Continuous sliding active pill behind the tab slots
+                // Continuous sliding active pill with subtle liquid horizontal stretch during transitions
                 Box(
                     modifier = Modifier
                         .offset(x = indicatorOffset)
                         .width(tabWidth)
                         .height(54.dp)
+                        .graphicsLayer {
+                            scaleX = 1f + 0.14f * pillStretch.value
+                            scaleY = 1f - 0.04f * pillStretch.value
+                        }
                         .clip(RoundedCornerShape(24.dp))
-                        .background(MintTealDark)
-                        .border(1.dp, MintTealBorder, RoundedCornerShape(24.dp))
+                        .background(MintTealDark.copy(alpha = 0.92f))
+                        .border(
+                            1.dp,
+                            specularRimBrush(MintTealBorder, isHighlighted = true),
+                            RoundedCornerShape(24.dp)
+                        )
                         .testTag("nav_sliding_pill")
                 )
 
@@ -726,8 +811,22 @@ fun ObsidianSideRail(
     alertTabs: Set<BottomTab> = emptySet()
 ) {
     val haptics = LocalHapticFeedback.current
+    val reducedMotion = rememberReducedMotionEnabled()
     val tabs = BottomTab.entries
     val selectedIndex = tabs.indexOf(selectedTab).coerceAtLeast(0)
+    var previousIndex by remember { mutableIntStateOf(selectedIndex) }
+    val railStretch = remember { Animatable(0f) }
+
+    LaunchedEffect(selectedIndex, reducedMotion) {
+        if (!reducedMotion && previousIndex != selectedIndex) {
+            railStretch.animateTo(1f, animationSpec = tween(durationMillis = 85))
+            railStretch.animateTo(0f, animationSpec = SurgeonMotion.LiquidPillSpring)
+        } else {
+            railStretch.snapTo(0f)
+        }
+        previousIndex = selectedIndex
+    }
+
     val itemHeight = 68.dp
     val itemGap = 8.dp
 
@@ -746,8 +845,8 @@ fun ObsidianSideRail(
                 .fillMaxHeight()
                 .testTag("obsidian_side_rail"),
             shape = RoundedCornerShape(28.dp),
-            color = NavPillSurface,
-            border = BorderStroke(1.dp, NavPillBorder)
+            color = DockGlassSurface,
+            border = BorderStroke(1.dp, specularRimBrush(NavPillBorder))
         ) {
             Column(
                 modifier = Modifier
@@ -761,7 +860,7 @@ fun ObsidianSideRail(
                         .size(44.dp)
                         .clip(RoundedCornerShape(14.dp))
                         .background(MintTealDark.copy(alpha = 0.7f))
-                        .border(1.dp, MintTealBorder, RoundedCornerShape(14.dp)),
+                        .border(1.dp, specularRimBrush(MintTealBorder), RoundedCornerShape(14.dp)),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
@@ -777,10 +876,14 @@ fun ObsidianSideRail(
                 Box(modifier = Modifier.fillMaxWidth()) {
                     val indicatorOffset by animateDpAsState(
                         targetValue = (itemHeight + itemGap) * selectedIndex,
-                        animationSpec = spring(
-                            dampingRatio = Spring.DampingRatioNoBouncy,
-                            stiffness = Spring.StiffnessMediumLow
-                        ),
+                        animationSpec = if (reducedMotion) {
+                            snap()
+                        } else {
+                            spring(
+                                dampingRatio = 0.78f,
+                                stiffness = Spring.StiffnessMediumLow
+                            )
+                        },
                         label = "rail_sliding_pill"
                     )
 
@@ -789,9 +892,17 @@ fun ObsidianSideRail(
                             .offset(y = indicatorOffset)
                             .fillMaxWidth()
                             .height(itemHeight)
+                            .graphicsLayer {
+                                scaleY = 1f + 0.14f * railStretch.value
+                                scaleX = 1f - 0.04f * railStretch.value
+                            }
                             .clip(RoundedCornerShape(20.dp))
-                            .background(MintTealDark)
-                            .border(1.dp, MintTealBorder, RoundedCornerShape(20.dp))
+                            .background(MintTealDark.copy(alpha = 0.92f))
+                            .border(
+                                1.dp,
+                                specularRimBrush(MintTealBorder, isHighlighted = true),
+                                RoundedCornerShape(20.dp)
+                            )
                             .testTag("rail_sliding_pill")
                     )
 

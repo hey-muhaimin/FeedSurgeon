@@ -9,12 +9,16 @@ import com.example.service.AccessibilityEventLogger
 import com.example.worker.RulesetSyncWorker
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 class FeedSurgeonApp : Application() {
     private val appScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
+    internal var initializationJob: Job? = null
+        private set
 
     val database: FeedSurgeonDatabase by lazy {
         FeedSurgeonDatabase.getInstance(this)
@@ -38,7 +42,7 @@ class FeedSurgeonApp : Application() {
 
     override fun onCreate() {
         super.onCreate()
-        appScope.launch {
+        initializationJob = appScope.launch {
             interventionRepository.ensureDefaultRulesSeeded()
             rulesetRepository.ensureLocalCacheSeeded()
             val prefs = settingsDataStore.preferencesFlow.first()

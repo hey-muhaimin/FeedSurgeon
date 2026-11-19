@@ -18,6 +18,7 @@ import com.example.ui.DayBarStat
 import com.example.ui.MainUiState
 import com.example.ui.components.BottomTab
 import com.example.ui.components.FloatingPillNavBar
+import com.example.ui.components.MindfulPausePreviewDialog
 import com.example.ui.components.ObsidianSideRail
 import com.example.ui.screens.AppDetailScreen
 import com.example.ui.screens.HomeScreen
@@ -395,5 +396,103 @@ class FeedSurgeonUiRobolectricTest {
             )
         )
         assertEquals(setOf(BottomTab.HOME, BottomTab.SETTINGS), attention)
+    }
+
+    @Test
+    fun `home screen renders hero protection ring gauge and animated today cuts count`() {
+        val rules = FeedSurgeonDatabase.defaultBuiltInRules()
+        val installed = setOf("com.google.android.youtube")
+
+        composeRule.setContent {
+            FeedSurgeonTheme {
+                HomeScreen(
+                    uiState = MainUiState(
+                        isInitialLoading = false,
+                        rules = rules,
+                        installedPackages = installed,
+                        isAccessibilityEnabled = true,
+                        isServiceConnected = true,
+                        protectionStatus = ProtectionStatus.OPERATIONAL,
+                        activeInstalledCount = 1,
+                        installedSupportedCount = 1,
+                        todayCutsCount = 7,
+                        todayReclaimedMinutes = 21
+                    ),
+                    onStatusClick = {},
+                    onSetupClick = {},
+                    onToggleGlobalPause = {},
+                    onPauseForMinutes = {},
+                    onGlobalBreakExpired = {},
+                    onAppSnoozeExpired = {},
+                    onRefreshBlockersClick = {},
+                    onAppClick = {},
+                    onToggleApp = { _, _ -> }
+                )
+            }
+        }
+        composeRule.waitForIdle()
+
+        composeRule.onNodeWithTag("today_cuts_count")
+            .assertIsDisplayed()
+            .assertTextContains("7")
+    }
+
+    @Test
+    @Config(sdk = [36], qualifiers = "w900dp-h900dp")
+    fun `home screen renders two-column mosaic grid at wide tablet width`() {
+        val rules = FeedSurgeonDatabase.defaultBuiltInRules()
+        val installed = setOf("com.google.android.youtube", "com.instagram.android")
+
+        composeRule.setContent {
+            FeedSurgeonTheme {
+                HomeScreen(
+                    uiState = MainUiState(
+                        isInitialLoading = false,
+                        rules = rules,
+                        installedPackages = installed,
+                        isAccessibilityEnabled = true,
+                        isServiceConnected = true,
+                        protectionStatus = ProtectionStatus.OPERATIONAL,
+                        activeInstalledCount = 2,
+                        installedSupportedCount = 2,
+                        todayCutsCount = 4
+                    ),
+                    onStatusClick = {},
+                    onSetupClick = {},
+                    onToggleGlobalPause = {},
+                    onPauseForMinutes = {},
+                    onGlobalBreakExpired = {},
+                    onAppSnoozeExpired = {},
+                    onRefreshBlockersClick = {},
+                    onAppClick = {},
+                    onToggleApp = { _, _ -> }
+                )
+            }
+        }
+        composeRule.waitForIdle()
+
+        composeRule.onNodeWithTag("home_mosaic_grid").assertIsDisplayed()
+        composeRule.onNodeWithTag("home_protection_control_card").assertIsDisplayed()
+        composeRule.onNodeWithTag("today_cuts_count").assertIsDisplayed()
+        composeRule.onNodeWithTag("home_apps_mosaic_row_0").assertIsDisplayed()
+    }
+
+    @Test
+    fun `mindful pause preview dialog displays liquid breathing orb and actions`() {
+        composeRule.setContent {
+            FeedSurgeonTheme {
+                MindfulPausePreviewDialog(
+                    appName = "YouTube",
+                    feedLabel = "Shorts",
+                    onDismiss = {}
+                )
+            }
+        }
+        composeRule.waitForIdle()
+
+        composeRule.onNodeWithTag("mindful_pause_preview_dialog").assertIsDisplayed()
+        composeRule.onNodeWithTag("liquid_breathing_orb").assertIsDisplayed()
+        composeRule.onNodeWithTag("preview_leave_feed_button").assertIsDisplayed()
+        composeRule.onNodeWithTag("preview_allow_5m_button").assertIsDisplayed()
     }
 }

@@ -43,6 +43,7 @@ import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
+import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -53,6 +54,12 @@ import java.io.File
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [36])
 class ExampleRobolectricTest {
+
+    @Before
+    fun cancelBackgroundStartupSync() {
+        val app = ApplicationProvider.getApplicationContext<Context>() as? FeedSurgeonApp
+        app?.initializationJob?.cancel()
+    }
 
     @Test
     fun `read app name and privacy url from context`() {

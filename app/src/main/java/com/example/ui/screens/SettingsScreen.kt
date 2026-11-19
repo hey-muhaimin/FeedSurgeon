@@ -1,6 +1,7 @@
 package com.example.ui.screens
 
 import android.Manifest
+import android.content.Context
 import android.os.Build
 import android.text.format.DateUtils
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -19,12 +20,15 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -70,6 +74,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.example.R
+import com.example.data.local.AppPreferences
+import com.example.data.local.TargetAppRuleEntity
 import com.example.data.model.ProtectionStatus
 import com.example.service.AccessibilityEventLogger
 import com.example.service.AccessibilityStatusHelper
@@ -92,6 +98,7 @@ import com.example.ui.theme.MintTeal
 import com.example.ui.theme.MonoTypography
 import com.example.ui.theme.ObsidianBg
 import com.example.ui.theme.OnMintTeal
+import com.example.ui.theme.StaggeredReveal
 import com.example.ui.theme.TextMuted
 import com.example.ui.theme.TextPrimary
 import com.example.ui.theme.TextSecondary
@@ -114,7 +121,6 @@ fun SettingsScreen(
     bottomContentPadding: Dp = 112.dp
 ) {
     val context = LocalContext.current
-    val haptics = LocalHapticFeedback.current
     val navBarBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
     val uriHandler = LocalUriHandler.current
     val privacyPolicyUrl = stringResource(R.string.privacy_policy_url)
@@ -140,461 +146,102 @@ fun SettingsScreen(
         !uiState.isBatteryOptimizationIgnored ||
         !uiState.isNotificationPermissionGranted
 
-    LazyColumn(
-        modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(
-            start = 20.dp,
-            end = 20.dp,
-            top = 18.dp,
-            bottom = bottomContentPadding + navBarBottom
-        ),
-        verticalArrangement = Arrangement.spacedBy(14.dp)
-    ) {
-        item {
-            SurgeonScreenHeader(
-                title = stringResource(R.string.settings_title),
-                subtitle = "Local rules & privacy controls",
-                trailingContent = {
-                    StatusBadgePill(
-                        text = if (hasReliabilityAttention) "Attention" else prefs.rulesetVersion,
-                        isWarning = hasReliabilityAttention
-                    )
-                }
-            )
-        }
+    BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+        val isMosaic = maxWidth >= 600.dp
 
-        // Protection & Permission Card
-        item {
-            val globalCountdown = rememberCountdownLabel(untilMs = uiState.globalPauseUntilMs)
-            val isGloballyPausedNow = globalCountdown != null
-            val effectiveStatus = when {
-                uiState.protectionStatus == ProtectionStatus.PERMISSION_NEEDED -> ProtectionStatus.PERMISSION_NEEDED
-                uiState.protectionStatus == ProtectionStatus.SERVICE_DISCONNECTED -> ProtectionStatus.SERVICE_DISCONNECTED
-                uiState.protectionStatus == ProtectionStatus.NO_APPS_ACTIVE -> ProtectionStatus.NO_APPS_ACTIVE
-                isGloballyPausedNow -> ProtectionStatus.PAUSED
-                else -> ProtectionStatus.OPERATIONAL
-            }
-            val pillText = when (effectiveStatus) {
-                ProtectionStatus.PERMISSION_NEEDED -> "Off"
-                ProtectionStatus.SERVICE_DISCONNECTED -> "Disconnected"
-                ProtectionStatus.NO_APPS_ACTIVE -> "0 apps"
-                ProtectionStatus.PAUSED -> "Paused"
-                ProtectionStatus.OPERATIONAL -> "Ready"
-            }
-            val statusSubtitle = when (effectiveStatus) {
-                ProtectionStatus.PERMISSION_NEEDED ->
-                    "Turn on Feed Surgeon in Android Settings so it can spot short feeds"
-                ProtectionStatus.SERVICE_DISCONNECTED ->
-                    "Permission is on, but Android stopped the service. Toggle Feed Surgeon off and on in Android Settings to reconnect."
-                ProtectionStatus.NO_APPS_ACTIVE ->
-                    "Service is connected, but no installed apps are switched on on Home"
-                ProtectionStatus.PAUSED ->
-                    if (uiState.globalPauseUntilMs == Long.MAX_VALUE) {
-                        "All blocking paused until you turn it back on"
-                    } else {
-                        "All blocking paused \u00B7 $globalCountdown remaining"
-                    }
-                ProtectionStatus.OPERATIONAL ->
-                    "Guarding $activeInstalledCount installed app${if (activeInstalledCount == 1) "" else "s"} on your phone"
-            }
-
-            SurgeonCard {
-                SectionLabel(text = "PROTECTION")
-                Spacer(modifier = Modifier.height(12.dp))
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = "Protection status",
-                            style = MaterialTheme.typography.titleMedium,
-                            color = TextPrimary
-                        )
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(
-                            text = statusSubtitle,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = TextSecondary,
-                            modifier = Modifier.testTag("settings_protection_subtitle")
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(
+                start = 20.dp,
+                end = 20.dp,
+                top = 18.dp,
+                bottom = bottomContentPadding + navBarBottom
+            ),
+            verticalArrangement = Arrangement.spacedBy(14.dp)
+        ) {
+            item {
+                SurgeonScreenHeader(
+                    title = stringResource(R.string.settings_title),
+                    subtitle = "Local rules & privacy controls",
+                    trailingContent = {
+                        StatusBadgePill(
+                            text = if (hasReliabilityAttention) "Attention" else prefs.rulesetVersion,
+                            isWarning = hasReliabilityAttention
                         )
                     }
-                    Spacer(modifier = Modifier.width(10.dp))
-                    StatusBadgePill(
-                        text = pillText,
-                        isWarning = effectiveStatus != ProtectionStatus.OPERATIONAL,
-                        modifier = Modifier.testTag("settings_protection_pill")
-                    )
-                }
-
-                if (effectiveStatus == ProtectionStatus.OPERATIONAL || effectiveStatus == ProtectionStatus.PAUSED) {
-                    Spacer(modifier = Modifier.height(14.dp))
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = "Pause all blocking",
-                                style = MaterialTheme.typography.titleMedium,
-                                color = TextPrimary
-                            )
-                            Text(
-                                text = if (isGloballyPausedNow && uiState.globalPauseUntilMs != Long.MAX_VALUE) {
-                                    "Resumes automatically in $globalCountdown"
-                                } else {
-                                    "Temporarily allow Shorts & Reels across every app"
-                                },
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = TextSecondary
-                            )
-                        }
-                        Spacer(modifier = Modifier.width(10.dp))
-                        SurgeonSwitch(
-                            checked = isGloballyPausedNow,
-                            onCheckedChange = onToggleGlobalPause,
-                            testTag = "settings_global_pause_switch"
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(14.dp))
-                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    Button(
-                        onClick = { AccessibilityStatusHelper.openAccessibilitySettings(context) },
-                        modifier = Modifier
-                            .weight(1f)
-                            .height(48.dp)
-                            .testTag("settings_accessibility_button"),
-                        shape = RoundedCornerShape(100.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = MintTeal,
-                            contentColor = OnMintTeal
-                        )
-                    ) {
-                        Text("Android Settings", fontWeight = FontWeight.SemiBold)
-                    }
-                    OutlinedButton(
-                        onClick = onReopenDisclosure,
-                        modifier = Modifier
-                            .weight(1f)
-                            .height(48.dp)
-                            .testTag("view_disclosure_button"),
-                        shape = RoundedCornerShape(100.dp),
-                        border = BorderStroke(1.dp, CardBorder),
-                        colors = ButtonDefaults.outlinedButtonColors(
-                            containerColor = CardSurfaceElevated,
-                            contentColor = TextPrimary
-                        )
-                    ) {
-                        Text("Guided setup")
-                    }
-                }
-            }
-        }
-
-        // Comfort, Reminders & Privacy Card
-        item {
-            SurgeonCard {
-                SectionLabel(text = "EXPERIENCE & PRIVACY")
-                Spacer(modifier = Modifier.height(12.dp))
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = "Quick pass bar",
-                            style = MaterialTheme.typography.titleMedium,
-                            color = TextPrimary
-                        )
-                        Text(
-                            text = "Show a 5-min pass / Undo bar after stepping in",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = TextSecondary
-                        )
-                    }
-                    Spacer(modifier = Modifier.width(10.dp))
-                    SurgeonSwitch(
-                        checked = prefs.showInterventionBanner,
-                        onCheckedChange = onSetShowBanner,
-                        testTag = "settings_banner_switch"
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(16.dp))
-                val minutePresets = listOf(60 to "1 min", 120 to "2 min", 180 to "3 min", 300 to "5 min")
-                val selectedPresetSeconds = minutePresets.minByOrNull { (sec, _) ->
-                    kotlin.math.abs(sec - prefs.reclaimedSecondsPerCut)
-                }?.first ?: 180
-                Text(
-                    text = "Time saved per avoided feed",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = TextSecondary
                 )
-                Spacer(modifier = Modifier.height(10.dp))
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(100.dp))
-                        .background(ObsidianBg)
-                        .padding(4.dp),
-                    horizontalArrangement = Arrangement.spacedBy(4.dp)
-                ) {
-                    minutePresets.forEach { (seconds, label) ->
-                        val isSelected = seconds == selectedPresetSeconds
-                        Box(
-                            modifier = Modifier
-                                .weight(1f)
-                                .minimumInteractiveComponentSize()
-                                .clip(RoundedCornerShape(100.dp))
-                                .background(if (isSelected) MintTeal else Color.Transparent)
-                                .clickable {
-                                    haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                    onSetReclaimedSeconds(seconds)
-                                }
-                                .padding(vertical = 10.dp)
-                                .testTag("time_saved_preset_${seconds}s"),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                text = label,
-                                style = MaterialTheme.typography.labelLarge,
-                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.SemiBold,
-                                color = if (isSelected) OnMintTeal else TextSecondary,
-                                maxLines = 1
-                            )
-                        }
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(12.dp))
-                OutlinedButton(
-                    onClick = { showPausePreview = true },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(48.dp)
-                        .testTag("settings_preview_pause_button"),
-                    shape = RoundedCornerShape(100.dp),
-                    border = BorderStroke(1.dp, CardBorder),
-                    colors = ButtonDefaults.outlinedButtonColors(
-                        containerColor = CardSurfaceElevated,
-                        contentColor = TextPrimary
-                    )
-                ) {
-                    Text("Preview pause screen")
-                }
-
-                Spacer(modifier = Modifier.height(8.dp))
-                TextButton(
-                    onClick = { uriHandler.openUri(privacyPolicyUrl) },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .testTag("settings_privacy_policy_button")
-                ) {
-                    Text(
-                        text = "Privacy Policy (suprbuild.com/privacy)",
-                        style = MaterialTheme.typography.labelLarge,
-                        color = MintTeal
-                    )
-                }
-
-                TextButton(
-                    onClick = { showClearConfirmDialog = true },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .testTag("clear_history_button")
-                ) {
-                    Text(
-                        text = "Clear my saved stats",
-                        style = MaterialTheme.typography.labelLarge,
-                        color = CoralDanger
-                    )
-                }
             }
-        }
 
-        // Collapsible Advanced & Diagnostics Section (tucked away for non-technical users)
-        item {
-            SurgeonCard(
-                onClick = { showAdvancedSection = !showAdvancedSection },
-                modifier = Modifier.testTag("settings_advanced_toggle_card")
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = "Advanced & diagnostics",
-                            style = MaterialTheme.typography.titleMedium,
-                            color = TextPrimary
-                        )
-                        Spacer(modifier = Modifier.height(2.dp))
-                        val staleNote = if (uiState.staleRulesCount > 0) {
-                            "${uiState.staleRulesCount} app blocker needs refresh"
-                        } else {
-                            "Blocker updates, battery reliability, and logs"
-                        }
-                        Text(
-                            text = staleNote,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = TextSecondary
-                        )
-                    }
-                    Icon(
-                        imageVector = if (showAdvancedSection) {
-                            Icons.Filled.KeyboardArrowUp
-                        } else {
-                            Icons.Filled.KeyboardArrowDown
-                        },
-                        contentDescription = if (showAdvancedSection) "Hide advanced settings" else "Show advanced settings",
-                        tint = TextSecondary
-                    )
-                }
-            }
-        }
-
-        item {
-            AnimatedVisibility(
-                visible = showAdvancedSection,
-                enter = fadeIn(tween(200)) + expandVertically(),
-                exit = fadeOut(tween(150)) + shrinkVertically()
-            ) {
-                Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
-                    // 1. Automatic Blocker Updates & Per-App Health
-                    val lastCheckedSubtitle = if (prefs.lastRulesetCheckMs == 0L) {
-                        "Built-in rules \u00B7 ${prefs.rulesetVersion}"
-                    } else {
-                        val rel = DateUtils.getRelativeTimeSpanString(
-                            prefs.lastRulesetCheckMs,
-                            System.currentTimeMillis(),
-                            DateUtils.MINUTE_IN_MILLIS
-                        )
-                        "Checked $rel \u00B7 ${prefs.rulesetVersion}"
-                    }
-                    SurgeonCard {
-                        SectionLabel(text = "BLOCKER UPDATES & HEALTH")
-                        Spacer(modifier = Modifier.height(12.dp))
+            if (isMosaic) {
+                item {
+                    StaggeredReveal(index = 0) {
                         Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(
-                                    text = "Auto-update blockers",
-                                    style = MaterialTheme.typography.titleMedium,
-                                    color = TextPrimary
-                                )
-                                Spacer(modifier = Modifier.height(2.dp))
-                                Text(
-                                    text = lastCheckedSubtitle,
-                                    style = MonoTypography.caption,
-                                    color = TextSecondary
-                                )
-                            }
-                            Spacer(modifier = Modifier.width(10.dp))
-                            SurgeonSwitch(
-                                checked = prefs.autoUpdateRules,
-                                onCheckedChange = onSetAutoUpdateRules,
-                                testTag = "settings_auto_update_switch"
-                            )
-                        }
-
-                        Spacer(modifier = Modifier.height(10.dp))
-                        SurgicalSyncLoadingBar(visible = uiState.isSyncingRules)
-                        AnimatedContent(
-                            targetState = uiState.syncStatusMessage,
-                            transitionSpec = { fadeIn(tween(180)) togetherWith fadeOut(tween(140)) },
-                            label = "settings_sync_msg"
-                        ) { msg ->
-                            if (msg != null) {
-                                Text(
-                                    text = msg,
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = MintTeal,
-                                    modifier = Modifier.padding(top = 6.dp)
-                                )
-                            }
-                        }
-
-                        Spacer(modifier = Modifier.height(12.dp))
-                        OutlinedButton(
-                            onClick = onCheckRulesNow,
-                            enabled = !uiState.isSyncingRules,
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .height(48.dp)
-                                .testTag("settings_check_updates_button"),
-                            shape = RoundedCornerShape(100.dp),
-                            border = BorderStroke(1.dp, CardBorder),
-                            colors = ButtonDefaults.outlinedButtonColors(
-                                containerColor = CardSurfaceElevated,
-                                contentColor = TextPrimary
-                            )
+                                .height(IntrinsicSize.Min)
+                                .testTag("settings_mosaic_top_row"),
+                            horizontalArrangement = Arrangement.spacedBy(14.dp)
                         ) {
-                            if (uiState.isSyncingRules) {
-                                CircularProgressIndicator(
-                                    modifier = Modifier.size(16.dp),
-                                    color = TextPrimary,
-                                    strokeWidth = 2.dp
-                                )
-                                Spacer(modifier = Modifier.width(8.dp))
-                            }
-                            Text(if (uiState.isSyncingRules) "Checking..." else "Check for blocker updates")
-                        }
-
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                            sortedRules.forEach { rule ->
-                                val isInstalled = rule.packageName in uiState.installedPackages
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .alpha(if (isInstalled) 1f else 0.65f),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    AppBadgeIcon(packageName = rule.packageName)
-                                    Spacer(modifier = Modifier.width(12.dp))
-                                    Column(modifier = Modifier.weight(1f)) {
-                                        Text(
-                                            text = rule.displayName,
-                                            style = MaterialTheme.typography.titleMedium,
-                                            color = TextPrimary
-                                        )
-                                        Text(
-                                            text = rule.feedLabel,
-                                            style = MaterialTheme.typography.bodyMedium,
-                                            color = TextSecondary
-                                        )
-                                    }
-                                    if (!isInstalled) {
-                                        Text(
-                                            text = "Not installed",
-                                            style = MaterialTheme.typography.labelMedium,
-                                            color = TextMuted
-                                        )
-                                    } else {
-                                        StatusBadgePill(
-                                            text = if (rule.isOutdated) "Needs update" else "Healthy",
-                                            isWarning = rule.isOutdated
-                                        )
-                                    }
-                                }
-                            }
+                            ProtectionCard(
+                                uiState = uiState,
+                                activeInstalledCount = activeInstalledCount,
+                                context = context,
+                                onToggleGlobalPause = onToggleGlobalPause,
+                                onReopenDisclosure = onReopenDisclosure,
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .fillMaxHeight()
+                            )
+                            ExperiencePrivacyCard(
+                                prefs = prefs,
+                                onSetShowBanner = onSetShowBanner,
+                                onSetReclaimedSeconds = onSetReclaimedSeconds,
+                                onShowPausePreview = { showPausePreview = true },
+                                onOpenPrivacyPolicy = { uriHandler.openUri(privacyPolicyUrl) },
+                                onRequestClearHistory = { showClearConfirmDialog = true },
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .fillMaxHeight()
+                            )
                         }
                     }
+                }
+            } else {
+                // Protection & Permission Card
+                item {
+                    StaggeredReveal(index = 0) {
+                        ProtectionCard(
+                            uiState = uiState,
+                            activeInstalledCount = activeInstalledCount,
+                            context = context,
+                            onToggleGlobalPause = onToggleGlobalPause,
+                            onReopenDisclosure = onReopenDisclosure
+                        )
+                    }
+                }
 
-                    // 2. Background Reliability
-                    SurgeonCard {
-                        SectionLabel(text = "BACKGROUND RELIABILITY")
-                        Spacer(modifier = Modifier.height(12.dp))
+                // Comfort, Reminders & Privacy Card
+                item {
+                    StaggeredReveal(index = 1) {
+                        ExperiencePrivacyCard(
+                            prefs = prefs,
+                            onSetShowBanner = onSetShowBanner,
+                            onSetReclaimedSeconds = onSetReclaimedSeconds,
+                            onShowPausePreview = { showPausePreview = true },
+                            onOpenPrivacyPolicy = { uriHandler.openUri(privacyPolicyUrl) },
+                            onRequestClearHistory = { showClearConfirmDialog = true }
+                        )
+                    }
+                }
+            }
+
+            // Collapsible Advanced & Diagnostics Section
+            item {
+                StaggeredReveal(index = 2) {
+                    SurgeonCard(
+                        onClick = { showAdvancedSection = !showAdvancedSection },
+                        modifier = Modifier.testTag("settings_advanced_toggle_card")
+                    ) {
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween,
@@ -602,169 +249,114 @@ fun SettingsScreen(
                         ) {
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(
-                                    text = "Battery saver exception",
+                                    text = "Advanced & diagnostics",
                                     style = MaterialTheme.typography.titleMedium,
                                     color = TextPrimary
                                 )
                                 Spacer(modifier = Modifier.height(2.dp))
+                                val staleNote = if (uiState.staleRulesCount > 0) {
+                                    "${uiState.staleRulesCount} app blocker needs refresh"
+                                } else {
+                                    "Blocker updates, battery reliability, and logs"
+                                }
                                 Text(
-                                    text = if (uiState.isBatteryOptimizationIgnored) {
-                                        "Unrestricted — stays running reliably in the background"
-                                    } else {
-                                        "Phone battery saver may pause Feed Surgeon in the background"
-                                    },
+                                    text = staleNote,
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = TextSecondary
                                 )
                             }
-                            Spacer(modifier = Modifier.width(10.dp))
-                            StatusBadgePill(
-                                text = if (uiState.isBatteryOptimizationIgnored) "Unrestricted" else "Limited",
-                                isWarning = !uiState.isBatteryOptimizationIgnored
+                            Icon(
+                                imageVector = if (showAdvancedSection) {
+                                    Icons.Filled.KeyboardArrowUp
+                                } else {
+                                    Icons.Filled.KeyboardArrowDown
+                                },
+                                contentDescription = if (showAdvancedSection) "Hide advanced settings" else "Show advanced settings",
+                                tint = TextSecondary
                             )
-                        }
-
-                        if (!uiState.isBatteryOptimizationIgnored) {
-                            Spacer(modifier = Modifier.height(12.dp))
-                            OutlinedButton(
-                                onClick = { ProtectionHealthHelper.requestIgnoreBatteryOptimizations(context) },
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(48.dp)
-                                    .testTag("settings_battery_optimization_button"),
-                                shape = RoundedCornerShape(100.dp),
-                                border = BorderStroke(1.dp, CardBorder),
-                                colors = ButtonDefaults.outlinedButtonColors(
-                                    containerColor = CardSurfaceElevated,
-                                    contentColor = MintTeal
-                                )
-                            ) {
-                                Text("Allow unrestricted battery", fontWeight = FontWeight.SemiBold)
-                            }
-                        }
-
-                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                            Spacer(modifier = Modifier.height(12.dp))
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Column(modifier = Modifier.weight(1f)) {
-                                    Text(
-                                        text = "Ongoing status notification",
-                                        style = MaterialTheme.typography.titleMedium,
-                                        color = TextPrimary
-                                    )
-                                    Spacer(modifier = Modifier.height(2.dp))
-                                    Text(
-                                        text = if (uiState.isNotificationPermissionGranted) {
-                                            "Active notification badge allowed"
-                                        } else {
-                                            "Allow notifications so Android keeps protection active"
-                                        },
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        color = TextSecondary
-                                    )
-                                }
-                                Spacer(modifier = Modifier.width(10.dp))
-                                StatusBadgePill(
-                                    text = if (uiState.isNotificationPermissionGranted) "Allowed" else "Hidden",
-                                    isWarning = !uiState.isNotificationPermissionGranted
-                                )
-                            }
-
-                            if (!uiState.isNotificationPermissionGranted) {
-                                Spacer(modifier = Modifier.height(10.dp))
-                                OutlinedButton(
-                                    onClick = {
-                                        notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
-                                    },
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .height(48.dp)
-                                        .testTag("settings_notification_permission_button"),
-                                    shape = RoundedCornerShape(100.dp),
-                                    border = BorderStroke(1.dp, CardBorder),
-                                    colors = ButtonDefaults.outlinedButtonColors(
-                                        containerColor = CardSurfaceElevated,
-                                        contentColor = TextPrimary
-                                    )
-                                ) {
-                                    Text("Enable status notification")
-                                }
-                            }
                         }
                     }
+                }
+            }
 
-                    // 3. Diagnostic Event Log
-                    val kb = (uiState.eventLogSizeBytes / 1024L).coerceAtLeast(
-                        if (uiState.eventLogSizeBytes > 0L) 1L else 0L
-                    )
-                    SurgeonCard {
-                        SectionLabel(text = "TROUBLESHOOTING LOG")
-                        Spacer(modifier = Modifier.height(12.dp))
+            item {
+                AnimatedVisibility(
+                    visible = showAdvancedSection,
+                    enter = fadeIn(tween(200)) + expandVertically(),
+                    exit = fadeOut(tween(150)) + shrinkVertically()
+                ) {
+                    if (isMosaic) {
                         Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(IntrinsicSize.Min),
+                            horizontalArrangement = Arrangement.spacedBy(14.dp)
                         ) {
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(
-                                    text = "Record diagnostic log",
-                                    style = MaterialTheme.typography.titleMedium,
-                                    color = TextPrimary
+                            BlockerUpdatesCard(
+                                uiState = uiState,
+                                prefs = prefs,
+                                sortedRules = sortedRules,
+                                onSetAutoUpdateRules = onSetAutoUpdateRules,
+                                onCheckRulesNow = onCheckRulesNow,
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .fillMaxHeight()
+                            )
+                            Column(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .fillMaxHeight(),
+                                verticalArrangement = Arrangement.spacedBy(14.dp)
+                            ) {
+                                BackgroundReliabilityCard(
+                                    uiState = uiState,
+                                    context = context,
+                                    onRequestNotificationPermission = {
+                                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                                            notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                                        }
+                                    }
                                 )
-                                Spacer(modifier = Modifier.height(2.dp))
-                                Text(
-                                    text = "${AccessibilityEventLogger.LOG_FILE_NAME} \u00B7 $kb KB",
-                                    style = MonoTypography.caption,
-                                    color = TextSecondary
+                                DiagnosticLogCard(
+                                    uiState = uiState,
+                                    prefs = prefs,
+                                    onSetEventCaptureEnabled = onSetEventCaptureEnabled,
+                                    onViewLog = {
+                                        onRefreshEventLog()
+                                        showLogDialog = true
+                                    },
+                                    onClearEventLog = onClearEventLog
                                 )
                             }
-                            Spacer(modifier = Modifier.width(10.dp))
-                            SurgeonSwitch(
-                                checked = prefs.eventCaptureEnabled,
-                                onCheckedChange = onSetEventCaptureEnabled,
-                                testTag = "settings_event_capture_switch"
-                            )
                         }
-                        Spacer(modifier = Modifier.height(12.dp))
-                        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                            OutlinedButton(
-                                onClick = {
+                    } else {
+                        Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                            BlockerUpdatesCard(
+                                uiState = uiState,
+                                prefs = prefs,
+                                sortedRules = sortedRules,
+                                onSetAutoUpdateRules = onSetAutoUpdateRules,
+                                onCheckRulesNow = onCheckRulesNow
+                            )
+                            BackgroundReliabilityCard(
+                                uiState = uiState,
+                                context = context,
+                                onRequestNotificationPermission = {
+                                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                                        notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                                    }
+                                }
+                            )
+                            DiagnosticLogCard(
+                                uiState = uiState,
+                                prefs = prefs,
+                                onSetEventCaptureEnabled = onSetEventCaptureEnabled,
+                                onViewLog = {
                                     onRefreshEventLog()
                                     showLogDialog = true
                                 },
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .height(48.dp)
-                                    .testTag("view_event_log_button"),
-                                shape = RoundedCornerShape(100.dp),
-                                border = BorderStroke(1.dp, CardBorder),
-                                colors = ButtonDefaults.outlinedButtonColors(
-                                    containerColor = CardSurfaceElevated,
-                                    contentColor = TextPrimary
-                                )
-                            ) {
-                                Text("View log")
-                            }
-                            OutlinedButton(
-                                onClick = onClearEventLog,
-                                enabled = uiState.eventLogSizeBytes > 0L,
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .height(48.dp)
-                                    .testTag("clear_event_log_button"),
-                                shape = RoundedCornerShape(100.dp),
-                                border = BorderStroke(1.dp, CardBorder),
-                                colors = ButtonDefaults.outlinedButtonColors(
-                                    containerColor = CardSurfaceElevated,
-                                    contentColor = CoralDanger
-                                )
-                            ) {
-                                Text("Clear log")
-                            }
+                                onClearEventLog = onClearEventLog
+                            )
                         }
                     }
                 }
@@ -861,5 +453,597 @@ fun SettingsScreen(
             feedLabel = "Shorts",
             onDismiss = { showPausePreview = false }
         )
+    }
+}
+
+@Composable
+private fun ProtectionCard(
+    uiState: MainUiState,
+    activeInstalledCount: Int,
+    context: Context,
+    onToggleGlobalPause: (Boolean) -> Unit,
+    onReopenDisclosure: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val globalCountdown = rememberCountdownLabel(untilMs = uiState.globalPauseUntilMs)
+    val isGloballyPausedNow = globalCountdown != null
+    val effectiveStatus = when {
+        uiState.protectionStatus == ProtectionStatus.PERMISSION_NEEDED -> ProtectionStatus.PERMISSION_NEEDED
+        uiState.protectionStatus == ProtectionStatus.SERVICE_DISCONNECTED -> ProtectionStatus.SERVICE_DISCONNECTED
+        uiState.protectionStatus == ProtectionStatus.NO_APPS_ACTIVE -> ProtectionStatus.NO_APPS_ACTIVE
+        isGloballyPausedNow -> ProtectionStatus.PAUSED
+        else -> ProtectionStatus.OPERATIONAL
+    }
+    val pillText = when (effectiveStatus) {
+        ProtectionStatus.PERMISSION_NEEDED -> "Off"
+        ProtectionStatus.SERVICE_DISCONNECTED -> "Disconnected"
+        ProtectionStatus.NO_APPS_ACTIVE -> "0 apps"
+        ProtectionStatus.PAUSED -> "Paused"
+        ProtectionStatus.OPERATIONAL -> "Ready"
+    }
+    val statusSubtitle = when (effectiveStatus) {
+        ProtectionStatus.PERMISSION_NEEDED ->
+            "Turn on Feed Surgeon in Android Settings so it can spot short feeds"
+        ProtectionStatus.SERVICE_DISCONNECTED ->
+            "Permission is on, but Android stopped the service. Toggle Feed Surgeon off and on in Android Settings to reconnect."
+        ProtectionStatus.NO_APPS_ACTIVE ->
+            "Service is connected, but no installed apps are switched on on Home"
+        ProtectionStatus.PAUSED ->
+            if (uiState.globalPauseUntilMs == Long.MAX_VALUE) {
+                "All blocking paused until you turn it back on"
+            } else {
+                "All blocking paused \u00B7 $globalCountdown remaining"
+            }
+        ProtectionStatus.OPERATIONAL ->
+            "Guarding $activeInstalledCount installed app${if (activeInstalledCount == 1) "" else "s"} on your phone"
+    }
+
+    SurgeonCard(modifier = modifier) {
+        SectionLabel(text = "PROTECTION")
+        Spacer(modifier = Modifier.height(12.dp))
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = "Protection status",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = TextPrimary
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = statusSubtitle,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = TextSecondary,
+                    modifier = Modifier.testTag("settings_protection_subtitle")
+                )
+            }
+            Spacer(modifier = Modifier.width(10.dp))
+            StatusBadgePill(
+                text = pillText,
+                isWarning = effectiveStatus != ProtectionStatus.OPERATIONAL,
+                modifier = Modifier.testTag("settings_protection_pill")
+            )
+        }
+
+        if (effectiveStatus == ProtectionStatus.OPERATIONAL || effectiveStatus == ProtectionStatus.PAUSED) {
+            Spacer(modifier = Modifier.height(14.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "Pause all blocking",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = TextPrimary
+                    )
+                    Text(
+                        text = if (isGloballyPausedNow && uiState.globalPauseUntilMs != Long.MAX_VALUE) {
+                            "Resumes automatically in $globalCountdown"
+                        } else {
+                            "Temporarily allow Shorts & Reels across every app"
+                        },
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = TextSecondary
+                    )
+                }
+                Spacer(modifier = Modifier.width(10.dp))
+                SurgeonSwitch(
+                    checked = isGloballyPausedNow,
+                    onCheckedChange = onToggleGlobalPause,
+                    testTag = "settings_global_pause_switch"
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(14.dp))
+        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            Button(
+                onClick = { AccessibilityStatusHelper.openAccessibilitySettings(context) },
+                modifier = Modifier
+                    .weight(1f)
+                    .height(48.dp)
+                    .testTag("settings_accessibility_button"),
+                shape = RoundedCornerShape(100.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MintTeal,
+                    contentColor = OnMintTeal
+                )
+            ) {
+                Text("Android Settings", fontWeight = FontWeight.SemiBold)
+            }
+            OutlinedButton(
+                onClick = onReopenDisclosure,
+                modifier = Modifier
+                    .weight(1f)
+                    .height(48.dp)
+                    .testTag("view_disclosure_button"),
+                shape = RoundedCornerShape(100.dp),
+                border = BorderStroke(1.dp, CardBorder),
+                colors = ButtonDefaults.outlinedButtonColors(
+                    containerColor = CardSurfaceElevated,
+                    contentColor = TextPrimary
+                )
+            ) {
+                Text("Guided setup")
+            }
+        }
+    }
+}
+
+@Composable
+private fun ExperiencePrivacyCard(
+    prefs: AppPreferences,
+    onSetShowBanner: (Boolean) -> Unit,
+    onSetReclaimedSeconds: (Int) -> Unit,
+    onShowPausePreview: () -> Unit,
+    onOpenPrivacyPolicy: () -> Unit,
+    onRequestClearHistory: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val haptics = LocalHapticFeedback.current
+    SurgeonCard(modifier = modifier) {
+        SectionLabel(text = "EXPERIENCE & PRIVACY")
+        Spacer(modifier = Modifier.height(12.dp))
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = "Quick pass bar",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = TextPrimary
+                )
+                Text(
+                    text = "Show a 5-min pass / Undo bar after stepping in",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = TextSecondary
+                )
+            }
+            Spacer(modifier = Modifier.width(10.dp))
+            SurgeonSwitch(
+                checked = prefs.showInterventionBanner,
+                onCheckedChange = onSetShowBanner,
+                testTag = "settings_banner_switch"
+            )
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+        val minutePresets = listOf(60 to "1 min", 120 to "2 min", 180 to "3 min", 300 to "5 min")
+        val selectedPresetSeconds = minutePresets.minByOrNull { (sec, _) ->
+            kotlin.math.abs(sec - prefs.reclaimedSecondsPerCut)
+        }?.first ?: 180
+        Text(
+            text = "Time saved per avoided feed",
+            style = MaterialTheme.typography.bodyMedium,
+            color = TextSecondary
+        )
+        Spacer(modifier = Modifier.height(10.dp))
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(100.dp))
+                .background(ObsidianBg)
+                .padding(4.dp),
+            horizontalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            minutePresets.forEach { (seconds, label) ->
+                val isSelected = seconds == selectedPresetSeconds
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .minimumInteractiveComponentSize()
+                        .clip(RoundedCornerShape(100.dp))
+                        .background(if (isSelected) MintTeal else Color.Transparent)
+                        .clickable {
+                            haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                            onSetReclaimedSeconds(seconds)
+                        }
+                        .padding(vertical = 10.dp)
+                        .testTag("time_saved_preset_${seconds}s"),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = label,
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.SemiBold,
+                        color = if (isSelected) OnMintTeal else TextSecondary,
+                        maxLines = 1
+                    )
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(12.dp))
+        OutlinedButton(
+            onClick = onShowPausePreview,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(48.dp)
+                .testTag("settings_preview_pause_button"),
+            shape = RoundedCornerShape(100.dp),
+            border = BorderStroke(1.dp, CardBorder),
+            colors = ButtonDefaults.outlinedButtonColors(
+                containerColor = CardSurfaceElevated,
+                contentColor = TextPrimary
+            )
+        ) {
+            Text("Preview pause screen")
+        }
+
+        Spacer(modifier = Modifier.height(8.dp))
+        TextButton(
+            onClick = onOpenPrivacyPolicy,
+            modifier = Modifier
+                .fillMaxWidth()
+                .testTag("settings_privacy_policy_button")
+        ) {
+            Text(
+                text = "Privacy Policy (suprbuild.com/privacy)",
+                style = MaterialTheme.typography.labelLarge,
+                color = MintTeal
+            )
+        }
+
+        TextButton(
+            onClick = onRequestClearHistory,
+            modifier = Modifier
+                .fillMaxWidth()
+                .testTag("clear_history_button")
+        ) {
+            Text(
+                text = "Clear my saved stats",
+                style = MaterialTheme.typography.labelLarge,
+                color = CoralDanger
+            )
+        }
+    }
+}
+
+@Composable
+private fun BlockerUpdatesCard(
+    uiState: MainUiState,
+    prefs: AppPreferences,
+    sortedRules: List<TargetAppRuleEntity>,
+    onSetAutoUpdateRules: (Boolean) -> Unit,
+    onCheckRulesNow: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val lastCheckedSubtitle = if (prefs.lastRulesetCheckMs == 0L) {
+        "Built-in rules \u00B7 ${prefs.rulesetVersion}"
+    } else {
+        val rel = DateUtils.getRelativeTimeSpanString(
+            prefs.lastRulesetCheckMs,
+            System.currentTimeMillis(),
+            DateUtils.MINUTE_IN_MILLIS
+        )
+        "Checked $rel \u00B7 ${prefs.rulesetVersion}"
+    }
+    SurgeonCard(modifier = modifier) {
+        SectionLabel(text = "BLOCKER UPDATES & HEALTH")
+        Spacer(modifier = Modifier.height(12.dp))
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = "Auto-update blockers",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = TextPrimary
+                )
+                Spacer(modifier = Modifier.height(2.dp))
+                Text(
+                    text = lastCheckedSubtitle,
+                    style = MonoTypography.caption,
+                    color = TextSecondary
+                )
+            }
+            Spacer(modifier = Modifier.width(10.dp))
+            SurgeonSwitch(
+                checked = prefs.autoUpdateRules,
+                onCheckedChange = onSetAutoUpdateRules,
+                testTag = "settings_auto_update_switch"
+            )
+        }
+
+        Spacer(modifier = Modifier.height(10.dp))
+        SurgicalSyncLoadingBar(visible = uiState.isSyncingRules)
+        AnimatedContent(
+            targetState = uiState.syncStatusMessage,
+            transitionSpec = { fadeIn(tween(180)) togetherWith fadeOut(tween(140)) },
+            label = "settings_sync_msg"
+        ) { msg ->
+            if (msg != null) {
+                Text(
+                    text = msg,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MintTeal,
+                    modifier = Modifier.padding(top = 6.dp)
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(12.dp))
+        OutlinedButton(
+            onClick = onCheckRulesNow,
+            enabled = !uiState.isSyncingRules,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(48.dp)
+                .testTag("settings_check_updates_button"),
+            shape = RoundedCornerShape(100.dp),
+            border = BorderStroke(1.dp, CardBorder),
+            colors = ButtonDefaults.outlinedButtonColors(
+                containerColor = CardSurfaceElevated,
+                contentColor = TextPrimary
+            )
+        ) {
+            if (uiState.isSyncingRules) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(16.dp),
+                    color = TextPrimary,
+                    strokeWidth = 2.dp
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+            }
+            Text(if (uiState.isSyncingRules) "Checking..." else "Check for blocker updates")
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            sortedRules.forEach { rule ->
+                val isInstalled = rule.packageName in uiState.installedPackages
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .alpha(if (isInstalled) 1f else 0.65f),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    AppBadgeIcon(packageName = rule.packageName)
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = rule.displayName,
+                            style = MaterialTheme.typography.titleMedium,
+                            color = TextPrimary
+                        )
+                        Text(
+                            text = rule.feedLabel,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = TextSecondary
+                        )
+                    }
+                    if (!isInstalled) {
+                        Text(
+                            text = "Not installed",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = TextMuted
+                        )
+                    } else {
+                        StatusBadgePill(
+                            text = if (rule.isOutdated) "Needs update" else "Healthy",
+                            isWarning = rule.isOutdated
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun BackgroundReliabilityCard(
+    uiState: MainUiState,
+    context: Context,
+    onRequestNotificationPermission: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    SurgeonCard(modifier = modifier) {
+        SectionLabel(text = "BACKGROUND RELIABILITY")
+        Spacer(modifier = Modifier.height(12.dp))
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = "Battery saver exception",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = TextPrimary
+                )
+                Spacer(modifier = Modifier.height(2.dp))
+                Text(
+                    text = if (uiState.isBatteryOptimizationIgnored) {
+                        "Unrestricted — stays running reliably in the background"
+                    } else {
+                        "Phone battery saver may pause Feed Surgeon in the background"
+                    },
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = TextSecondary
+                )
+            }
+            Spacer(modifier = Modifier.width(10.dp))
+            StatusBadgePill(
+                text = if (uiState.isBatteryOptimizationIgnored) "Unrestricted" else "Limited",
+                isWarning = !uiState.isBatteryOptimizationIgnored
+            )
+        }
+
+        if (!uiState.isBatteryOptimizationIgnored) {
+            Spacer(modifier = Modifier.height(12.dp))
+            OutlinedButton(
+                onClick = { ProtectionHealthHelper.requestIgnoreBatteryOptimizations(context) },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(48.dp)
+                    .testTag("settings_battery_optimization_button"),
+                shape = RoundedCornerShape(100.dp),
+                border = BorderStroke(1.dp, CardBorder),
+                colors = ButtonDefaults.outlinedButtonColors(
+                    containerColor = CardSurfaceElevated,
+                    contentColor = MintTeal
+                )
+            ) {
+                Text("Allow unrestricted battery", fontWeight = FontWeight.SemiBold)
+            }
+        }
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            Spacer(modifier = Modifier.height(12.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "Ongoing status notification",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = TextPrimary
+                    )
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        text = if (uiState.isNotificationPermissionGranted) {
+                            "Active notification badge allowed"
+                        } else {
+                            "Allow notifications so Android keeps protection active"
+                        },
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = TextSecondary
+                    )
+                }
+                Spacer(modifier = Modifier.width(10.dp))
+                StatusBadgePill(
+                    text = if (uiState.isNotificationPermissionGranted) "Allowed" else "Hidden",
+                    isWarning = !uiState.isNotificationPermissionGranted
+                )
+            }
+
+            if (!uiState.isNotificationPermissionGranted) {
+                Spacer(modifier = Modifier.height(10.dp))
+                OutlinedButton(
+                    onClick = onRequestNotificationPermission,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(48.dp)
+                        .testTag("settings_notification_permission_button"),
+                    shape = RoundedCornerShape(100.dp),
+                    border = BorderStroke(1.dp, CardBorder),
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        containerColor = CardSurfaceElevated,
+                        contentColor = TextPrimary
+                    )
+                ) {
+                    Text("Enable status notification")
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun DiagnosticLogCard(
+    uiState: MainUiState,
+    prefs: AppPreferences,
+    onSetEventCaptureEnabled: (Boolean) -> Unit,
+    onViewLog: () -> Unit,
+    onClearEventLog: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val kb = (uiState.eventLogSizeBytes / 1024L).coerceAtLeast(
+        if (uiState.eventLogSizeBytes > 0L) 1L else 0L
+    )
+    SurgeonCard(modifier = modifier) {
+        SectionLabel(text = "TROUBLESHOOTING LOG")
+        Spacer(modifier = Modifier.height(12.dp))
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = "Record diagnostic log",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = TextPrimary
+                )
+                Spacer(modifier = Modifier.height(2.dp))
+                Text(
+                    text = "${AccessibilityEventLogger.LOG_FILE_NAME} \u00B7 $kb KB",
+                    style = MonoTypography.caption,
+                    color = TextSecondary
+                )
+            }
+            Spacer(modifier = Modifier.width(10.dp))
+            SurgeonSwitch(
+                checked = prefs.eventCaptureEnabled,
+                onCheckedChange = onSetEventCaptureEnabled,
+                testTag = "settings_event_capture_switch"
+            )
+        }
+        Spacer(modifier = Modifier.height(12.dp))
+        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            OutlinedButton(
+                onClick = onViewLog,
+                modifier = Modifier
+                    .weight(1f)
+                    .height(48.dp)
+                    .testTag("view_event_log_button"),
+                shape = RoundedCornerShape(100.dp),
+                border = BorderStroke(1.dp, CardBorder),
+                colors = ButtonDefaults.outlinedButtonColors(
+                    containerColor = CardSurfaceElevated,
+                    contentColor = TextPrimary
+                )
+            ) {
+                Text("View log")
+            }
+            OutlinedButton(
+                onClick = onClearEventLog,
+                enabled = uiState.eventLogSizeBytes > 0L,
+                modifier = Modifier
+                    .weight(1f)
+                    .height(48.dp)
+                    .testTag("clear_event_log_button"),
+                shape = RoundedCornerShape(100.dp),
+                border = BorderStroke(1.dp, CardBorder),
+                colors = ButtonDefaults.outlinedButtonColors(
+                    containerColor = CardSurfaceElevated,
+                    contentColor = CoralDanger
+                )
+            ) {
+                Text("Clear log")
+            }
+        }
     }
 }
