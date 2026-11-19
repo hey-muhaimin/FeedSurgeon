@@ -31,7 +31,11 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.PauseCircle
 import androidx.compose.material.icons.outlined.Schedule
+import androidx.compose.material.icons.outlined.Shield
+import androidx.compose.material.icons.outlined.Visibility
+import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.LocalFireDepartment
 import androidx.compose.material.icons.rounded.Pause
 import androidx.compose.material3.ButtonDefaults
@@ -63,6 +67,7 @@ import com.example.R
 import com.example.ui.AppBreakdownStat
 import com.example.ui.DayBarStat
 import com.example.ui.MainUiState
+import com.example.ui.WeeklyFunnelStats
 import com.example.ui.components.AnimatedIntCounter
 import com.example.ui.components.AppBadgeIcon
 import com.example.ui.components.GroupedListDivider
@@ -167,6 +172,12 @@ fun InsightsScreen(
                         }
                     }
                 }
+
+                item {
+                    StaggeredReveal(index = 1) {
+                        ActivityFunnelCard(funnel = uiState.weeklyFunnel)
+                    }
+                }
             } else {
                 // Weekly Bar Chart Card
                 item {
@@ -181,9 +192,16 @@ fun InsightsScreen(
                     }
                 }
 
-                // 3-Column Bento Stat Cards
+                // Activity Funnel Card directly below weekly chart
                 item {
                     StaggeredReveal(index = 1) {
+                        ActivityFunnelCard(funnel = uiState.weeklyFunnel)
+                    }
+                }
+
+                // 3-Column Bento Stat Cards
+                item {
+                    StaggeredReveal(index = 2) {
                         StatTripletRow(
                             streakDays = uiState.streakDays,
                             weeklyReclaimedText = uiState.weeklyReclaimedText,
@@ -194,7 +212,7 @@ fun InsightsScreen(
 
                 // Estimation transparency note
                 item {
-                    StaggeredReveal(index = 2) {
+                    StaggeredReveal(index = 3) {
                         EstimateNoteText(
                             reclaimedSecondsPerCut = uiState.preferences.reclaimedSecondsPerCut,
                             modifier = Modifier.padding(horizontal = 2.dp)
@@ -656,6 +674,176 @@ private fun StatTripletRow(
 }
 
 @Composable
+private fun ActivityFunnelCard(
+    funnel: WeeklyFunnelStats,
+    modifier: Modifier = Modifier
+) {
+    val scheme = MaterialTheme.colorScheme
+    val neu = StillspaceTheme.colors
+    val maxDenominator = funnel.detectedCount.coerceAtLeast(1)
+
+    SurgeonCard(
+        modifier = modifier.testTag("insights_activity_funnel_card"),
+        contentPadding = PaddingValues(18.dp)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "Activity funnel",
+                style = MaterialTheme.typography.titleMedium,
+                color = scheme.onSurface
+            )
+            Text(
+                text = "Last 7 days",
+                style = MaterialTheme.typography.labelMedium,
+                color = scheme.onSurfaceVariant
+            )
+        }
+        Spacer(modifier = Modifier.height(14.dp))
+
+        val stages = listOf(
+            FunnelStageItem(
+                tag = "funnel_stage_detected",
+                label = "Feed detected",
+                subtitle = "Matched short-form feed opened",
+                count = funnel.detectedCount,
+                icon = Icons.Outlined.Visibility,
+                tint = scheme.primary,
+                containerColor = scheme.primaryContainer,
+                barColor = scheme.primary.copy(alpha = 0.65f)
+            ),
+            FunnelStageItem(
+                tag = "funnel_stage_attempted",
+                label = "Intervention attempted",
+                subtitle = "Reminder shown or exit triggered",
+                count = funnel.attemptedCount,
+                icon = Icons.Outlined.Shield,
+                tint = scheme.primary,
+                containerColor = scheme.primaryContainer,
+                barColor = scheme.primary.copy(alpha = 0.85f)
+            ),
+            FunnelStageItem(
+                tag = "funnel_stage_completed",
+                label = "Intervention completed",
+                subtitle = "Verified that the feed closed",
+                count = funnel.completedCount,
+                icon = Icons.Rounded.CheckCircle,
+                tint = neu.statusActiveText,
+                containerColor = neu.statusActiveBg,
+                barColor = neu.statusActiveText
+            ),
+            FunnelStageItem(
+                tag = "funnel_stage_continued",
+                label = "User chose to continue",
+                subtitle = "5-minute pass chosen by you",
+                count = funnel.continuedCount,
+                icon = Icons.Outlined.PauseCircle,
+                tint = neu.statusWarningText,
+                containerColor = neu.statusWarningBg,
+                barColor = neu.statusWarningText
+            )
+        )
+
+        stages.forEachIndexed { index, stage ->
+            val targetFraction = if (stage.count <= 0) {
+                0.04f
+            } else {
+                (stage.count.toFloat() / maxDenominator.toFloat()).coerceIn(0.08f, 1f)
+            }
+            val animatedFraction by animateFloatAsState(
+                targetValue = targetFraction,
+                animationSpec = tween(durationMillis = 380, easing = FastOutSlowInEasing),
+                label = stage.tag
+            )
+
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .semantics(mergeDescendants = true) {}
+                    .testTag(stage.tag)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    HabitIconBadge(
+                        icon = stage.icon,
+                        tint = stage.tint,
+                        containerColor = stage.containerColor,
+                        badgeSize = 36.dp,
+                        iconSize = 18.dp,
+                        cornerRadius = 11.dp
+                    )
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = stage.label,
+                            style = MaterialTheme.typography.titleSmall,
+                            color = scheme.onSurface,
+                            maxLines = 1,
+                            softWrap = false,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                        Spacer(modifier = Modifier.height(1.dp))
+                        Text(
+                            text = stage.subtitle,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = scheme.onSurfaceVariant,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(8.dp))
+                    AnimatedIntCounter(
+                        target = stage.count,
+                        style = MaterialTheme.typography.titleMedium.copy(
+                            fontFeatureSettings = "tnum"
+                        ),
+                        color = scheme.onSurface
+                    )
+                }
+                Spacer(modifier = Modifier.height(8.dp))
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(5.dp)
+                        .clip(RoundedCornerShape(100.dp))
+                        .background(neu.trackInactive)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth(animatedFraction)
+                            .height(5.dp)
+                            .clip(RoundedCornerShape(100.dp))
+                            .background(stage.barColor)
+                    )
+                }
+            }
+
+            if (index < stages.lastIndex) {
+                GroupedListDivider(
+                    modifier = Modifier.padding(vertical = 12.dp)
+                )
+            }
+        }
+    }
+}
+
+private data class FunnelStageItem(
+    val tag: String,
+    val label: String,
+    val subtitle: String,
+    val count: Int,
+    val icon: androidx.compose.ui.graphics.vector.ImageVector,
+    val tint: Color,
+    val containerColor: Color,
+    val barColor: Color
+)
+
+@Composable
 private fun EstimateNoteText(
     reclaimedSecondsPerCut: Int,
     modifier: Modifier = Modifier
@@ -670,7 +858,7 @@ private fun EstimateNoteText(
         )
     }
     Text(
-        text = "Estimated from confirmed exits \u00D7 your $perVisitLabel per-visit estimate in Settings, not measured screen time. Failed exits are excluded.",
+        text = "Estimated from verified exits \u00D7 your $perVisitLabel per-visit estimate in Settings, not measured screen time. Unverified attempts, passes, and failed exits are excluded.",
         style = MaterialTheme.typography.bodySmall,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
         modifier = modifier.testTag("insights_estimate_note")

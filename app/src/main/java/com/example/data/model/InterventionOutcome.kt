@@ -1,8 +1,9 @@
 package com.example.data.model
 
 enum class InterventionOutcome {
-    CONFIRMED,
+    DETECTED,
     ATTEMPTED,
-    FAILED,
-    ALLOWED_ONCE
+    CONFIRMED,
+    ALLOWED_ONCE,
+    FAILED
 }

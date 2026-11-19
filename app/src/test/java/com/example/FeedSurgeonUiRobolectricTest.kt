@@ -29,6 +29,7 @@ import com.example.ui.DayBarStat
 import com.example.ui.MainUiState
 import com.example.ui.MainViewModel
 import com.example.ui.OnboardingStep
+import com.example.ui.WeeklyFunnelStats
 import com.example.ui.components.BottomTab
 import com.example.ui.components.LiquidShieldOverlay
 import com.example.ui.components.MindfulPausePreviewDialog
@@ -931,5 +932,130 @@ class FeedSurgeonUiRobolectricTest {
         assertEquals(Color(0xFFFFFFFF), lightDock)
         assertEquals(DarkHabitBg, darkBg)
         assertEquals(DarkHabitSurface, darkSurface)
+    }
+
+    @Test
+    fun `insights screen renders activity funnel card with all four verifiable stages`() {
+        val dayBars = listOf(
+            DayBarStat("M", "Monday", "Nov 12", count = 3, reclaimedMinutes = 8, fraction = 0.7f, isToday = false),
+            DayBarStat("T", "Tuesday", "Nov 13", count = 2, reclaimedMinutes = 5, fraction = 0.5f, isToday = false),
+            DayBarStat("W", "Wednesday", "Nov 14", count = 0, reclaimedMinutes = 0, fraction = 0.14f, isToday = false),
+            DayBarStat("T", "Thursday", "Nov 15", count = 0, reclaimedMinutes = 0, fraction = 0.14f, isToday = false),
+            DayBarStat("F", "Friday", "Nov 16", count = 1, reclaimedMinutes = 3, fraction = 0.35f, isToday = false),
+            DayBarStat("S", "Saturday", "Nov 17", count = 1, reclaimedMinutes = 3, fraction = 0.35f, isToday = false),
+            DayBarStat("S", "Sunday", "Nov 18", count = 0, reclaimedMinutes = 0, fraction = 0.14f, isToday = true)
+        )
+
+        composeRule.setContent {
+            FeedSurgeonTheme {
+                InsightsScreen(
+                    uiState = MainUiState(
+                        isInitialLoading = false,
+                        preferences = AppPreferences(reclaimedSecondsPerCut = 180),
+                        weeklyCutsCount = 7,
+                        weeklyDayBars = dayBars,
+                        weeklyReclaimedText = "~21 min",
+                        weeklyAllowedOnceCount = 3,
+                        weeklyFunnel = WeeklyFunnelStats(
+                            detectedCount = 12,
+                            attemptedCount = 10,
+                            completedCount = 7,
+                            continuedCount = 3
+                        ),
+                        streakDays = 2
+                    )
+                )
+            }
+        }
+        composeRule.waitForIdle()
+
+        composeRule.onNode(hasScrollToNodeAction())
+            .performScrollToNode(hasTestTag("insights_activity_funnel_card"))
+        composeRule.onNodeWithTag("insights_activity_funnel_card").assertIsDisplayed()
+
+        composeRule.onNode(hasScrollToNodeAction())
+            .performScrollToNode(hasTestTag("funnel_stage_detected"))
+        composeRule.onNodeWithTag("funnel_stage_detected")
+            .assertIsDisplayed()
+            .assertTextContains("Feed detected", substring = true)
+            .assertTextContains("12", substring = true)
+
+        composeRule.onNode(hasScrollToNodeAction())
+            .performScrollToNode(hasTestTag("funnel_stage_attempted"))
+        composeRule.onNodeWithTag("funnel_stage_attempted")
+            .assertIsDisplayed()
+            .assertTextContains("Intervention attempted", substring = true)
+            .assertTextContains("10", substring = true)
+
+        composeRule.onNode(hasScrollToNodeAction())
+            .performScrollToNode(hasTestTag("funnel_stage_completed"))
+        composeRule.onNodeWithTag("funnel_stage_completed")
+            .assertIsDisplayed()
+            .assertTextContains("Intervention completed", substring = true)
+            .assertTextContains("7", substring = true)
+
+        composeRule.onNode(hasScrollToNodeAction())
+            .performScrollToNode(hasTestTag("funnel_stage_continued"))
+        composeRule.onNodeWithTag("funnel_stage_continued")
+            .assertIsDisplayed()
+            .assertTextContains("User chose to continue", substring = true)
+            .assertTextContains("3", substring = true)
+    }
+
+    @Test
+    fun `home screen shows customize hint, app chevrons, and separates row click from switch toggle`() {
+        val rules = FeedSurgeonDatabase.defaultBuiltInRules()
+        val installed = setOf("com.google.android.youtube", "com.instagram.android")
+        var clickedApp: String? = null
+        var toggledPair: Pair<String, Boolean>? = null
+
+        composeRule.setContent {
+            FeedSurgeonTheme {
+                HomeScreen(
+                    uiState = MainUiState(
+                        isInitialLoading = false,
+                        rules = rules,
+                        installedPackages = installed,
+                        isAccessibilityEnabled = true,
+                        isServiceConnected = true,
+                        protectionStatus = ProtectionStatus.OPERATIONAL,
+                        activeInstalledCount = 2,
+                        installedSupportedCount = 2
+                    ),
+                    onStatusClick = {},
+                    onSetupClick = {},
+                    onToggleGlobalPause = {},
+                    onPauseForMinutes = {},
+                    onGlobalBreakExpired = {},
+                    onAppSnoozeExpired = {},
+                    onRefreshBlockersClick = {},
+                    onAppClick = { pkg -> clickedApp = pkg },
+                    onToggleApp = { pkg, enabled -> toggledPair = pkg to enabled }
+                )
+            }
+        }
+        composeRule.waitForIdle()
+
+        composeRule.onNode(hasScrollToNodeAction())
+            .performScrollToNode(hasTestTag("home_apps_customize_hint"))
+        composeRule.onNodeWithTag("home_apps_customize_hint")
+            .assertIsDisplayed()
+            .assertTextContains("Tap any app to customize")
+
+        composeRule.onNode(hasScrollToNodeAction())
+            .performScrollToNode(hasTestTag("target_app_card_com.google.android.youtube"))
+        composeRule.onNodeWithTag("app_detail_chevron_com.google.android.youtube", useUnmergedTree = true)
+            .assertIsDisplayed()
+
+        // Toggling the switch invokes onToggleApp without opening AppDetail
+        composeRule.onNodeWithTag("toggle_com.google.android.youtube").performClick()
+        composeRule.waitForIdle()
+        assertEquals("com.google.android.youtube" to false, toggledPair)
+        assertEquals(null, clickedApp)
+
+        // Tapping the row opens AppDetail independently
+        composeRule.onNodeWithTag("target_app_card_com.google.android.youtube").performClick()
+        composeRule.waitForIdle()
+        assertEquals("com.google.android.youtube", clickedApp)
     }
 }

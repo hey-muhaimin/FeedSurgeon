@@ -322,7 +322,7 @@ class ExampleRobolectricTest {
     }
 
     @Test
-    fun `intervention repository records outcomes and filters failed events from insights`() = runTest {
+    fun `intervention repository tracks four-stage funnel and counts only verified exits`() = runTest {
         val context = ApplicationProvider.getApplicationContext<Context>()
         val db = FeedSurgeonDatabase.getInstance(context)
         val settings = SettingsDataStore(context)
@@ -331,47 +331,73 @@ class ExampleRobolectricTest {
         repo.clearHistory()
 
         val ytRule = db.feedSurgeonDao().getRuleByPackage("com.google.android.youtube")!!
+
+        // 1. Detected only (never attempted)
+        val detectedOnlyId = repo.recordIntervention(
+            rule = ytRule,
+            matchedSelector = "com.google.android.youtube:id/reel_recycler",
+            actionTaken = InterventionMode.OVERLAY,
+            outcome = InterventionOutcome.DETECTED
+        )
+
+        // 2. Detected -> Attempted -> Verified Completed
         val confirmedId = repo.recordIntervention(
             rule = ytRule,
             matchedSelector = "com.google.android.youtube:id/reel_recycler",
             actionTaken = InterventionMode.HOME_TAB,
-            outcome = InterventionOutcome.ATTEMPTED
+            outcome = InterventionOutcome.DETECTED
         )
+        repo.markEventAttempted(confirmedId)
         repo.updateInterventionOutcome(confirmedId, InterventionOutcome.CONFIRMED)
 
+        // 3. Detected -> Attempted -> Failed exit
         val failedId = repo.recordIntervention(
             rule = ytRule,
             matchedSelector = "tab:\"Shorts\"",
             actionTaken = InterventionMode.BACK,
-            outcome = InterventionOutcome.ATTEMPTED
+            outcome = InterventionOutcome.DETECTED
         )
+        repo.markEventAttempted(failedId)
         repo.updateInterventionOutcome(failedId, InterventionOutcome.FAILED)
 
+        // 4. Detected -> Attempted -> User chose to continue
         val allowedId = repo.recordIntervention(
             rule = ytRule,
             matchedSelector = "com.google.android.youtube:id/shorts_player",
             actionTaken = InterventionMode.OVERLAY,
-            outcome = InterventionOutcome.ATTEMPTED
+            outcome = InterventionOutcome.DETECTED
         )
+        repo.markEventAttempted(allowedId)
         repo.allowOnceForEvent(allowedId, ytRule.packageName)
 
         val allEvents = repo.recentEvents.first()
-        assertEquals(3, allEvents.size)
-        assertEquals(
-            InterventionOutcome.CONFIRMED,
-            allEvents.first { it.id == confirmedId }.outcome
-        )
-        assertEquals(
-            InterventionOutcome.FAILED,
-            allEvents.first { it.id == failedId }.outcome
-        )
+        assertEquals(4, allEvents.size)
+        val detectedEvent = allEvents.first { it.id == detectedOnlyId }
+        assertEquals(InterventionOutcome.DETECTED, detectedEvent.outcome)
+        assertFalse(detectedEvent.wasAttempted)
+
+        val confirmedEvent = allEvents.first { it.id == confirmedId }
+        assertEquals(InterventionOutcome.CONFIRMED, confirmedEvent.outcome)
+        assertTrue(confirmedEvent.wasAttempted)
+
+        val failedEvent = allEvents.first { it.id == failedId }
+        assertEquals(InterventionOutcome.FAILED, failedEvent.outcome)
+        assertTrue(failedEvent.wasAttempted)
+
         val allowedEvent = allEvents.first { it.id == allowedId }
         assertEquals(InterventionOutcome.ALLOWED_ONCE, allowedEvent.outcome)
         assertTrue(allowedEvent.wasAllowedOnce)
+        assertTrue(allowedEvent.wasAttempted)
 
         val counted = MainViewModel.filterCountedEvents(allEvents)
-        assertEquals(2, counted.size)
-        assertFalse(counted.any { it.id == failedId })
+        assertEquals(1, counted.size)
+        assertEquals(confirmedId, counted.single().id)
+
+        val funnel = MainViewModel.computeWeeklyFunnel(allEvents)
+        assertEquals(4, funnel.detectedCount)
+        assertEquals(3, funnel.attemptedCount)
+        assertEquals(1, funnel.completedCount)
+        assertEquals(1, funnel.continuedCount)
     }
 
     @Test
@@ -418,6 +444,66 @@ class ExampleRobolectricTest {
         val cursor = db.query("SELECT outcome FROM intervention_events")
         assertTrue(cursor.moveToFirst())
         assertEquals("CONFIRMED", cursor.getString(0))
+        cursor.close()
+        helper.close()
+        context.deleteDatabase(dbName)
+    }
+
+    @Test
+    fun `migration 3 to 4 adds wasAttempted defaulting 1 and 0 for DETECTED`() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val dbName = "migration_3_4_test.db"
+        context.deleteDatabase(dbName)
+        val factory = FrameworkSQLiteOpenHelperFactory()
+        val config = SupportSQLiteOpenHelper.Configuration.builder(context)
+            .name(dbName)
+            .callback(object : SupportSQLiteOpenHelper.Callback(3) {
+                override fun onCreate(db: SupportSQLiteDatabase) {
+                    db.execSQL(
+                        """
+                        CREATE TABLE IF NOT EXISTS intervention_events (
+                            id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                            packageName TEXT NOT NULL,
+                            appName TEXT NOT NULL,
+                            feedLabel TEXT NOT NULL,
+                            matchedSelector TEXT NOT NULL,
+                            actionTaken TEXT NOT NULL,
+                            timestampMs INTEGER NOT NULL,
+                            reclaimedSeconds INTEGER NOT NULL,
+                            wasAllowedOnce INTEGER NOT NULL,
+                            outcome TEXT NOT NULL
+                        )
+                        """.trimIndent()
+                    )
+                }
+
+                override fun onUpgrade(db: SupportSQLiteDatabase, oldVersion: Int, newVersion: Int) = Unit
+            })
+            .build()
+
+        val helper = factory.create(config)
+        val db = helper.writableDatabase
+        db.execSQL(
+            """
+            INSERT INTO intervention_events (packageName, appName, feedLabel, matchedSelector, actionTaken, timestampMs, reclaimedSeconds, wasAllowedOnce, outcome)
+            VALUES ('com.google.android.youtube', 'YouTube', 'Shorts', 'id/reel_recycler', 'OVERLAY', 1000, 165, 0, 'CONFIRMED')
+            """.trimIndent()
+        )
+        db.execSQL(
+            """
+            INSERT INTO intervention_events (packageName, appName, feedLabel, matchedSelector, actionTaken, timestampMs, reclaimedSeconds, wasAllowedOnce, outcome)
+            VALUES ('com.instagram.android', 'Instagram', 'Reels', 'id/clips', 'OVERLAY', 2000, 165, 0, 'DETECTED')
+            """.trimIndent()
+        )
+        FeedSurgeonDatabase.MIGRATION_3_4.migrate(db)
+
+        val cursor = db.query("SELECT outcome, wasAttempted FROM intervention_events ORDER BY timestampMs ASC")
+        assertTrue(cursor.moveToFirst())
+        assertEquals("CONFIRMED", cursor.getString(0))
+        assertEquals(1, cursor.getInt(1))
+        assertTrue(cursor.moveToNext())
+        assertEquals("DETECTED", cursor.getString(0))
+        assertEquals(0, cursor.getInt(1))
         cursor.close()
         helper.close()
         context.deleteDatabase(dbName)

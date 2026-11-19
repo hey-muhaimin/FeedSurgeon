@@ -40,10 +40,16 @@ interface FeedSurgeonDao {
     @Query("SELECT * FROM intervention_events ORDER BY timestampMs DESC LIMIT 200")
     fun observeRecentEvents(): Flow<List<InterventionEventEntity>>
 
+    @Query("SELECT * FROM intervention_events WHERE id = :eventId LIMIT 1")
+    suspend fun getEventById(eventId: Long): InterventionEventEntity?
+
     @Insert
     suspend fun insertEvent(event: InterventionEventEntity): Long
 
-    @Query("UPDATE intervention_events SET wasAllowedOnce = 1, outcome = 'ALLOWED_ONCE' WHERE id = :eventId")
+    @Query("UPDATE intervention_events SET wasAttempted = 1, outcome = 'ATTEMPTED' WHERE id = :eventId")
+    suspend fun markEventAttempted(eventId: Long)
+
+    @Query("UPDATE intervention_events SET wasAllowedOnce = 1, wasAttempted = 1, outcome = 'ALLOWED_ONCE' WHERE id = :eventId")
     suspend fun markEventAllowedOnce(eventId: Long)
 
     @Query("UPDATE intervention_events SET outcome = :outcome WHERE id = :eventId")

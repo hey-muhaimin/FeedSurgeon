@@ -300,12 +300,14 @@ class FeedSurgeonService : AccessibilityService() {
     private fun executeHomeTabThenBackFallback(
         rootNode: AccessibilityNodeInfo?,
         rule: TargetAppRuleEntity
-    ) {
+    ): Boolean {
         val clickedHome = rootNode?.let {
             SelectorMatcher.findHomeTabNode(it, rule.homeTabLabel)
                 ?.performAction(AccessibilityNodeInfo.ACTION_CLICK)
         } == true
-        if (!clickedHome) {
+        return if (clickedHome) {
+            true
+        } else {
             performGlobalAction(GLOBAL_ACTION_BACK)
         }
     }
@@ -331,7 +333,10 @@ class FeedSurgeonService : AccessibilityService() {
         }
 
         if (rule.interventionMode == InterventionMode.HOME_TAB || rule.interventionMode == InterventionMode.OVERLAY) {
-            performGlobalAction(GLOBAL_ACTION_BACK)
+            val backSent = performGlobalAction(GLOBAL_ACTION_BACK)
+            if (backSent && eventId != null) {
+                app.interventionRepository.markEventAttempted(eventId)
+            }
             delay(300L)
             val cleared = !isStillOnMatchedFeed(rule)
             if (eventId != null) {
@@ -361,26 +366,34 @@ class FeedSurgeonService : AccessibilityService() {
             lastRecordedInterventionElapsed[rule.packageName] = nowElapsed
         }
 
+        val eventIdDeferred = CompletableDeferred<Long?>()
+        serviceScope.launch {
+            val eventId = if (shouldRecord) {
+                app.interventionRepository.recordIntervention(
+                    rule = rule,
+                    matchedSelector = matchedSelector,
+                    actionTaken = rule.interventionMode,
+                    outcome = InterventionOutcome.DETECTED
+                )
+            } else {
+                null
+            }
+            eventIdDeferred.complete(eventId)
+        }
+
         val shield = overlayShield
         if (rule.interventionMode == InterventionMode.OVERLAY && shield != null) {
-            val eventIdDeferred = CompletableDeferred<Long?>()
-            serviceScope.launch {
-                val eventId = if (shouldRecord) {
-                    app.interventionRepository.recordIntervention(
-                        rule = rule,
-                        matchedSelector = matchedSelector,
-                        actionTaken = InterventionMode.OVERLAY,
-                        outcome = InterventionOutcome.ATTEMPTED
-                    )
-                } else {
-                    null
-                }
-                eventIdDeferred.complete(eventId)
-            }
-
             shield.show(
                 appName = rule.displayName,
                 feedLabel = rule.feedLabel,
+                onOverlayShown = {
+                    serviceScope.launch {
+                        val eventId = eventIdDeferred.await()
+                        if (eventId != null) {
+                            app.interventionRepository.markEventAttempted(eventId)
+                        }
+                    }
+                },
                 onExitFeed = {
                     lastBlockTimestamps[rule.packageName] = SystemClock.elapsedRealtime()
                     val freshRoot = resolveTargetRootNode(rule.packageName)
@@ -412,10 +425,13 @@ class FeedSurgeonService : AccessibilityService() {
                 onAttachmentFailed = {
                     lastBlockTimestamps[rule.packageName] = SystemClock.elapsedRealtime()
                     val freshRoot = resolveTargetRootNode(rule.packageName) ?: rootNode
-                    executeHomeTabThenBackFallback(freshRoot, rule)
+                    val fallbackSent = executeHomeTabThenBackFallback(freshRoot, rule)
                     serviceScope.launch {
                         try {
                             val eventId = eventIdDeferred.await()
+                            if (eventId != null && fallbackSent) {
+                                app.interventionRepository.markEventAttempted(eventId)
+                            }
                             verifyInterventionAndFallbackIfNeeded(rule, eventId)
                         } finally {
                             inFlightVerifications.remove(rule.packageName)
@@ -426,7 +442,7 @@ class FeedSurgeonService : AccessibilityService() {
             return
         }
 
-        when (rule.interventionMode) {
+        val initiated = when (rule.interventionMode) {
             InterventionMode.BACK -> performGlobalAction(GLOBAL_ACTION_BACK)
             InterventionMode.HOME_TAB,
             InterventionMode.OVERLAY -> executeHomeTabThenBackFallback(rootNode, rule)
@@ -434,15 +450,9 @@ class FeedSurgeonService : AccessibilityService() {
 
         serviceScope.launch {
             try {
-                val eventId = if (shouldRecord) {
-                    app.interventionRepository.recordIntervention(
-                        rule = rule,
-                        matchedSelector = matchedSelector,
-                        actionTaken = rule.interventionMode,
-                        outcome = InterventionOutcome.ATTEMPTED
-                    )
-                } else {
-                    null
+                val eventId = eventIdDeferred.await()
+                if (eventId != null && initiated) {
+                    app.interventionRepository.markEventAttempted(eventId)
                 }
                 verifyInterventionAndFallbackIfNeeded(rule, eventId)
             } finally {

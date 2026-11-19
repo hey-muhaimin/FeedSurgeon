@@ -16,5 +16,6 @@ data class InterventionEventEntity(
     val timestampMs: Long = System.currentTimeMillis(),
     val reclaimedSeconds: Int = 165,
     val wasAllowedOnce: Boolean = false,
+    val wasAttempted: Boolean = true,
     val outcome: InterventionOutcome = InterventionOutcome.CONFIRMED
 )

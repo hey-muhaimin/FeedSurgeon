@@ -48,6 +48,13 @@ data class AppBreakdownStat(
     val fraction: Float
 )
 
+data class WeeklyFunnelStats(
+    val detectedCount: Int = 0,
+    val attemptedCount: Int = 0,
+    val completedCount: Int = 0,
+    val continuedCount: Int = 0
+)
+
 enum class OnboardingStep(val index: Int) {
     WELCOME(0),
     TARGET_APPS(1),
@@ -88,6 +95,7 @@ data class MainUiState(
     val weeklyDayBars: List<DayBarStat> = emptyList(),
     val weeklyReclaimedText: String = "0 min",
     val weeklyAllowedOnceCount: Int = 0,
+    val weeklyFunnel: WeeklyFunnelStats = WeeklyFunnelStats(),
     val byAppBreakdown: List<AppBreakdownStat> = emptyList(),
     val recentToast: InterventionToastState? = null,
     val isSyncingRules: Boolean = false,
@@ -204,6 +212,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             InstalledAppDetector.getInstalledPackages(app, rules.map { it.packageName })
         }
         val nowMs = System.currentTimeMillis()
+        val weekStart = InterventionRepository.startOfWeekDaysAgoMs(6, nowMs)
+        val allWeekEvents = events.filter { it.timestampMs >= weekStart }
+        val weeklyFunnel = computeWeeklyFunnel(allWeekEvents)
+        val weekAllowedOnce = weeklyFunnel.continuedCount
+
         val countedEvents = filterCountedEvents(events)
         val todayStart = InterventionRepository.startOfTodayMs(nowMs)
         val todayEvents = countedEvents.filter { it.timestampMs >= todayStart }
@@ -211,11 +224,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
         val fiveDayBars = buildFiveDaySparkline(countedEvents, nowMs)
         val weeklyBars = buildWeeklyDayBars(countedEvents, nowMs)
-        val weekStart = InterventionRepository.startOfWeekDaysAgoMs(6, nowMs)
         val weekEvents = countedEvents.filter { it.timestampMs >= weekStart }
         val weekSeconds = weekEvents.sumOf { it.reclaimedSeconds }
         val weekReclaimedText = formatReclaimedDuration(weekSeconds)
-        val weekAllowedOnce = weekEvents.count { it.wasAllowedOnce }
 
         val byApp = buildAppBreakdown(rules, weekEvents)
         val installedRules = rules.filter { it.packageName in installed }
@@ -250,6 +261,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             weeklyDayBars = weeklyBars,
             weeklyReclaimedText = weekReclaimedText,
             weeklyAllowedOnceCount = weekAllowedOnce,
+            weeklyFunnel = weeklyFunnel,
             byAppBreakdown = byApp,
             recentToast = transient.toast,
             isSyncingRules = transient.isSyncing,
@@ -640,6 +652,14 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
 
         fun filterCountedEvents(events: List<InterventionEventEntity>): List<InterventionEventEntity> =
-            events.filter { it.outcome != InterventionOutcome.FAILED }
+            events.filter { it.outcome == InterventionOutcome.CONFIRMED }
+
+        fun computeWeeklyFunnel(events: List<InterventionEventEntity>): WeeklyFunnelStats =
+            WeeklyFunnelStats(
+                detectedCount = events.size,
+                attemptedCount = events.count { it.wasAttempted || it.outcome != InterventionOutcome.DETECTED },
+                completedCount = events.count { it.outcome == InterventionOutcome.CONFIRMED },
+                continuedCount = events.count { it.wasAllowedOnce || it.outcome == InterventionOutcome.ALLOWED_ONCE }
+            )
     }
 }

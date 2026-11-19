@@ -104,7 +104,7 @@ class InterventionRepository(
         rule: TargetAppRuleEntity,
         matchedSelector: String,
         actionTaken: InterventionMode,
-        outcome: InterventionOutcome = InterventionOutcome.ATTEMPTED
+        outcome: InterventionOutcome = InterventionOutcome.DETECTED
     ): Long {
         val prefs = settingsDataStore.preferencesFlow.first()
         val now = System.currentTimeMillis()
@@ -118,10 +118,11 @@ class InterventionRepository(
                 timestampMs = now,
                 reclaimedSeconds = prefs.reclaimedSecondsPerCut,
                 wasAllowedOnce = outcome == InterventionOutcome.ALLOWED_ONCE,
+                wasAttempted = outcome != InterventionOutcome.DETECTED,
                 outcome = outcome
             )
         )
-        if (prefs.showInterventionBanner && outcome != InterventionOutcome.FAILED) {
+        if (prefs.showInterventionBanner && outcome == InterventionOutcome.CONFIRMED) {
             DiagnosticsBridge.publishToast(
                 InterventionToastState(
                     eventId = eventId,
@@ -135,10 +136,36 @@ class InterventionRepository(
         return eventId
     }
 
+    suspend fun markEventAttempted(eventId: Long) {
+        dao.markEventAttempted(eventId)
+    }
+
     suspend fun updateInterventionOutcome(eventId: Long, outcome: InterventionOutcome) {
         dao.updateEventOutcome(eventId, outcome)
-        if (outcome == InterventionOutcome.FAILED) {
-            DiagnosticsBridge.dismissToastIfEvent(eventId)
+        when (outcome) {
+            InterventionOutcome.CONFIRMED -> {
+                val prefs = settingsDataStore.preferencesFlow.first()
+                if (prefs.showInterventionBanner) {
+                    val event = dao.getEventById(eventId)
+                    if (event != null) {
+                        DiagnosticsBridge.publishToast(
+                            InterventionToastState(
+                                eventId = event.id,
+                                packageName = event.packageName,
+                                feedLabel = event.feedLabel,
+                                message = "${event.appName} ${event.feedLabel} paused",
+                                timestampMs = System.currentTimeMillis()
+                            )
+                        )
+                    }
+                }
+            }
+            InterventionOutcome.FAILED,
+            InterventionOutcome.ALLOWED_ONCE -> {
+                DiagnosticsBridge.dismissToastIfEvent(eventId)
+            }
+            InterventionOutcome.DETECTED,
+            InterventionOutcome.ATTEMPTED -> Unit
         }
     }
 

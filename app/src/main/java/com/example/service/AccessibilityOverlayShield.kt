@@ -44,6 +44,7 @@ class AccessibilityOverlayShield(private val context: Context) {
         feedLabel: String,
         onExitFeed: () -> Unit,
         onAllowOnce: () -> Unit,
+        onOverlayShown: () -> Unit = {},
         onAttachmentFailed: () -> Unit = {}
     ) {
         mainHandler.post {
@@ -222,6 +223,7 @@ class AccessibilityOverlayShield(private val context: Context) {
             try {
                 windowManager.addView(root, layoutParams)
                 overlayView = root
+                onOverlayShown()
                 if (animatorsEnabled) {
                     root.animate()
                         .alpha(1f)

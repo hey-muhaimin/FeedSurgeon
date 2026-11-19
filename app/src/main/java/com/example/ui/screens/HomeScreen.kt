@@ -36,6 +36,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.outlined.PauseCircle
@@ -317,23 +318,34 @@ fun HomeScreen(
 
             // Your apps section header
             item {
-                Row(
+                Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(top = 2.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
+                        .padding(top = 2.dp)
                 ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Your apps",
+                            style = MaterialTheme.typography.titleLarge,
+                            color = scheme.onBackground
+                        )
+                        Text(
+                            text = "${installedRules.size} on phone",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = scheme.onSurfaceVariant,
+                            modifier = Modifier.testTag("installed_apps_count")
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(2.dp))
                     Text(
-                        text = "Your apps",
-                        style = MaterialTheme.typography.titleLarge,
-                        color = scheme.onBackground
-                    )
-                    Text(
-                        text = "${installedRules.size} on phone",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = scheme.onSurfaceVariant,
-                        modifier = Modifier.testTag("installed_apps_count")
+                        text = "Tap any app to customize",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = neu.textMuted,
+                        modifier = Modifier.testTag("home_apps_customize_hint")
                     )
                 }
             }
@@ -1042,6 +1054,15 @@ private fun TargetAppRowContent(
             checked = rule.enabled,
             onCheckedChange = onToggle,
             testTag = "toggle_${rule.packageName}"
+        )
+        Spacer(modifier = Modifier.width(4.dp))
+        Icon(
+            imageVector = Icons.AutoMirrored.Rounded.KeyboardArrowRight,
+            contentDescription = "Configure ${rule.displayName}",
+            tint = neu.textMuted,
+            modifier = Modifier
+                .size(20.dp)
+                .testTag("app_detail_chevron_${rule.packageName}")
         )
     }
 }
